@@ -21,7 +21,7 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
   install.packages('pacman')
 }
 
-pacman::p_load(R2jags, MCMCvis)
+pacman::p_load(rjags, MCMCvis)
 
 
 
