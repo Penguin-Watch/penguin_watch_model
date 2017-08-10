@@ -10,8 +10,6 @@
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
-dev.off()
-
 
 
 # Load packages -----------------------------------------------------------
@@ -192,21 +190,10 @@ n_max <- 1e6 # max allowable iterations
 
 # Run model (non-parallel) ---------------------------------------------------------------
 
-#R2jags
-out = jags(data = DATA,
-           model.file = "mark_recapture.jags",
-           working.directory = getwd(),
-           parameters.to.save = Pars,
-           inits = Inits,
-           n.burnin = n_burn,
-           n.iter = n_draw,
-           n.chains = n_chain,
-           n.thin = n_thin)
-
 
 #rjags
 jm = jags.model(data = DATA, 
-                file = "JAGS/captive.jags", 
+                file = "mark_recapture.jags", 
                 inits = Inits, 
                 n.chains = 3, 
                 n.adapt = n_adapt)
