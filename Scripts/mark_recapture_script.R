@@ -106,8 +106,14 @@ cat("
         p_sight[t,i] <- z[t,i] * detect_p[i]
         
         #state model
-        z[t,i] ~ dbern(p_alive[t,i])
-        p_alive[t,i] <- z[t-1,i] * surv_p
+        
+        ifelse(z[t-1, i] < 2,
+              z[t,i] ~ dbern(p_alive[t,i])                
+              p_alive[t,i] <- z[t-1,i] * surv_p,
+              
+              z[t,i] ~ dbinom(p_alive[t,i], 2)
+              p_alive[t,i] <- (z[t-1,i]/2) * surv_p)
+
       }
     }
 
