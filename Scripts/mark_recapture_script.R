@@ -100,54 +100,33 @@ cat("
     for (i in 1:N)
     {
       #both chicks alive at time step 1
-      z[1,i] <- 1
-      ch_y[1,i] <- 1
+      z[1,i] <- 2
 
       for (t in 2:L)
       { 
 
         #observation model
 
-        #< 2 chicks -> ch == 1
-        y_t[t,i,1] ~ dbern(p_sight[t,i])
+        yt1[t,i] ~ dbern(p_sight[t,i])
+        yt2[t,i] ~ dbern(p_sight[t,i])
     
-        #2 chicks - > ch == 2
-        y_t[t,i,2] ~ dbinom(p_sight[t,i], 2)
+        y[t,i] ~ dsum(yt1, yt2)
     
-        #ch_y[t,i] <- 1 + step(z[t,i] - 2)
-        ch_y[t,i] <- ifelse(z[t,i] < 2,
-                          1,
-                          2)
-    
-        y[t,i] <- y_t[t,i,ch_y[t,i]]
-    
-        p_sight[t,i] <- ifelse(z[t,i]<2,
+        p_sight[t,i] <- ifelse(z[t,i] < 2,
                         z[t,i] * detect_p[i],
                         detect_p[i])
 
 
-
-
-
         #state model
 
-        #< 2 chicks -> ch == 1
-        z_t[t,i,1] ~ dbern(p_alive[t,i]) 
+        zt1[t,i] ~ dbern(p_alive[t,i])
+        zt2[t,i] ~ dbern(p_alive[t,i])   
 
-        #2 chicks - > ch == 2
-        z_t[t,i,2] ~ dbinom(p_alive[t,i], 2)
-
-        ch_z[t,i] <- 1 + step(z[t-1,i] - 2)
-        #ch_z[t,i] <- ifelse(z[t-1,i] < 2,
-        #                  1,
-        #                  2)
-
-        z[t,i] <- z_t[t,i,ch_z[t,i]]
+        z[t,i] ~ dsum(zt1, zt2)
         
-        p_alive[t,i] <- ifelse(z[t-1,i]<2,
+        p_alive[t,i] <- ifelse(z[t-1,i] < 2,
                         z[t-1,i] * surv_p,
                         surv_p)
-
       }
     }
 
