@@ -1,0 +1,31 @@
+
+    model {
+    
+    for (i in 1:N)
+    {
+      #both chicks alive at time step 1
+      z[1,i] <- 1
+
+      for (t in 2:L)
+      { 
+
+        #observation model
+    
+        y[t,i] ~ dbern(psight[t,i])
+        psight[t,i] <- detect_p * z[t,i]
+
+        #state model
+
+        z[t,i] ~ dbern(palive[t,i])
+        palive[t,i] <- surv_p * z[t-1,i]
+
+      }
+    }
+
+
+    #priors
+    surv_p ~ dunif(0,1)
+
+    detect_p ~ dunif(0,1)
+    
+    }
