@@ -99,7 +99,10 @@ cat("
     
     for (i in 1:N)
     {
-      for (t in 1:L)
+      #both chicks alive at time step 1
+      z[i,1] <- 2
+
+      for (t in 2:L)
       { 
         #observation model
         
@@ -107,18 +110,18 @@ cat("
                         dbern(p_sight[t,i]),
                         dbinom(p_sight[t,i], 2))
         p_sight[t,i] <- ifelse(z[t,i]<2,
-                        p_sight[t,i] <- z[t,i] * detect_p[i],
-                        p_sight[t,i] <- (z[t,i]/2) * detect_p[i])
+                        z[t,i] * detect_p[i],
+                        (z[t,i]/2) * detect_p[i])
 
 
         #state model
 
         z[t,i] ~ ifelse(z[t-1,i]<2, 
                         dbern(p_alive[t,i]),
-                        z[t,i] ~ dbinom(p_alive[t,i], 2))
+                        dbinom(p_alive[t,i], 2))
         p_alive[t,i] <- ifelse(z[t-1,i]<2,
-                        p_alive[t,i] <- z[t-1,i] * surv_p,
-                        p_alive[t,i] <- (z[t-1,i]/2) * surv_p)
+                        z[t-1,i] * surv_p,
+                        (z[t-1,i]/2) * surv_p)
       }
     }
 
