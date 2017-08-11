@@ -107,12 +107,12 @@ cat("
 
         #observation model
     
-        y[t,i] ~ dbinom(detect_p, z[t,i])
+        y[t,i] ~ dbin(detect_p, z[t,i])
 
 
         #state model
 
-        z[t,i] ~ dbinom(surv_p, z[t-1,i])
+        z[t,i] ~ dbin(surv_p, 2)
       }
     }
 
@@ -120,7 +120,7 @@ cat("
     #priors
     surv_p ~ dunif(0,1)
 
-    detect_p ~ dunif(0,1)
+    detect_p ~ dunif(0.4,0.6)
 
 
 #NOT SURE ABOUT ANY OF THIS IN THIS CASE
@@ -150,18 +150,18 @@ sink()
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(surv_p = runif(1, min = 0, max = 1),
-                detect_p = runif(1, min = 0, max = 1),
+Inits_1 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
+                detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(surv_p = runif(1, min = 0, max = 1),
-                detect_p = runif(1, min = 0, max = 1),
+Inits_2 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
+                detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(surv_p = runif(1, min = 0, max = 1),
-                detect_p = runif(1, min = 0, max = 1),
+Inits_3 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
+                detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -172,8 +172,7 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('surv_p',
-          'detect_p',
-          'z')
+          'detect_p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
