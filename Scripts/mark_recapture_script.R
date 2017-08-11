@@ -106,27 +106,13 @@ cat("
       { 
 
         #observation model
-
-        yt1[t,i] ~ dbern(p_sight[t,i])
-        yt2[t,i] ~ dbern(p_sight[t,i])
     
-        y[t,i] ~ dsum(yt1, yt2)
-    
-        p_sight[t,i] <- ifelse(z[t,i] < 2,
-                        z[t,i] * detect_p[i],
-                        detect_p[i])
+        y[t,i] ~ dbinom(detect_p, z[t,i])
 
 
         #state model
 
-        zt1[t,i] ~ dbern(p_alive[t,i])
-        zt2[t,i] ~ dbern(p_alive[t,i])   
-
-        z[t,i] ~ dsum(zt1, zt2)
-        
-        p_alive[t,i] <- ifelse(z[t-1,i] < 2,
-                        z[t-1,i] * surv_p,
-                        surv_p)
+        z[t,i] ~ dbinom(surv_p, z[t-1,i])
       }
     }
 
@@ -134,10 +120,7 @@ cat("
     #priors
     surv_p ~ dunif(0,1)
 
-    for (i in 1:N)
-    {
-      detect_p[i] ~ dunif(0,1)
-    }
+    detect_p ~ dunif(0,1)
 
 
 #NOT SURE ABOUT ANY OF THIS IN THIS CASE
@@ -168,17 +151,17 @@ sink()
 
 
 Inits_1 <- list(surv_p = runif(1, min = 0, max = 1),
-                detect_p = runif(DATA$N, min = 0, max = 1),
+                detect_p = runif(1, min = 0, max = 1),
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(surv_p = runif(1, min = 0, max = 1),
-                detect_p = runif(DATA$N, min = 0, max = 1),
+                detect_p = runif(1, min = 0, max = 1),
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(surv_p = runif(1, min = 0, max = 1),
-                detect_p = runif(DATA$N, min = 0, max = 1),
+                detect_p = runif(1, min = 0, max = 1),
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -190,8 +173,6 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 Pars <- c('surv_p',
           'detect_p',
-          'p_alive',
-          'p_sight',
           'z')
 
 
@@ -253,7 +234,7 @@ n_final <- n_draw/n_thin
 
 
 #summary
-MCMCsummary(out)
+MCMCsummary(out, params = 'p')
 
 #trace plots
 MCMCtrace(out, params = 'beta', ind = TRUE)
