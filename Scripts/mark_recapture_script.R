@@ -100,37 +100,53 @@ cat("
     for (i in 1:N)
     {
       #both chicks alive at time step 1
-      z[i,1] <- 2
+      z[1,i] <- 1
 
       for (t in 2:L)
       { 
-        #observation model
-        
-        yt1[t,i] ~ dbern(p_sight[t,i])
-        yt2[t,i] ~ dbern(p_sight[t,i])
-        
-        y[t,i] <- ifelse(z[t,i]<2,
-                        yt1[t,i],
-                        yt1[t,i] + yt2[t,i])
 
+        #observation model
+
+        #< 2 chicks -> ch == 1
+        y_t[t,i,1] ~ dbern(p_sight[t,i])
+    
+        #2 chicks - > ch == 2
+        y_t[t,i,2] ~ dbinom(p_sight[t,i], 2)
+    
+        ch_y[t,i] <- 1 + step(z[t,i] - 2)
+        #ch_y[t,i] <- ifelse(z[t,i] < 2,
+        #                  1,
+        #                  2)
+    
+        y[t,i] ~ dunif(y_t[t,i,ch_y[t,i]], y_t[t,i,ch_y[t,i]])
+    
         p_sight[t,i] <- ifelse(z[t,i]<2,
                         z[t,i] * detect_p[i],
                         detect_p[i])
 
 
 
+
+
         #state model
 
-        zt1[t,i] ~ dbern(p_alive[t,i])
-        zt2[t,i] ~ dbern(p_alive[t,i])        
+        #< 2 chicks -> ch == 1
+        z_t[t,i,1] ~ dbern(p_alive[t,i]) 
 
-        z[t,i] <- ifelse(z[t-1,i]<2,
-                        zt1[t,i],
-                        zt1[t,i] + zt2[t,i])
+        #2 chicks - > ch == 2
+        z_t[t,i,2] ~ dbinom(p_alive[t,i], 2)
 
+        ch_z[t,i] <- 1 + step(z[t-1,i] - 2)
+        #ch_z[t,i] <- ifelse(z[t-1,i] < 2,
+        #                  1,
+        #                  2)
+
+        z[t,i] <- z_t[t,i,ch_z[t,i]]
+        
         p_alive[t,i] <- ifelse(z[t-1,i]<2,
                         z[t-1,i] * surv_p,
                         surv_p)
+
       }
     }
 
@@ -217,7 +233,7 @@ n_max <- 1e6 # max allowable iterations
 #rjags
 jm = jags.model(data = DATA, 
                 file = "mark_recapture.jags", 
-                inits = Inits, 
+                inits = F_Inits, 
                 n.chains = 3, 
                 n.adapt = n_adapt)
 
