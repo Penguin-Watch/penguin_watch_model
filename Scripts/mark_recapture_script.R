@@ -101,6 +101,7 @@ cat("
     {
       #both chicks alive at time step 1
       z[1,i] <- 1
+      ch_y[1,i] <- 1
 
       for (t in 2:L)
       { 
@@ -113,12 +114,12 @@ cat("
         #2 chicks - > ch == 2
         y_t[t,i,2] ~ dbinom(p_sight[t,i], 2)
     
-        ch_y[t,i] <- 1 + step(z[t,i] - 2)
-        #ch_y[t,i] <- ifelse(z[t,i] < 2,
-        #                  1,
-        #                  2)
+        #ch_y[t,i] <- 1 + step(z[t,i] - 2)
+        ch_y[t,i] <- ifelse(z[t,i] < 2,
+                          1,
+                          2)
     
-        y[t,i] ~ dunif(y_t[t,i,ch_y[t,i]], y_t[t,i,ch_y[t,i]])
+        y[t,i] <- y_t[t,i,ch_y[t,i]]
     
         p_sight[t,i] <- ifelse(z[t,i]<2,
                         z[t,i] * detect_p[i],
