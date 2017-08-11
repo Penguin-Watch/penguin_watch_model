@@ -106,9 +106,9 @@ cat("
       { 
         #observation model
         
-        y[t,i] ~ ifelse(z[t,i]<2, 
-                        dbern(p_sight[t,i]),
-                        dbinom(p_sight[t,i], 2))
+        ifelse(z[t,i]<2, 
+                        y[t,i] ~ dbern(p_sight[t,i]),
+                        y[t,i] ~ dbinom(p_sight[t,i], 2))
         p_sight[t,i] <- ifelse(z[t,i]<2,
                         z[t,i] * detect_p[i],
                         (z[t,i]/2) * detect_p[i])
@@ -116,9 +116,9 @@ cat("
 
         #state model
 
-        z[t,i] ~ ifelse(z[t-1,i]<2, 
-                        dbern(p_alive[t,i]),
-                        dbinom(p_alive[t,i], 2))
+        ifelse(z[t-1,i]<2, 
+                        z[t,i] ~ dbern(p_alive[t,i]),
+                        z[t,i] ~ dbinom(p_alive[t,i], 2))
         p_alive[t,i] <- ifelse(z[t-1,i]<2,
                         z[t-1,i] * surv_p,
                         (z[t-1,i]/2) * surv_p)
