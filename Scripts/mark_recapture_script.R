@@ -76,13 +76,17 @@ obs_fun <- function(input)
 }
 
 obs_state <- apply(true_state, 2, obs_fun)
+obs_state2 <- obs_state
+
+to.ch <- which(obs_state2 == 2, arr.ind = TRUE)
+obs_state2[to.ch] <- 1
 
 
 
 DATA <- list(
-  y = obs_state, #reponse
-  N = NCOL(obs_state), #number of nests
-  L = NROW(obs_state)) #number of time points
+  y = obs_state2, #reponse
+  N = NCOL(obs_state2), #number of nests
+  L = NROW(obs_state2)) #number of time points
 
 
 
@@ -100,19 +104,21 @@ cat("
     for (i in 1:N)
     {
       #both chicks alive at time step 1
-      z[1,i] <- 2
+      z[1,i] <- 1
 
       for (t in 2:L)
       { 
 
         #observation model
     
-        y[t,i] ~ dbin(detect_p, z[t,i])
-
+        y[t,i] ~ dbern(psight[t,i])
+        psight[t,i] <- detect_p * z[t,i]
 
         #state model
 
-        z[t,i] ~ dbin(surv_p, 2)
+        z[t,i] ~ dbern(palive[t,i])
+        palive[t,i] <- surv_p * z[t-1,i]
+
       }
     }
 
@@ -120,25 +126,7 @@ cat("
     #priors
     surv_p ~ dunif(0,1)
 
-    detect_p ~ dunif(0.4,0.6)
-
-
-#NOT SURE ABOUT ANY OF THIS IN THIS CASE
-    #For posterior predictive check
-    #simulate data and calc sq residual
-    #y.rep[t,i] ~ dbern(p_sight.rep[t,i])
-    #p_sight.rep[t,i] <- z.rep[t,i] * detect_p[i]
-    #z.rep[t,i] ~ dbern(p_alive[t,i])
-
-    #sim compared to fit      
-    #sq.sim[i] <- pow(y.rep[t,i] - mu.y[i], 2)
-    #actual compared to fit      
-    #sq.act[i] <- pow((y[t,i] - mu.y[i]), 2)
-    
-    #error for R^2 calculation
-    #e.y[i] <- y[i] - mu.y[i]
-    #ids for each data point
-    #id.y[i] <- id[i]
+    detect_p ~ dunif(0,1)
     
     }",fill = TRUE)
 
@@ -233,7 +221,7 @@ n_final <- n_draw/n_thin
 
 
 #summary
-MCMCsummary(out, params = 'p')
+MCMCsummary(out)
 
 #trace plots
 MCMCtrace(out, params = 'beta', ind = TRUE)
