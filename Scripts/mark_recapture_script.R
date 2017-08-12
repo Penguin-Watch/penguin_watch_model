@@ -6,6 +6,11 @@
 #Authors: Casey Youngflesh
 ######################
 
+#TODO
+#simulate so params are actually known
+#detection vary with nest
+#detection vary with age (time)
+#survival vary with age
 
 
 # Clear environment -------------------------------------------------------
@@ -77,16 +82,12 @@ obs_fun <- function(input)
 }
 
 obs_state <- apply(true_state, 2, obs_fun)
-obs_state2 <- obs_state
-
-#to.ch <- which(obs_state2 == 2, arr.ind = TRUE)
-#obs_state2[to.ch] <- 1
 
 
 DATA <- list(
-  y = obs_state2, #reponse
-  N = NROW(obs_state2), #number of nests
-  L = NCOL(obs_state2)) #number of time points
+  y = obs_state, #reponse
+  N = NROW(obs_state), #number of nests
+  L = NCOL(obs_state)) #number of time points
 
 
 
@@ -109,36 +110,34 @@ cat("
       for (t in 2:L)
       { 
 
-        #observation model
-        y[i,t] ~ dbinom(psight[i,t], z[i,t])
-        psight[i,t] <- detect_p[i,t] * z[i,t]
-
         #state model
-        z[i,t] ~ dbinom(palive[i,t], z[i,t-1])
-        palive[i,t] <- surv_p[i,t] * z[i,t-1]
+        z[i,t] ~ dbinom(p_alive[i,t], z[i,t-1])
+        p_alive[i,t] <- ifelse(z[i,t-1] < 2,
+                              surv_p[i,t] * z[i,t-1],
+                              surv_p[i,t])
+
+        #observation model
+        y[i,t] ~ dbinom(p_sight[i,t], z[i,t])
+        p_sight[i,t] <- ifelse(z[i,t] < 2,
+                              detect_p[i,t] * z[i,t],
+                              detect_p[i,t])
 
       }
     }
 
 
-    
+    #priors
     for (i in 1:N)
     {
       for (t in 1:L)
       {
-        detect_p[i,t] <- mean.detect_p
-        surv_p[i,t] <- mean.surv_p
-      } #t
-    } #i
+        detect_p[i,t] <- mn_detect_p
+        surv_p[i,t] <- mn_surv_p
+      }
+    }
 
-
-
-    #priors
-    # surv_p ~ dunif(0,1)
-    # detect_p ~ dunif(0,1)
-
-    mean.detect_p ~ dunif(0,1)
-    mean.surv_p ~ dunif(0,1)
+    mn_detect_p ~ dunif(0,1)
+    mn_surv_p ~ dunif(0,1)
 
 
     }",fill = TRUE)
@@ -150,7 +149,7 @@ sink()
 
 # Starting values ---------------------------------------------------------
 
-#produce inits for z-state
+#produce inits for z-state - fill 2s and 1s
 #fun modified from Kerry and Schaub 2012
 #assume that chicks are alive since time step 1 (even though they could have died as eggs)
 known.state.fun <- function(INPUT)
@@ -159,6 +158,7 @@ known.state.fun <- function(INPUT)
   state <- INPUT
   for (i in 1:NROW(INPUT))
   {
+    #i <- 1
     n1 <- 1
     n2 <- max(which(INPUT[i,] == 2))
     
@@ -166,8 +166,7 @@ known.state.fun <- function(INPUT)
     
     n3 <- max(which(state[i,] == 1))
 
-    state[i,(n2+2):n3] <- 1
-    #state[i,n3] <- NA
+    state[i,(n2+1):n3] <- 1
     state[i,n1] <- NA
   }
   state[state == 0] <- NA
@@ -176,26 +175,20 @@ known.state.fun <- function(INPUT)
 
 z_vals <- known.state.fun(DATA$y)
 
-Inits_1 <- list(#surv_p = 0.5, #runif(1, min = 0, max = 1),
-                #detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
-                mean.surv_p = 0.5,             
-                mean.detect_p = 0.5,
+Inits_1 <- list(mn_surv_p = runif(1, 0, 1),
+                mn_detect_p = runif(1, 0, 1),
                 z = z_vals,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(#surv_p = 0.5, #runif(1, min = 0, max = 1),
-                #detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
-                mean.surv_p = 0.5,             
-                mean.detect_p = 0.5,
+Inits_2 <- list(mn_surv_p = runif(1, 0, 1),
+                mn_detect_p = runif(1, 0, 1),
                 z = z_vals,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(#surv_p = 0.5, #runif(1, min = 0, max = 1),
-                #detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
-                mean.surv_p = 0.5,
-                mean.detect_p = 0.5,
+Inits_3 <- list(mn_surv_p = runif(1, 0, 1),
+                mn_detect_p = runif(1, 0, 1),
                 z = z_vals,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
@@ -206,8 +199,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 # Parameters to track -----------------------------------------------------
 
-Pars <- c('mean.surv_p',
-          'mean.detect_p')
+Pars <- c('mn_surv_p',
+          'mn_detect_p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
