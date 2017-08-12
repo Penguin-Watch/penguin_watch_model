@@ -7,7 +7,6 @@
 ######################
 
 #TODO
-#detection vary with nest
 #detection vary with age (time)
 #survival vary with age
 #add posterior predictive check - see Schrimpf script
@@ -48,6 +47,11 @@ pacman::p_load(rjags, MCMCvis)
 n_ts <- 100 #number of time steps
 nests <- 5 #number of nests
 surv_prob <- rep(0.985, n_ts-1)
+n1 <- 0.5
+n2 <- 0.6
+n3 <- 0.7
+n4 <- 0.8
+n5 <- 0.9
 
 #survival probability
 PHI <- matrix(surv_prob, 
@@ -182,7 +186,6 @@ cat("
         phi[i,t] <- mean_phi
         logit(p[i,t]) <- mu_p + eps_p[i]
       }
-      logit(trans_p[i]) <- mu_p + eps_p[i] #detection prob at each nest - probability scale
     }
 
 
@@ -190,6 +193,7 @@ cat("
     for (i in 1:N)
     {
       eps_p[i] ~ dnorm(0, tau_p)
+      logit(p_est[i]) <- mu_p + eps_p[i] #detection prob at each nest - probability scale
     }
 
     #phi = survival prob
@@ -244,7 +248,7 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 Pars <- c('mean_phi',
           'mean_p',
           'sigma2',
-          'trans_p')
+          'p_est')
 
 
 # Inputs for MCMC ---------------------------------------------------------
