@@ -55,11 +55,11 @@ PHI <- matrix(surv_prob,
                     nrow = nests)
 
 #detection probability
-P <- rbind(rep(0.3, n_ts-1),
-            rep(0.4, n_ts-1),
-            rep(0.5, n_ts-1),
+P <- rbind(rep(0.5, n_ts-1),
             rep(0.6, n_ts-1),
-            rep(0.7, n_ts-1))
+            rep(0.7, n_ts-1),
+            rep(0.8, n_ts-1),
+            rep(0.9, n_ts-1))
 
 #function to simulate time series
 sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
@@ -174,7 +174,7 @@ cat("
     }
 
 
-    #priors
+    #transforms
     for (i in 1:N)
     {
       for (t in 1:L)
@@ -182,8 +182,11 @@ cat("
         phi[i,t] <- mean_phi
         logit(p[i,t]) <- mu_p + eps_p[i]
       }
+      logit(trans_p[i]) <- mu_p + eps_p[i] #detection prob at each nest - probability scale
     }
 
+
+    #priors
     for (i in 1:N)
     {
       eps_p[i] ~ dnorm(0, tau_p)
@@ -191,13 +194,17 @@ cat("
 
     #phi = survival prob
     #p = detection prob
-    mean_phi ~ dunif(0,1)
     
-    mean_p ~ dunif(0,1) 
-    mu_p <- log(mean_p / (1-mean_p)) #could use broad normal instead but would have to transform mean_phi instead
-    tau_p <- pow(sigma, -2) #could use broad gamma instead
+    mean_phi ~ dunif(0,1)
+    mean_p ~ dunif(0,1)               #Mean survival - could use alternative below
+    mu_p <- log(mean_p / (1-mean_p))  #Logit transform - could use alternative below
+    tau_p <- pow(sigma, -2)
     sigma ~ dunif(0, 10)
     sigma2 <- pow(sigma, 2)
+
+
+    #mu_p ~ dnorm(0, 0.001)           #Prior for logit of mean survival
+    #mean_p <- 1 / (1+exp(-mu_p))     #Inv-logit transform
 
 
     }",fill = TRUE)
@@ -236,7 +243,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 Pars <- c('mean_phi',
           'mean_p',
-          'sigma2')
+          'sigma2',
+          'trans_p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
@@ -299,10 +307,11 @@ n_final <- floor(n_draw/n_thin)
 #phi = survival prob
 #p = detection prob
 
-
-
 #summary
 MCMCsummary(out)
+
+P[,1]
+
 
 #trace plots
 MCMCtrace(out, params = 'beta', ind = TRUE)
