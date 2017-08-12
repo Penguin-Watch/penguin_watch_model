@@ -48,7 +48,6 @@ pacman::p_load(rjags, MCMCvis)
 n_ts <- 100 #number of time steps
 nests <- 5 #number of nests
 surv_prob <- rep(0.985, n_ts-1)
-detect_prob <- rep(0.5, n_ts-1)
 
 #survival probability
 PHI <- matrix(surv_prob, 
@@ -56,9 +55,11 @@ PHI <- matrix(surv_prob,
                     nrow = nests)
 
 #detection probability
-P <- matrix(detect_prob,
-                      ncol = n_ts-1,
-                      nrow = nests)
+P <- rbind(rep(0.3, n_ts-1),
+            rep(0.4, n_ts-1),
+            rep(0.5, n_ts-1),
+            rep(0.6, n_ts-1),
+            rep(0.7, n_ts-1))
 
 #function to simulate time series
 sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
@@ -178,15 +179,25 @@ cat("
     {
       for (t in 1:L)
       {
-        phi[i,t] <- mn_phi
-        p[i,t] <- mn_p
+        phi[i,t] <- mean_phi
+        logit(p[i,t]) <- mu_p + eps_p[i]
       }
+    }
+
+    for (i in 1:N)
+    {
+      eps_p[i] ~ dnorm(0, tau_p)
     }
 
     #phi = survival prob
     #p = detection prob
-    mn_phi ~ dunif(0,1)
-    mn_p ~ dunif(0,1)
+    mean_phi ~ dunif(0,1)
+    
+    mean_p ~ dunif(0,1) 
+    mu_p <- log(mean_p / (1-mean_p)) #could use broad normal instead but would have to transform mean_phi instead
+    tau_p <- pow(sigma, -2) #could use broad gamma instead
+    sigma ~ dunif(0, 10)
+    sigma2 <- pow(sigma, 2)
 
 
     }",fill = TRUE)
@@ -199,18 +210,21 @@ sink()
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mn_phi = runif(1, 0, 1),
-                mn_p = runif(1, 0, 1),
+Inits_1 <- list(mean_phi = runif(1, 0, 1),
+                mean_p = runif(1, 0, 1),
+                sigma = runif(1, 0, 10),
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mn_phi = runif(1, 0, 1),
-                mn_p = runif(1, 0, 1),
+Inits_2 <- list(mean_phi = runif(1, 0, 1),
+                mean_p = runif(1, 0, 1),
+                sigma = runif(1, 0, 10),
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mn_phi = runif(1, 0, 1),
-                mn_p = runif(1, 0, 1),
+Inits_3 <- list(mean_phi = runif(1, 0, 1),
+                mean_p = runif(1, 0, 1),
+                sigma = runif(1, 0, 10),
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -220,8 +234,9 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 # Parameters to track -----------------------------------------------------
 
-Pars <- c('mn_phi',
-          'mn_p')
+Pars <- c('mean_phi',
+          'mean_p',
+          'sigma2')
 
 
 # Inputs for MCMC ---------------------------------------------------------
