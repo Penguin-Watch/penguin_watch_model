@@ -1,13 +1,12 @@
 ######################
 #Mark-recapture for penguin watch 
 #
-#Assumption that chicks are alive at start of analysis (could have died as eggs)
+#Assumption that chicks are alive at start of analysis (though could have failed as eggs)
 #
 #Authors: Casey Youngflesh
 ######################
 
 #TODO
-#simulate so params are actually known - see Kerry and Schaub 2012
 #detection vary with nest
 #detection vary with age (time)
 #survival vary with age
@@ -36,13 +35,7 @@ pacman::p_load(rjags, MCMCvis)
 #setwd('Data')
 #data <- read.csv('XXXX.csv', header=TRUE)
 
-
-#simulate data
-#model each site separately to start
-#5 nests - 400 time steps - 2 possible chicks per nest
-
 #ISSUES
-#going to start with 0 at all nests (can't really see eggs)
 #if don't see two chicks, can't say there were ever two chicks
 #detection probability (and survival probability) will change over time - higher as they get older [maybe same survival probability for each nest, but they vary over time (linear function of age)? want survival prob to vary over time with env covariates maybe]
 #also have possibly more than two chicks per cell in some cases when older
