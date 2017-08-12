@@ -79,8 +79,8 @@ obs_fun <- function(input)
 obs_state <- apply(true_state, 2, obs_fun)
 obs_state2 <- obs_state
 
-to.ch <- which(obs_state2 == 2, arr.ind = TRUE)
-obs_state2[to.ch] <- 1
+#to.ch <- which(obs_state2 == 2, arr.ind = TRUE)
+#obs_state2[to.ch] <- 1
 
 
 DATA <- list(
@@ -104,28 +104,43 @@ cat("
     for (i in 1:N)
     {
       #both chicks alive at time step 1
-      z[i,1] <- 1
+      z[i,1] <- 2
 
       for (t in 2:L)
       { 
 
         #observation model
-        y[i,t] ~ dbern(psight[i,t])
-        psight[i,t] <- detect_p * z[i,t]
+        y[i,t] ~ dbinom(psight[i,t], z[i,t])
+        psight[i,t] <- detect_p[i,t] * z[i,t]
 
         #state model
-        z[i,t] ~ dbern(palive[i,t])
-        palive[i,t] <- surv_p * z[i,t-1]
+        z[i,t] ~ dbinom(palive[i,t], z[i,t-1])
+        palive[i,t] <- surv_p[i,t] * z[i,t-1]
 
       }
     }
 
 
-    #priors
-    surv_p ~ dunif(0,1)
-
-    detect_p ~ dunif(0,1)
     
+    for (i in 1:N)
+    {
+      for (t in 1:L)
+      {
+        detect_p[i,t] <- mean.detect_p
+        surv_p[i,t] <- mean.surv_p
+      } #t
+    } #i
+
+
+
+    #priors
+    # surv_p ~ dunif(0,1)
+    # detect_p ~ dunif(0,1)
+
+    mean.detect_p ~ dunif(0,1)
+    mean.surv_p ~ dunif(0,1)
+
+
     }",fill = TRUE)
 
 sink()
@@ -140,13 +155,20 @@ sink()
 #assume that chicks are alive since time step 1 (even though they could have died as eggs)
 known.state.fun <- function(INPUT)
 {
+  #INPUT <- DATA$y
   state <- INPUT
   for (i in 1:NROW(INPUT))
   {
+    i <- 1
     n1 <- 1
-    n2 <- max(which(INPUT[i,] == 1))
+    n2 <- max(which(INPUT[i,] == 2))
     
-    state[i,n1:n2] <- 1
+    state[i,n1:n2] <- 2
+    
+    n3 <- which(state[i,] != 2)
+
+    #state[i,(n2+1):n3] <- 1
+    state[i,n3] <- NA
     state[i,n1] <- NA
   }
   state[state == 0] <- NA
@@ -155,20 +177,26 @@ known.state.fun <- function(INPUT)
 
 z_vals <- known.state.fun(DATA$y)
 
-Inits_1 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
-                detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+Inits_1 <- list(#surv_p = 0.5, #runif(1, min = 0, max = 1),
+                #detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+                mean.surv_p = 0.5,             
+                mean.detect_p = 0.5,
                 z = z_vals,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
-                detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+Inits_2 <- list(#surv_p = 0.5, #runif(1, min = 0, max = 1),
+                #detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+                mean.surv_p = 0.5,             
+                mean.detect_p = 0.5,
                 z = z_vals,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
-                detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+Inits_3 <- list(#surv_p = 0.5, #runif(1, min = 0, max = 1),
+                #detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+                mean.surv_p = 0.5,
+                mean.detect_p = 0.5,
                 z = z_vals,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
@@ -179,8 +207,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 # Parameters to track -----------------------------------------------------
 
-Pars <- c('surv_p',
-          'detect_p')
+Pars <- c('mean.surv_p',
+          'mean.detect_p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
