@@ -53,12 +53,12 @@ pacman::p_load(rjags, MCMCvis)
 #5b - die day 350
 
 
-#true state
-true_state <- data.frame(nest1 = rep(2, 400), 
+#true state - rows are nests, columns are time steps
+true_state <- t(data.frame(nest1 = rep(2, 400), 
                          nest2 = c(rep(2, 100), rep(1, 150), rep(0, 150)),
                          nest3 = c(rep(2, 300), rep(1, 100)),
                          nest4 = c(rep(2, 150), rep(1, 170), rep(0, 80)),
-                         nest5 = c(rep(2, 350), rep(1, 50)))
+                         nest5 = c(rep(2, 350), rep(1, 50))))
 
 
 #observed state - simulate imperfect detection
@@ -85,8 +85,8 @@ obs_state2[to.ch] <- 1
 
 DATA <- list(
   y = obs_state2, #reponse
-  N = NCOL(obs_state2), #number of nests
-  L = NROW(obs_state2)) #number of time points
+  N = NROW(obs_state2), #number of nests
+  L = NCOL(obs_state2)) #number of time points
 
 
 
@@ -104,20 +104,18 @@ cat("
     for (i in 1:N)
     {
       #both chicks alive at time step 1
-      z[1,i] <- 1
+      z[i,1] <- 1
 
       for (t in 2:L)
       { 
 
         #observation model
-    
-        y[t,i] ~ dbern(psight[t,i])
-        psight[t,i] <- detect_p * z[t,i]
+        y[i,t] ~ dbern(psight[i,t])
+        psight[i,t] <- detect_p * z[i,t]
 
         #state model
-
-        z[t,i] ~ dbern(palive[t,i])
-        palive[t,i] <- surv_p * z[t-1,i]
+        z[i,t] ~ dbern(palive[i,t])
+        palive[i,t] <- surv_p * z[i,t-1]
 
       }
     }
@@ -137,19 +135,40 @@ sink()
 
 # Starting values ---------------------------------------------------------
 
+#produce inits for z-state
+#fun modified from Kerry and Schaub 2012
+known.state.fun <- function(INPUT)
+{
+  state <- INPUT
+  for (i in 1:NROW(INPUT))
+  {
+    n1 <- min(which(INPUT[i,] == 1))
+    n2 <- max(which(INPUT[i,] == 1))
+    
+    state[i,n1:n2] <- 1
+    state[i,n1] <- NA
+  }
+  state[state == 0] <- NA
+  return(state)
+}
+
+z_vals <- known.state.fun(DATA$y)
 
 Inits_1 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
                 detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+                z = z_vals,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
                 detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+                z = z_vals,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(surv_p = 0.5, #runif(1, min = 0, max = 1),
                 detect_p = 0.5, #runif(DATA$N, min = 0, max = 1),
+                z = z_vals,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
