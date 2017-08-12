@@ -159,16 +159,15 @@ known.state.fun <- function(INPUT)
   state <- INPUT
   for (i in 1:NROW(INPUT))
   {
-    i <- 1
     n1 <- 1
     n2 <- max(which(INPUT[i,] == 2))
     
     state[i,n1:n2] <- 2
     
-    n3 <- which(state[i,] != 2)
+    n3 <- max(which(state[i,] == 1))
 
-    #state[i,(n2+1):n3] <- 1
-    state[i,n3] <- NA
+    state[i,(n2+2):n3] <- 1
+    #state[i,n3] <- NA
     state[i,n1] <- NA
   }
   state[state == 0] <- NA
