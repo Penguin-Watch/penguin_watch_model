@@ -41,6 +41,7 @@ pacman::p_load(rjags, MCMCvis)
 #also have possibly more than two chicks per cell in some cases when older
 #what to do about no observation over night - can't be ignored right? Treating each hour as one time step here
 #might not have to assume both chicks alive at start - first sighting of 2 chicks can be start - p182 Kerry and Schaub 2012
+#all years should be run hierarchically for a site, and all sites hierarchically for each species?
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
@@ -220,8 +221,7 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mn_phi',
-          'mn_p',
-          'p')
+          'mn_p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
@@ -283,7 +283,6 @@ n_final <- floor(n_draw/n_thin)
 
 #phi = survival prob
 #p = detection prob
-#z = latent state
 
 
 
