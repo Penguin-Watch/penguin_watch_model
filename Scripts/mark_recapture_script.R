@@ -48,18 +48,20 @@ nests <- 5 #number of nests
 surv_prob <- rep(0.99, n_ts-1)
 detect_prob <- rep(0.5, n_ts-1)
 
-SURV_PROB <- matrix(surv_prob, 
+#survival probability
+PHI <- matrix(surv_prob, 
                     ncol = n_ts-1,
                     nrow = nests)
 
-DETECT_PROB <- matrix(detect_prob,
+#detection probability
+P <- matrix(detect_prob,
                       ncol = n_ts-1,
                       nrow = nests)
 
 #function to simulate time series
-sim_data_fun <- function(SURV_MAT, DETECT_MAT, N_NESTS)
+sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
 {
-  TS_LEN <- NCOL(SURV_MAT) + 1
+  TS_LEN <- NCOL(PHI_MAT) + 1
   CH <- matrix(0, 
                ncol = TS_LEN, 
                nrow = N_NESTS)
@@ -73,17 +75,17 @@ sim_data_fun <- function(SURV_MAT, DETECT_MAT, N_NESTS)
     for (t in 2:TS_LEN)
     {
       #TRUE STATE
-      t_SP[t] <- rbinom(1, size = t_SP[t-1], prob = SURV_MAT[i,t-1])
+      t_SP[t] <- rbinom(1, size = t_SP[t-1], prob = PHI_MAT[i,t-1])
       
       #OBSERVED STATE
-      t_DP <- rbinom(1, size = t_SP[t], prob = DETECT_MAT[i,t-1])
+      t_DP <- rbinom(1, size = t_SP[t], prob = P_MAT[i,t-1])
       CH[i,t] <- t_DP
     }
   }
   return(CH)
 }
 
-sim_data <- sim_data_fun(SURV_PROB, DETECT_PROB, nests)
+sim_data <- sim_data_fun(PHI, P, nests)
 
 
 # Data for model ----------------------------------------------------------
@@ -118,14 +120,14 @@ cat("
         #state model
         z[i,t] ~ dbinom(p_alive[i,t], z[i,t-1])
         p_alive[i,t] <- ifelse(z[i,t-1] < 2,
-                              surv_p[i,t] * z[i,t-1],
-                              surv_p[i,t])
+                              phi[i,t] * z[i,t-1],
+                              phi[i,t])
 
         #observation model
         y[i,t] ~ dbinom(p_sight[i,t], z[i,t])
         p_sight[i,t] <- ifelse(z[i,t] < 2,
-                              detect_p[i,t] * z[i,t],
-                              detect_p[i,t])
+                              p[i,t] * z[i,t],
+                              p[i,t])
 
       }
     }
@@ -136,13 +138,15 @@ cat("
     {
       for (t in 1:L)
       {
-        detect_p[i,t] <- mn_detect_p
-        surv_p[i,t] <- mn_surv_p
+        phi[i,t] <- mn_phi
+        p[i,t] <- mn_p
       }
     }
 
-    mn_detect_p ~ dunif(0,1)
-    mn_surv_p ~ dunif(0,1)
+    #phi = survival prob
+    #p = detection prob
+    mn_phi ~ dunif(0,1)
+    mn_p ~ dunif(0,1)
 
 
     }",fill = TRUE)
@@ -164,13 +168,19 @@ known.state.fun <- function(INPUT)
   for (i in 1:NROW(INPUT))
   {
     n1 <- 1
-    n2 <- max(which(INPUT[i,] == 2))
     
-    state[i,n1:n2] <- 2
+    if (sum(state[i,] == 2) > 0)
+    {
+      n2 <- max(which(INPUT[i,] == 2))
+      state[i,n1:n2] <- 2
+    }
     
-    n3 <- max(which(state[i,] == 1))
-
-    state[i,(n2+1):n3] <- 1
+    if (sum(state[i,] == 1) > 0)
+    {
+      n3 <- max(which(state[i,] == 1))
+      state[i,(n2+1):n3] <- 1
+    }
+    
     state[i,n1] <- NA
   }
   state[state == 0] <- NA
@@ -179,20 +189,20 @@ known.state.fun <- function(INPUT)
 
 z_vals <- known.state.fun(DATA$y)
 
-Inits_1 <- list(mn_surv_p = runif(1, 0, 1),
-                mn_detect_p = runif(1, 0, 1),
+Inits_1 <- list(mn_phi = runif(1, 0, 1),
+                mn_p = runif(1, 0, 1),
                 z = z_vals,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mn_surv_p = runif(1, 0, 1),
-                mn_detect_p = runif(1, 0, 1),
+Inits_2 <- list(mn_phi = runif(1, 0, 1),
+                mn_p = runif(1, 0, 1),
                 z = z_vals,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mn_surv_p = runif(1, 0, 1),
-                mn_detect_p = runif(1, 0, 1),
+Inits_3 <- list(mn_phi = runif(1, 0, 1),
+                mn_p = runif(1, 0, 1),
                 z = z_vals,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
@@ -203,8 +213,10 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 # Parameters to track -----------------------------------------------------
 
-Pars <- c('mn_surv_p',
-          'mn_detect_p')
+Pars <- c('mn_phi',
+          'mn_p',
+          'p',
+          'z')
 
 
 # Inputs for MCMC ---------------------------------------------------------
@@ -264,6 +276,12 @@ n_final <- n_draw/n_thin
 # Analyze posterior -------------------------------------------------------
 
 
+#phi = survival prob
+#p = detection prob
+#z = latent state
+
+
+
 #summary
 MCMCsummary(out)
 
@@ -274,22 +292,3 @@ MCMCtrace(out, params = 'beta', ind = TRUE)
 MCMCplot(out, params = 'beta', rank = FALSE, labels = NULL,
          horiz = FALSE, ref_ovl = FALSE)
 
-
-#for PPC - how does simulated error compare to actual error
-s.sq.act <- MCMCchains(out, params = 'sq.act')
-s.sq.sim <- MCMCchains(out, params = 'sq.sim')
-
-plot(s.sq.act, s.sq.sim, pch = '.')
-abline(a=0, b=1, lty=2, lwd = 5)
-mean(s.sq.act > s.sq.sim) #should be about 0.5
-
-
-#for r^2 and lamba (degree of pooling) - see Gelman and Pardoe 2006
-e.y_out <- MCMCchains(out, params = 'e.y')
-#id.y_out <- MCMCchains(out, params = 'id.y') - to calculate separate r^2 values
-
-#r^2
-r2.y <- 1 - mean(apply(e.y_out, 1, var))/var(data_in$y, na.rm=TRUE)
-
-#lambda
-lambda.y <- 1 - var(apply(e.y_out, 2, mean))/mean(apply(e.y_out, 1, var))
