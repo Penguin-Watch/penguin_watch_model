@@ -1,6 +1,7 @@
 ######################
 #Mark-recapture for penguin watch 
 #
+#Assumption that chicks are alive at start of analysis (could have died as eggs)
 #
 #Authors: Casey Youngflesh
 ######################
@@ -82,7 +83,6 @@ to.ch <- which(obs_state2 == 2, arr.ind = TRUE)
 obs_state2[to.ch] <- 1
 
 
-
 DATA <- list(
   y = obs_state2, #reponse
   N = NROW(obs_state2), #number of nests
@@ -137,12 +137,13 @@ sink()
 
 #produce inits for z-state
 #fun modified from Kerry and Schaub 2012
+#assume that chicks are alive since time step 1 (even though they could have died as eggs)
 known.state.fun <- function(INPUT)
 {
   state <- INPUT
   for (i in 1:NROW(INPUT))
   {
-    n1 <- min(which(INPUT[i,] == 1))
+    n1 <- 1
     n2 <- max(which(INPUT[i,] == 1))
     
     state[i,n1:n2] <- 1
