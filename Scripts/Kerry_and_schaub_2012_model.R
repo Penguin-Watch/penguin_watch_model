@@ -67,25 +67,25 @@ cat("
         
         # Observation process
         y[i,t] ~ dbern(mu2[i,t])
-        mu2[i,t] <- p[i,t-1] * z[i,t]
+        mu2[i,t] <- mean.p * z[i,t]
 
         # State process
         z[i,t] ~ dbern(mu1[i,t])
-        mu1[i,t] <- phi[i,t-1] * z[i,t-1]
+        mu1[i,t] <- mean.phi * z[i,t-1]
 
       } #t
     } #i
 
 
     # Priors and constraints
-    for (i in 1:nind)
-    {
-      for (t in f[i]:(n.occasions-1))
-      {
-        phi[i,t] <- mean.phi
-        p[i,t] <- mean.p
-      } #t
-    } #i
+    # for (i in 1:nind)
+    # {
+    #   for (t in f[i]:(n.occasions-1))
+    #   {
+    #     phi[i,t] <- mean.phi
+    #     p[i,t] <- mean.p
+    #   } #t
+    # } #i
 
     mean.phi ~ dunif(0, 1)         # Prior for mean survival
     mean.p ~ dunif(0, 1)           # Prior for mean recapture
