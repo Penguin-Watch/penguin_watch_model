@@ -39,13 +39,14 @@ pacman::p_load(rjags, MCMCvis)
 #if don't see two chicks, can't say there were ever two chicks
 #detection probability (and survival probability) will change over time - higher as they get older [maybe same survival probability for each nest, but they vary over time (linear function of age)? want survival prob to vary over time with env covariates maybe]
 #also have possibly more than two chicks per cell in some cases when older
-
+#what to do about no observation over night - can't be ignored right? Treating each hour as one time step here
+#might not have to assume both chicks alive at start - first sighting of 2 chicks can be start - p182 Kerry and Schaub 2012
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
 n_ts <- 100 #number of time steps
 nests <- 5 #number of nests
-surv_prob <- rep(0.99, n_ts-1)
+surv_prob <- rep(0.985, n_ts-1)
 detect_prob <- rep(0.5, n_ts-1)
 
 #survival probability
@@ -88,13 +89,51 @@ sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
 sim_data <- sim_data_fun(PHI, P, nests)
 
 
+
+#known info regarding z-state
+
+#fun modified from Kerry and Schaub 2012
+#assume that chicks are alive since time step 1 (even though they could have died as eggs)
+known.state.fun <- function(INPUT)
+{
+  #INPUT <- DATA$y
+  state <- INPUT
+  for (i in 1:NROW(INPUT))
+  {
+    n1 <- 1
+    
+    if (sum(state[i,] == 2) > 0)
+    {
+      n2 <- max(which(INPUT[i,] == 2))
+      state[i,n1:n2] <- 2
+    }
+    
+    if (sum(state[i,] == 1) > 0)
+    {
+      n3 <- max(which(state[i,] == 1))
+      state[i,(n2+1):n3] <- 1
+    }
+    
+    state[i,n1] <- NA
+  }
+  state[state == 0] <- NA
+  return(state)
+}
+
+z_vals <- known.state.fun(sim_data)
+
+
+
+
+
 # Data for model ----------------------------------------------------------
 
 
 DATA <- list(
   y = sim_data, #reponse
   N = NROW(sim_data), #number of nests
-  L = NCOL(sim_data)) #number of time points
+  L = NCOL(sim_data),
+  z = z_vals) #number of time points
 
 
 
@@ -158,52 +197,19 @@ sink()
 
 # Starting values ---------------------------------------------------------
 
-#produce inits for z-state - fill 2s and 1s
-#fun modified from Kerry and Schaub 2012
-#assume that chicks are alive since time step 1 (even though they could have died as eggs)
-known.state.fun <- function(INPUT)
-{
-  #INPUT <- DATA$y
-  state <- INPUT
-  for (i in 1:NROW(INPUT))
-  {
-    n1 <- 1
-    
-    if (sum(state[i,] == 2) > 0)
-    {
-      n2 <- max(which(INPUT[i,] == 2))
-      state[i,n1:n2] <- 2
-    }
-    
-    if (sum(state[i,] == 1) > 0)
-    {
-      n3 <- max(which(state[i,] == 1))
-      state[i,(n2+1):n3] <- 1
-    }
-    
-    state[i,n1] <- NA
-  }
-  state[state == 0] <- NA
-  return(state)
-}
-
-z_vals <- known.state.fun(DATA$y)
 
 Inits_1 <- list(mn_phi = runif(1, 0, 1),
                 mn_p = runif(1, 0, 1),
-                z = z_vals,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(mn_phi = runif(1, 0, 1),
                 mn_p = runif(1, 0, 1),
-                z = z_vals,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(mn_phi = runif(1, 0, 1),
                 mn_p = runif(1, 0, 1),
-                z = z_vals,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -215,15 +221,14 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 Pars <- c('mn_phi',
           'mn_p',
-          'p',
-          'z')
+          'p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
 
 n_adapt <- 5000  # number for initial adapt
 n_burn <- 2000 # number burnin
-n_draw <- 2000  # number of final draws to make
+n_draw <- 8000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
@@ -243,7 +248,7 @@ jm = jags.model(data = DATA,
 
 update(jm, n.iter = n_burn)
 
-out = coda.samples(jm, 
+out <- coda.samples(jm, 
                    n.iter = n_draw, 
                    variable.names = Pars, 
                    thin = n_thin)
@@ -253,20 +258,20 @@ out = coda.samples(jm,
 #extra draws if didn't converge
 n_total <- n_burn + n_draw
 n_extra <- 0
-while(max(MCMCsummary(out)[,5]) > Rhat_max &
+while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
       n_total < n_max)
 {
   
-  out <- update(out,
-                n.iter = n_draw,
-                n.chains = n_chain,
-                n.thin = n_thin)
+  out <- coda.samples(jm, 
+                      n.iter = n_draw, 
+                      variable.names = Pars,
+                      n.thin = n_thin)
   
   n_extra <- n_extra + n_draw
   n_total <- n_total + n_draw
 }
 
-n_final <- n_draw/n_thin
+n_final <- floor(n_draw/n_thin)
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
