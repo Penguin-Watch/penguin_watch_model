@@ -7,10 +7,11 @@
 ######################
 
 #TODO
-#simulate so params are actually known
+#simulate so params are actually known - see Kerry and Schaub 2012
 #detection vary with nest
 #detection vary with age (time)
 #survival vary with age
+#add posterior predictive check - see Schrimpf script
 
 
 # Clear environment -------------------------------------------------------
@@ -47,47 +48,58 @@ pacman::p_load(rjags, MCMCvis)
 #also have possibly more than two chicks per cell in some cases when older
 
 
-#1a - survive entire time
-#1b - survive entire time
-#2a - die day 100
-#2b - die day 250
-#3a - survive entire time
-#3b - die day 300
-#4a - die day 320
-#4b - die day 150
-#5a - survive entire time
-#5b - die day 350
 
+#simulate new data - script modified from Kerry and Schaub 2012
+n_ts <- 100 #number of time steps
+nests <- 5 #number of nests
+surv_prob <- rep(0.99, n_ts-1)
+detect_prob <- rep(0.5, n_ts-1)
 
-#true state - rows are nests, columns are time steps
-true_state <- t(data.frame(nest1 = rep(2, 400), 
-                         nest2 = c(rep(2, 100), rep(1, 150), rep(0, 150)),
-                         nest3 = c(rep(2, 300), rep(1, 100)),
-                         nest4 = c(rep(2, 150), rep(1, 170), rep(0, 80)),
-                         nest5 = c(rep(2, 350), rep(1, 50))))
+SURV_PROB <- matrix(surv_prob, 
+                    ncol = n_ts-1,
+                    nrow = nests)
 
+DETECT_PROB <- matrix(detect_prob,
+                      ncol = n_ts-1,
+                      nrow = nests)
 
-#observed state - simulate imperfect detection
-
-obs_fun <- function(input)
+#function to simulate time series
+sim_data_fun <- function(SURV_MAT, DETECT_MAT, N_NESTS)
 {
-  #observation probability
-  obs_prob <- 0.5
-  o_state <- c()
-  for (i in 1:length(input))
+  TS_LEN <- NCOL(SURV_MAT) + 1
+  CH <- matrix(0, 
+               ncol = TS_LEN, 
+               nrow = N_NESTS)
+  
+  for (i in 1:N_NESTS)
   {
-    o_state[i] <- rbinom(1, size = input[i], prob = obs_prob)
+    #both chicks alive at start
+    CH[i,1] <- 2 
+    
+    t_SP <- c(2, rep(NA, TS_LEN-1))
+    for (t in 2:TS_LEN)
+    {
+      #TRUE STATE
+      t_SP[t] <- rbinom(1, size = t_SP[t-1], prob = SURV_MAT[i,t-1])
+      
+      #OBSERVED STATE
+      t_DP <- rbinom(1, size = t_SP[t], prob = DETECT_MAT[i,t-1])
+      CH[i,t] <- t_DP
+    }
   }
-  return(o_state)
+  return(CH)
 }
 
-obs_state <- apply(true_state, 2, obs_fun)
+sim_data <- sim_data_fun(SURV_PROB, DETECT_PROB, nests)
+
+
+# Data for model ----------------------------------------------------------
 
 
 DATA <- list(
-  y = obs_state, #reponse
-  N = NROW(obs_state), #number of nests
-  L = NCOL(obs_state)) #number of time points
+  y = sim_data, #reponse
+  N = NROW(sim_data), #number of nests
+  L = NCOL(sim_data)) #number of time points
 
 
 
@@ -158,7 +170,6 @@ known.state.fun <- function(INPUT)
   state <- INPUT
   for (i in 1:NROW(INPUT))
   {
-    #i <- 1
     n1 <- 1
     n2 <- max(which(INPUT[i,] == 2))
     
