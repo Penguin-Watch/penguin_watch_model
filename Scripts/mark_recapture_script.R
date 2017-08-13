@@ -319,14 +319,16 @@ Pars <- c('mean_phi',
           'mu_phi',
           'mu_p',
           'eps_phi',
-          'eps_p')
+          'eps_p',
+          'p',
+          'phi')
 
 
 # Inputs for MCMC ---------------------------------------------------------
 
 n_adapt <- 10000  # number for initial adapt
 n_burn <- 20000 # number burnin
-n_draw <- 20000  # number of final draws to make
+n_draw <- 5000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
@@ -388,7 +390,7 @@ out.1 <- clusterEvalQ(cl,
 out <- mcmc.list(out.1[[1]][[1]], 
                  out.1[[2]][[1]], 
                  out.1[[3]][[1]])
-#(proc.time() - ptm)/60 #minutes
+(proc.time() - ptm)[3]/60 #minutes
 
 
 
@@ -420,19 +422,20 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
   n_total <- n_total + n_draw
 }
 stopCluster(cl)
-#(proc.time() - ptm)/60 #minutes
+#(proc.time() - ptm)[3]/60 #minutes
 
 n_final <- floor((n_draw + n_extra)/n_thin)
 
 
 # Run model - non-parallel ------------------------------------------------
 
-# 
+
 # #rjags
-# jm = jags.model(data = DATA, 
-#                 file = "mark_recapture.jags", 
-#                 inits = F_Inits, 
-#                 n.chains = 3, 
+# ptm <- proc.time()
+# jm = jags.model(data = DATA,
+#                 file = "mark_recapture.jags",
+#                 inits = F_Inits,
+#                 n.chains = 3,
 #                 n.adapt = n_adapt)
 # 
 # update(jm, n.iter = n_burn)
@@ -449,16 +452,16 @@ n_final <- floor((n_draw + n_extra)/n_thin)
 # while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 #       n_total < n_max)
 # {
-#   
-#   out <- coda.samples(jm, 
-#                       n.iter = n_draw, 
+# 
+#   out <- coda.samples(jm,
+#                       n.iter = n_draw,
 #                       variable.names = Pars,
 #                       n.thin = n_thin)
-#   
+# 
 #   n_extra <- n_extra + n_draw
 #   n_total <- n_total + n_draw
 # }
-# 
+# #(proc.time() - ptm)[3]/60 #minutes
 # n_final <- floor((n_draw + n_extra)/n_thin)
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
@@ -478,6 +481,26 @@ MCMCtrace(out, pdf = TRUE)
 
 p_ch <- MCMCchains(out, 'p')
 p_v <- apply(p_ch, 2, median)[-c(1:3)]
+
+beta_p_ch <- MCMCchains(out, 'beta_p', excl = 'beta_phi')
+beta_phi_ch <- MCMCchains(out, 'beta_phi')
+
+mean_p_ch <- MCMCchains(out, 'mean_p', excl = 'mean_phi')
+mean_phi_ch <- MCMCchains(out, 'mean_phi')
+
+
+plot(beta_p_ch, beta_phi_ch, pch = '.')
+cor(beta_p_ch, beta_phi_ch)
+
+plot(mean_p_ch, mean_phi_ch, pch = '.')
+cor(mean_p_ch, mean_phi_ch)
+
+
+
+
+
+
+
 
 
 
