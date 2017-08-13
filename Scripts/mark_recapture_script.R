@@ -10,7 +10,7 @@
 #add posterior predictive check - see Schrimpf script
 #how to model more than one site?
 #might want to know when the chicks die - how do we do that? should just fit surv param as random effect and look at that change across time rather than linear model?
-#do the trends in both detection and survival make for nonidentifiability? non-id of surv and detect in a particular year
+#do the trends in both detection and survival make for nonidentifiability? non-id of surv and detect in a particular year - plot chains against one another (for params think might not be identifiable)
 #maybe make function assymtotic rather than linear for varying surv and detection?
 
 
@@ -241,7 +241,7 @@ cat("
     #priors
     for (t in 1:L)
     {
-      eps_phi[t] ~ dnorm(0, tau_phi) I(-20,20)
+      eps_phi[t] ~ dnorm(0, tau_phi) T(-20,20)
     }
     
     mean_phi ~ dunif(0,1)
@@ -252,7 +252,7 @@ cat("
     
     for (i in 1:N)
     {
-      eps_p[i] ~ dnorm(0, tau_p) I(-20,20)
+      eps_p[i] ~ dnorm(0, tau_p) T(-20,20)
     }
 
     mean_p ~ dunif(0,1)                        #Mean survival - could use alternative below
@@ -263,8 +263,8 @@ cat("
     sigma_p ~ dunif(0, 10)
     sigma_p2 <- pow(sigma_p, 2)
     
-    beta_phi ~ dnorm(0, 0.1)
-    beta_p ~ dnorm(0, 0.1)
+    beta_phi ~ dnorm(0, 0.1) T(-1,1)
+    beta_p ~ dnorm(0, 0.1) T(-1,1)
 
 
     }",fill = TRUE)
@@ -326,7 +326,7 @@ Pars <- c('mean_phi',
 
 n_adapt <- 10000  # number for initial adapt
 n_burn <- 20000 # number burnin
-n_draw <- 40000  # number of final draws to make
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
@@ -384,10 +384,11 @@ out.1 <- clusterEvalQ(cl,
                         return(samples)
                       })
 
+
 out <- mcmc.list(out.1[[1]][[1]], 
                  out.1[[2]][[1]], 
                  out.1[[3]][[1]])
-#proc.time() - ptm
+#(proc.time() - ptm)/60 #minutes
 
 
 
@@ -418,7 +419,8 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
   n_extra <- n_extra + n_draw
   n_total <- n_total + n_draw
 }
-proc.time() - ptm
+stopCluster(cl)
+#(proc.time() - ptm)/60 #minutes
 
 n_final <- floor((n_draw + n_extra)/n_thin)
 
@@ -470,7 +472,7 @@ n_final <- floor((n_draw + n_extra)/n_thin)
 #p = detection prob
 
 #summary
-MCMCsummary(out, digits = 4)
+MCMCsummary(out, excl = 'eps', digits = 4)
 
 MCMCtrace(out, pdf = TRUE)
 
