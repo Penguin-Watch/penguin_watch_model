@@ -207,31 +207,36 @@ cat("
     {
       for (t in 1:L)
       {
-        logit(phi[i,t]) <- mu_phi + beta_phi*x[t]        #phi = survival prob
-        logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]   #p = detection prob
+        logit(phi[i,t]) <- mu_phi + beta_phi*x[t] + eps_phi[t]       #phi = survival prob
+        logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]               #p = detection prob
       }
     }
 
 
     #priors
+    for (t in 1:L)
+    {
+      eps_phi[t] ~ dnorm(0, tau_phi)
+    }
+    
+    mean_phi ~ dunif(0,1)
+    mu_phi <- log(mean_phi / (1 - mean_phi))    
+    tau_phi <- pow(sigma_phi, -2)
+    sigma_phi ~ dunif(0, 10)
+    sigma_phi2 <- pow(sigma_phi, 2)
+    
     for (i in 1:N)
     {
       eps_p[i] ~ dnorm(0, tau_p)
     }
 
-   
-    
-    
-    mean_phi ~ dunif(0,1)
-    mu_phi <- log(mean_phi / (1 - mean_phi))    
-    
     mean_p ~ dunif(0,1)                        #Mean survival - could use alternative below
     mu_p <- log(mean_p / (1 - mean_p))         #Logit transform - could use alternative below
     #mean_p <- 1 / (1+exp(-mu_p))              #Mean survival - Inv-logit transform    
     #mu_p ~ dnorm(0, 0.001)                    #Prior for logit of mean survival
-    tau_p <- pow(sigma, -2)
-    sigma ~ dunif(0, 10)
-    sigma2 <- pow(sigma, 2)
+    tau_p <- pow(sigma_p, -2)
+    sigma_p ~ dunif(0, 10)
+    sigma_p2 <- pow(sigma_p, 2)
     
     beta_phi ~ dnorm(0, 0.1)
     beta_p ~ dnorm(0, 0.1)
@@ -249,25 +254,28 @@ sink()
 
 Inits_1 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
-                sigma = runif(1, 0, 10),
-                beta_p = 0,
+                sigma_phi = runif(1, 0, 10),
+                sigma_p = runif(1, 0, 10),
                 beta_phi = 0,
+                beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
-                sigma = runif(1, 0, 10),
-                beta_p = 0,
+                sigma_phi = runif(1, 0, 10),
+                sigma_p = runif(1, 0, 10),
                 beta_phi = 0,
+                beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
-                sigma = runif(1, 0, 10),
-                beta_p = 0,
+                sigma_phi = runif(1, 0, 10),
+                sigma_p = runif(1, 0, 10),
                 beta_phi = 0,
+                beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -279,7 +287,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 Pars <- c('mean_phi',
           'mean_p',
-          'sigma2',
+          'sigma_p2',
+          'sigma_phi2',
           'beta_p',
           'beta_phi')
 
