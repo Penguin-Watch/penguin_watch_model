@@ -7,10 +7,10 @@
 ######################
 
 #TODO
-#survival vary with age
 #add posterior predictive check - see Schrimpf script
 #how to model more than one site?
-
+#might want to know when the chicks die - how do we do that? should just fit surv param as random effect and look at that change across time rather than linear model?
+#do the trends in both detection and survival make for nonidentifiability?
 
 # Clear environment -------------------------------------------------------
 
@@ -45,17 +45,24 @@ pacman::p_load(rjags, MCMCvis)
 
 #simulate new data - script modified from Kerry and Schaub 2012
 n_ts <- 100 #number of time steps
+x <- 1:n_ts
 nests <- 5 #number of nests
+
 surv_prob <- rep(0.985, n_ts-1)
 
 
 #survival probability
-PHI <- matrix(surv_prob, 
-                    ncol = n_ts-1,
-                    nrow = nests)
+a_s <- 0.985
+b_s <- 0.0001
+
+PHI <- rbind(a_s + b_s*x,
+             a_s + b_s*x,
+             a_s + b_s*x,
+             a_s + b_s*x,
+             a_s + b_s*x)
+
 
 #detection probability
-x <- 1:n_ts
 n1 <- 0.3
 n2 <- 0.4
 n3 <- 0.5
@@ -189,7 +196,7 @@ cat("
     {
       for (t in 1:L)
       {
-        phi[i,t] <- mean_phi
+        logit(phi[i,t]) <- mu_phi + beta_phi*x[t]
         logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]
       }
     }
@@ -205,13 +212,16 @@ cat("
     #p = detection prob
     
     mean_phi ~ dunif(0,1)
-    mean_p ~ dunif(0,1)               #Mean survival - could use alternative below
-    mu_p <- log(mean_p / (1-mean_p))  #Logit transform - could use alternative below
+    mu_phi <- log(mean_phi / (1 - mean_phi))    
+    
+    mean_p ~ dunif(0,1)                 #Mean survival - could use alternative below
+    mu_p <- log(mean_p / (1 - mean_p))  #Logit transform - could use alternative below
     tau_p <- pow(sigma, -2)
     sigma ~ dunif(0, 10)
     sigma2 <- pow(sigma, 2)
+    
+    beta_phi ~ dnorm(0, 0.1)
     beta_p ~ dnorm(0, 0.1)
-
 
     #mu_p ~ dnorm(0, 0.001)           #Prior for logit of mean survival
     #mean_p <- 1 / (1+exp(-mu_p))     #Inv-logit transform
@@ -231,6 +241,7 @@ Inits_1 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma = runif(1, 0, 10),
                 beta_p = 0,
+                beta_phi = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -238,6 +249,7 @@ Inits_2 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma = runif(1, 0, 10),
                 beta_p = 0,
+                beta_phi = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -245,6 +257,7 @@ Inits_3 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma = runif(1, 0, 10),
                 beta_p = 0,
+                beta_phi = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -258,18 +271,18 @@ Pars <- c('mean_phi',
           'mean_p',
           'sigma2',
           'beta_p',
-          'p')
+          'beta_phi')
 
 
 # Inputs for MCMC ---------------------------------------------------------
 
 n_adapt <- 5000  # number for initial adapt
-n_burn <- 2000 # number burnin
-n_draw <- 8000  # number of final draws to make
+n_burn <- 6000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
-Rhat_max <- 1.1 # max allowable Rhat (close to 1 = convergence)
+Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
 n_max <- 1e6 # max allowable iterations
 
 
@@ -308,7 +321,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
   n_total <- n_total + n_draw
 }
 
-n_final <- floor(n_draw/n_thin)
+n_final <- floor((n_draw + n_extra)/n_thin)
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
@@ -322,7 +335,9 @@ n_final <- floor(n_draw/n_thin)
 #p = detection prob
 
 #summary
-MCMCsummary(out, excl = 'p[')
+MCMCsummary(out, digits = 4)
+
+MCMCtrace(out, pdf = TRUE)
 
 p_ch <- MCMCchains(out, 'p')
 p_v <- apply(p_ch, 2, median)[-c(1:3)]
