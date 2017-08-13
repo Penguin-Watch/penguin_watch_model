@@ -10,7 +10,7 @@
 #add posterior predictive check - see Schrimpf script
 #how to model more than one site?
 #might want to know when the chicks die - how do we do that? should just fit surv param as random effect and look at that change across time rather than linear model?
-#do the trends in both detection and survival make for nonidentifiability?
+#do the trends in both detection and survival make for nonidentifiability? non-id of surv and detect in a particular year
 #maybe make function assymtotic rather than linear for varying surv and detection?
 
 
@@ -44,7 +44,7 @@ pacman::p_load(rjags, MCMCvis, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 400 #number of time steps
+n_ts <- 200 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -66,7 +66,21 @@ return(B)
 }
 
 phi_data <- sim_p_fun(0.985)
-#plot(phi_data, type = 'l', ylim = c(0.98,1))
+
+#check trend
+#cov <- c(1:length(phi_data))
+#plot(cov, phi_data, ylim = c(0.98,1), type ='l')
+
+#nls
+#fit_nls <- nls(phi_data ~ SSlogis(cov, Asym, xmid, scal))
+#summary(fit_nls)
+#lines(cov, predict(fit_nls), col = 'red')
+
+#lm
+#fit_lm <- lm(phi_data ~  cov)
+#summary(fit_lm)
+#abline(fit_lm, col = 'red')
+
 
 PHI <- matrix(rep(phi_data, nests),
               nrow = nests,
@@ -86,6 +100,17 @@ for (i in 1:length(dp))
   P[i,] <- sim_p_fun(dp[i], RATE = 0.005, TOP = 0.95)
   #plot(p_data, type = 'l', ylim = c(0,1), main = paste0(i))
 }
+
+
+#check trend
+#lm
+# cov_p <- 1:length(P[1,])
+# fit_p <- lm(P[1,] ~ cov_p)
+# summary(fit_p)
+
+
+
+
 
 
 #function to simulate time series
@@ -290,14 +315,18 @@ Pars <- c('mean_phi',
           'sigma_p2',
           'sigma_phi2',
           'beta_p',
-          'beta_phi')
+          'beta_phi',
+          'mu_phi',
+          'mu_p',
+          'eps_phi',
+          'eps_p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
 
 n_adapt <- 10000  # number for initial adapt
-n_burn <- 10000 # number burnin
-n_draw <- 20000  # number of final draws to make
+n_burn <- 20000 # number burnin
+n_draw <- 40000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
@@ -358,7 +387,7 @@ out.1 <- clusterEvalQ(cl,
 out <- mcmc.list(out.1[[1]][[1]], 
                  out.1[[2]][[1]], 
                  out.1[[3]][[1]])
-
+proc.time() - ptm
 
 
 
@@ -389,6 +418,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
   n_extra <- n_extra + n_draw
   n_total <- n_total + n_draw
 }
+proc.time() - ptm
 
 n_final <- floor((n_draw + n_extra)/n_thin)
 
@@ -405,11 +435,10 @@ n_final <- floor((n_draw + n_extra)/n_thin)
 # 
 # update(jm, n.iter = n_burn)
 # 
-# out <- coda.samples(jm, 
-#                    n.iter = n_draw, 
-#                    variable.names = Pars, 
+# out <- coda.samples(jm,
+#                    n.iter = n_draw,
+#                    variable.names = Pars,
 #                    thin = n_thin)
-# 
 # 
 # 
 # #extra draws if didn't converge
