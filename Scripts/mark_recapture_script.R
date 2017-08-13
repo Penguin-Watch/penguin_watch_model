@@ -241,7 +241,7 @@ cat("
     #priors
     for (t in 1:L)
     {
-      eps_phi[t] ~ dnorm(0, tau_phi)
+      eps_phi[t] ~ dnorm(0, tau_phi) I(-20,20)
     }
     
     mean_phi ~ dunif(0,1)
@@ -252,7 +252,7 @@ cat("
     
     for (i in 1:N)
     {
-      eps_p[i] ~ dnorm(0, tau_p)
+      eps_p[i] ~ dnorm(0, tau_p) I(-20,20)
     }
 
     mean_p ~ dunif(0,1)                        #Mean survival - could use alternative below
@@ -387,7 +387,7 @@ out.1 <- clusterEvalQ(cl,
 out <- mcmc.list(out.1[[1]][[1]], 
                  out.1[[2]][[1]], 
                  out.1[[3]][[1]])
-proc.time() - ptm
+#proc.time() - ptm
 
 
 
