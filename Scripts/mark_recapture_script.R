@@ -24,7 +24,7 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
   install.packages('pacman')
 }
 
-pacman::p_load(rjags, MCMCvis)
+pacman::p_load(rjags, MCMCvis, parallel)
 
 
 
@@ -276,46 +276,96 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
-n_adapt <- 5000  # number for initial adapt
-n_burn <- 6000 # number burnin
-n_draw <- 20000  # number of final draws to make
+n_adapt <- 1000  # number for initial adapt
+n_burn <- 1000 # number burnin
+n_draw <- 2000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
-Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
+Rhat_max <- 1.05 # max allowable Rhat (close to 1 = convergence)
 n_max <- 1e6 # max allowable iterations
 
 
-# Run model (non-parallel) ---------------------------------------------------------------
+# Run model (parallel) ---------------------------------------------------------------
+
+#number of chains
+cl <- parallel::makeCluster(n_chain)
+
+pid <- NA
+for(i in 1:n_chain)
+{
+  pidNum <- capture.output(cl[[i]])
+  start <- regexpr("pid", pidNum)[[1]]
+  end <- nchar(pidNum)
+  pid[i] <- substr(pidNum, (start + 4), end)
+}
 
 
-#rjags
-jm = jags.model(data = DATA, 
-                file = "mark_recapture.jags", 
-                inits = F_Inits, 
-                n.chains = 3, 
-                n.adapt = n_adapt)
-
-update(jm, n.iter = n_burn)
-
-out <- coda.samples(jm, 
-                   n.iter = n_draw, 
-                   variable.names = Pars, 
-                   thin = n_thin)
+parallel::clusterExport(cl, 
+                        c('DATA', 
+                          'n_adapt', 
+                          'n_burn', 
+                          'n_draw',
+                          'n_thin',
+                          'Pars', 
+                          'pid',
+                          'F_Inits'
+                        ))
 
 
+ptm <- proc.time()
+out.1 <- clusterEvalQ(cl, 
+                      {
+                        require(rjags)
+                        processNum <- which(pid==Sys.getpid())
+                        m.inits <- F_Inits[[processNum]]
+                        
+                        jm = jags.model(data = DATA, 
+                                        file = "mark_recapture.jags", 
+                                        inits = m.inits, 
+                                        n.chains = 1, 
+                                        n.adapt = n_adapt)
+                        
+                        update(jm, 
+                               n.iter = n_burn)
+                        
+                        samples = coda.samples(jm, 
+                                               n.iter = n_draw, 
+                                               variable.names = Pars, 
+                                               thin = n_thin)
+                        return(samples)
+                      })
 
-#extra draws if didn't converge
+out <- mcmc.list(out.1[[1]][[1]], 
+                 out.1[[2]][[1]], 
+                 out.1[[3]][[1]])
+
+
+
+
+#more iterations if not converged
 n_total <- n_burn + n_draw
 n_extra <- 0
 while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
       n_total < n_max)
 {
   
-  out <- coda.samples(jm, 
-                      n.iter = n_draw, 
-                      variable.names = Pars,
-                      n.thin = n_thin)
+  out.2 <- clusterEvalQ(cl, 
+                        {
+                          require(rjags)
+                          processNum <- which(pid==Sys.getpid())
+                          m.inits <- F_Inits[[processNum]]
+                          
+                          samples = coda.samples(jm, 
+                                                 n.iter = n_draw, 
+                                                 variable.names = Pars, 
+                                                 thin = n_thin)
+                          return(samples)
+                        })
+  
+  out <- mcmc.list(out.2[[1]][[1]], 
+                   out.2[[2]][[1]], 
+                   out.2[[3]][[1]])
   
   n_extra <- n_extra + n_draw
   n_total <- n_total + n_draw
@@ -323,13 +373,50 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 
 n_final <- floor((n_draw + n_extra)/n_thin)
 
+
+# Run model - non-parallel ------------------------------------------------
+
+# 
+# #rjags
+# jm = jags.model(data = DATA, 
+#                 file = "mark_recapture.jags", 
+#                 inits = F_Inits, 
+#                 n.chains = 3, 
+#                 n.adapt = n_adapt)
+# 
+# update(jm, n.iter = n_burn)
+# 
+# out <- coda.samples(jm, 
+#                    n.iter = n_draw, 
+#                    variable.names = Pars, 
+#                    thin = n_thin)
+# 
+# 
+# 
+# #extra draws if didn't converge
+# n_total <- n_burn + n_draw
+# n_extra <- 0
+# while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
+#       n_total < n_max)
+# {
+#   
+#   out <- coda.samples(jm, 
+#                       n.iter = n_draw, 
+#                       variable.names = Pars,
+#                       n.thin = n_thin)
+#   
+#   n_extra <- n_extra + n_draw
+#   n_total <- n_total + n_draw
+# }
+# 
+# n_final <- floor((n_draw + n_extra)/n_thin)
+
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
 
 
 
 # Analyze posterior -------------------------------------------------------
-
 
 #phi = survival prob
 #p = detection prob
