@@ -11,6 +11,8 @@
 #how to model more than one site?
 #might want to know when the chicks die - how do we do that? should just fit surv param as random effect and look at that change across time rather than linear model?
 #do the trends in both detection and survival make for nonidentifiability?
+#maybe make function assymtotic rather than linear for varying surv and detection?
+
 
 # Clear environment -------------------------------------------------------
 
@@ -35,8 +37,6 @@ pacman::p_load(rjags, MCMCvis, parallel)
 #data <- read.csv('XXXX.csv', header=TRUE)
 
 #ISSUES
-#if don't see two chicks, can't say there were ever two chicks
-#detection probability (and survival probability) will change over time - higher as they get older [maybe same survival probability for each nest, but they vary over time (linear function of age)? want survival prob to vary over time with env covariates maybe]
 #also have possibly more than two chicks per cell in some cases when older
 #what to do about no observation over night - can't be ignored right? Treating each hour as one time step here
 #might not have to assume both chicks alive at start - first sighting of 2 chicks can be start - p182 Kerry and Schaub 2012
@@ -44,37 +44,48 @@ pacman::p_load(rjags, MCMCvis, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 100 #number of time steps
+n_ts <- 400 #number of time steps
 x <- 1:n_ts
-nests <- 5 #number of nests
-
-surv_prob <- rep(0.985, n_ts-1)
+nests <- 30 #number of nests
 
 
 #survival probability
-a_s <- 0.985
-b_s <- 0.0001
 
-PHI <- rbind(a_s + b_s*x,
-             a_s + b_s*x,
-             a_s + b_s*x,
-             a_s + b_s*x,
-             a_s + b_s*x)
+sim_p_fun <- function(START, RATE = 0.008, TOP = 1)
+{
+  B <- rep(NA, n_ts-1)
+
+  B[1] <- START
+  K <- TOP
+  r <- RATE
+  for(t in 1:(n_ts-2))
+  {
+    B[t+1] <- B[t] + r*(1-B[t]/K)
+  }
+return(B)
+}
+
+phi_data <- sim_p_fun(0.985)
+#plot(phi_data, type = 'l', ylim = c(0.98,1))
+
+PHI <- matrix(rep(phi_data, nests),
+              nrow = nests,
+              ncol = n_ts-1)
 
 
 #detection probability
-n1 <- 0.3
-n2 <- 0.4
-n3 <- 0.5
-n4 <- 0.6
-n5 <- 0.7
-b <- 0.002
+#starting probs for each nest
+dp <- runif(30, 0.3, 0.8)
 
-P <- rbind(n1 + b*x,
-           n2 + b*x,
-           n3 + b*x,
-           n4 + b*x,
-           n5 + b*x)
+P <- matrix(rep(NA, nests*(n_ts-1)),
+            nrow = nests,
+            ncol = n_ts-1)
+
+for (i in 1:length(dp))
+{
+  P[i,] <- sim_p_fun(dp[i], RATE = 0.005, TOP = 0.95)
+  #plot(p_data, type = 'l', ylim = c(0,1), main = paste0(i))
+}
 
 
 #function to simulate time series
@@ -196,8 +207,8 @@ cat("
     {
       for (t in 1:L)
       {
-        logit(phi[i,t]) <- mu_phi + beta_phi*x[t]
-        logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]
+        logit(phi[i,t]) <- mu_phi + beta_phi*x[t]        #phi = survival prob
+        logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]   #p = detection prob
       }
     }
 
@@ -208,23 +219,22 @@ cat("
       eps_p[i] ~ dnorm(0, tau_p)
     }
 
-    #phi = survival prob
-    #p = detection prob
+   
+    
     
     mean_phi ~ dunif(0,1)
     mu_phi <- log(mean_phi / (1 - mean_phi))    
     
-    mean_p ~ dunif(0,1)                 #Mean survival - could use alternative below
-    mu_p <- log(mean_p / (1 - mean_p))  #Logit transform - could use alternative below
+    mean_p ~ dunif(0,1)                        #Mean survival - could use alternative below
+    mu_p <- log(mean_p / (1 - mean_p))         #Logit transform - could use alternative below
+    #mean_p <- 1 / (1+exp(-mu_p))              #Mean survival - Inv-logit transform    
+    #mu_p ~ dnorm(0, 0.001)                    #Prior for logit of mean survival
     tau_p <- pow(sigma, -2)
     sigma ~ dunif(0, 10)
     sigma2 <- pow(sigma, 2)
     
     beta_phi ~ dnorm(0, 0.1)
     beta_p ~ dnorm(0, 0.1)
-
-    #mu_p ~ dnorm(0, 0.001)           #Prior for logit of mean survival
-    #mean_p <- 1 / (1+exp(-mu_p))     #Inv-logit transform
 
 
     }",fill = TRUE)
@@ -276,13 +286,13 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
-n_adapt <- 1000  # number for initial adapt
-n_burn <- 1000 # number burnin
-n_draw <- 2000  # number of final draws to make
+n_adapt <- 10000  # number for initial adapt
+n_burn <- 10000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
-Rhat_max <- 1.05 # max allowable Rhat (close to 1 = convergence)
+Rhat_max <- 1.03 # max allowable Rhat (close to 1 = convergence)
 n_max <- 1e6 # max allowable iterations
 
 
