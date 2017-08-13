@@ -7,9 +7,9 @@
 ######################
 
 #TODO
-#detection vary with age (time)
 #survival vary with age
 #add posterior predictive check - see Schrimpf script
+#how to model more than one site?
 
 
 # Clear environment -------------------------------------------------------
@@ -47,11 +47,7 @@ pacman::p_load(rjags, MCMCvis)
 n_ts <- 100 #number of time steps
 nests <- 5 #number of nests
 surv_prob <- rep(0.985, n_ts-1)
-n1 <- 0.5
-n2 <- 0.6
-n3 <- 0.7
-n4 <- 0.8
-n5 <- 0.9
+
 
 #survival probability
 PHI <- matrix(surv_prob, 
@@ -59,11 +55,20 @@ PHI <- matrix(surv_prob,
                     nrow = nests)
 
 #detection probability
-P <- rbind(rep(0.5, n_ts-1),
-            rep(0.6, n_ts-1),
-            rep(0.7, n_ts-1),
-            rep(0.8, n_ts-1),
-            rep(0.9, n_ts-1))
+x <- 1:n_ts
+n1 <- 0.3
+n2 <- 0.4
+n3 <- 0.5
+n4 <- 0.6
+n5 <- 0.7
+b <- 0.002
+
+P <- rbind(n1 + b*x,
+           n2 + b*x,
+           n3 + b*x,
+           n4 + b*x,
+           n5 + b*x)
+
 
 #function to simulate time series
 sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
@@ -138,8 +143,9 @@ z_vals <- known.state.fun(sim_data)
 DATA <- list(
   y = sim_data, #reponse
   N = NROW(sim_data), #number of nests
-  L = NCOL(sim_data),
-  z = z_vals) #number of time points
+  L = NCOL(sim_data), #number of time points
+  z = z_vals,
+  x = 1:NCOL(sim_data)) 
 
 
 
@@ -184,7 +190,7 @@ cat("
       for (t in 1:L)
       {
         phi[i,t] <- mean_phi
-        logit(p[i,t]) <- mu_p + eps_p[i]
+        logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]
       }
     }
 
@@ -193,7 +199,6 @@ cat("
     for (i in 1:N)
     {
       eps_p[i] ~ dnorm(0, tau_p)
-      logit(p_est[i]) <- mu_p + eps_p[i] #detection prob at each nest - probability scale
     }
 
     #phi = survival prob
@@ -205,6 +210,7 @@ cat("
     tau_p <- pow(sigma, -2)
     sigma ~ dunif(0, 10)
     sigma2 <- pow(sigma, 2)
+    beta_p ~ dnorm(0, 0.1)
 
 
     #mu_p ~ dnorm(0, 0.001)           #Prior for logit of mean survival
@@ -224,18 +230,21 @@ sink()
 Inits_1 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma = runif(1, 0, 10),
+                beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma = runif(1, 0, 10),
+                beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma = runif(1, 0, 10),
+                beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -248,7 +257,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 Pars <- c('mean_phi',
           'mean_p',
           'sigma2',
-          'p_est')
+          'beta_p',
+          'p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
@@ -312,9 +322,11 @@ n_final <- floor(n_draw/n_thin)
 #p = detection prob
 
 #summary
-MCMCsummary(out)
+MCMCsummary(out, excl = 'p[')
 
-P[,1]
+p_ch <- MCMCchains(out, 'p')
+p_v <- apply(p_ch, 2, median)[-c(1:3)]
+
 
 
 #trace plots
