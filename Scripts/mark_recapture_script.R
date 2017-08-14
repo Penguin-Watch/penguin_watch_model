@@ -319,8 +319,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 Pars <- c('mean_phi',
           'mean_p',
-          'sigma_p2',
-          'sigma_phi2',
+          'sigma_p',
+          'sigma_phi',
           'beta_p',
           'beta_phi',
           'mu_phi',
@@ -436,7 +436,7 @@ print(paste0('Total iterations: ', n_final))
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
-
+#saveRDS(out, 'out_10a_80b_20d_101.rds')
 
 
 # Analyze posterior -------------------------------------------------------
@@ -444,15 +444,16 @@ print(paste0('Total iterations: ', n_final))
 #phi = survival prob
 #p = detection prob
 
-saveRDS(out, 'out_10a_80b_20d_101.rds')
-#out <- readRDS('model_l_out.rds')
+require(MCMCvis)
+setwd('HPC')
 
+out <- readRDS('out_10a_80b_20d_200t_102.rds')
 
 
 #summary
 MCMCtrace(out, ind = TRUE, pdf = TRUE)
 
-MCMCsummary(out, digits = 4)
+MCMCsummary(out, params = 'sigma', digits = 4)
 
 
 

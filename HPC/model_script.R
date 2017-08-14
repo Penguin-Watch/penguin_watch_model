@@ -294,8 +294,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 Pars <- c('mean_phi',
           'mean_p',
-          'sigma_p2',
-          'sigma_phi2',
+          'sigma_p',
+          'sigma_phi',
           'beta_p',
           'beta_phi',
           'mu_phi',
@@ -308,13 +308,13 @@ Pars <- c('mean_phi',
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 10000  # number for initial adapt
-n_burn <- 80000 # number burnin
+n_burn <- 100000 # number burnin
 n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
 Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
-n_max <- 70000 # max allowable iterations
+n_max <- 200000 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -420,5 +420,5 @@ print(paste0('Total iterations: ', n_final))
 #p = detection prob
 
 #adapt_burn_draw_time_rhatthreshold
-saveRDS(out, 'out_10a_80b_20d_200t_102.rds')
+saveRDS(out, 'out_10a_100b_20d_200t_102.rds')
 #out <- readRDS('model_l_out.rds')
