@@ -10,8 +10,22 @@
 #add posterior predictive check - see Schrimpf script
 #how to model more than one site?
 #might want to know when the chicks die - how do we do that? should just fit surv param as random effect and look at that change across time rather than linear model?
-#do the trends in both detection and survival make for nonidentifiability? non-id of surv and detect in a particular year - plot chains against one another (for params think might not be identifiable)
+#do the trends in both detection and survival make for nonidentifiability? non-id of surv and detect in a particular year - plot chains against one another (for params think might not be identifiable) p219 Kerry and Schaub 2012
 #maybe make function assymtotic rather than linear for varying surv and detection?
+#change sim data to linear
+
+
+
+#plot p[1,1] against phi[1,1] - CHECK
+#check correlation p and phi - CHECK
+#compare estimates p and phi against true p and phi - 
+#plot posteriors for:
+#1) betas - dnorm(0, 1) T(-1,1) - CHECK
+#2) mean_phi and mean_p - dunif(0,0.1) - CHECK
+#3) eps_phi and eps_p - dnorm(0, tau_p) T(-20,20) - p okay, phi maybe weakly identifiable
+#and compare to priors
+
+
 
 
 # Clear environment -------------------------------------------------------
@@ -44,7 +58,7 @@ pacman::p_load(rjags, MCMCvis, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 200 #number of time steps
+n_ts <- 400 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -241,7 +255,7 @@ cat("
     #priors
     for (t in 1:L)
     {
-      eps_phi[t] ~ dnorm(0, tau_phi) T(-20,20)
+      eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10)
     }
     
     mean_phi ~ dunif(0,1)
@@ -252,7 +266,7 @@ cat("
     
     for (i in 1:N)
     {
-      eps_p[i] ~ dnorm(0, tau_p) T(-20,20)
+      eps_p[i] ~ dnorm(0, tau_p) T(-10,10)
     }
 
     mean_p ~ dunif(0,1)                        #Mean survival - could use alternative below
@@ -263,8 +277,8 @@ cat("
     sigma_p ~ dunif(0, 10)
     sigma_p2 <- pow(sigma_p, 2)
     
-    beta_phi ~ dnorm(0, 0.1) T(-1,1)
-    beta_p ~ dnorm(0, 0.1) T(-1,1)
+    beta_phi ~ dnorm(0, 1) T(-1,1)
+    beta_p ~ dnorm(0, 1) T(-1,1)
 
 
     }",fill = TRUE)
@@ -319,24 +333,25 @@ Pars <- c('mean_phi',
           'mu_phi',
           'mu_p',
           'eps_phi',
-          'eps_p',
-          'p',
-          'phi')
+          'eps_p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
 
 n_adapt <- 10000  # number for initial adapt
-n_burn <- 20000 # number burnin
-n_draw <- 5000  # number of final draws to make
+n_burn <- 40000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
-Rhat_max <- 1.03 # max allowable Rhat (close to 1 = convergence)
+Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
 n_max <- 1e6 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
+
+
+#run_jags <- function(JAGS_FILE)
 
 #number of chains
 cl <- parallel::makeCluster(n_chain)
@@ -349,7 +364,6 @@ for(i in 1:n_chain)
   end <- nchar(pidNum)
   pid[i] <- substr(pidNum, (start + 4), end)
 }
-
 
 parallel::clusterExport(cl, 
                         c('DATA', 
@@ -390,7 +404,7 @@ out.1 <- clusterEvalQ(cl,
 out <- mcmc.list(out.1[[1]][[1]], 
                  out.1[[2]][[1]], 
                  out.1[[3]][[1]])
-(proc.time() - ptm)[3]/60 #minutes
+#(proc.time() - ptm)[3]/60 #minutes
 
 
 
@@ -422,7 +436,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
   n_total <- n_total + n_draw
 }
 stopCluster(cl)
-#(proc.time() - ptm)[3]/60 #minutes
+(proc.time() - ptm)[3]/60 #minutes
 
 n_final <- floor((n_draw + n_extra)/n_thin)
 
@@ -474,24 +488,44 @@ n_final <- floor((n_draw + n_extra)/n_thin)
 #phi = survival prob
 #p = detection prob
 
-#summary
-MCMCsummary(out, excl = 'eps', digits = 4)
+saveRDS(out, 'model_out.rds')
+#out <- readRDS('model_out.rds')
 
+#summary
+#MCMCsummary(out, params = 'beta', digits = 4)
 MCMCtrace(out, pdf = TRUE)
 
-p_ch <- MCMCchains(out, 'p')
-p_v <- apply(p_ch, 2, median)[-c(1:3)]
 
+
+#cor of posteriors of p with posteriors of phi
+pb <- txtProgressBar(min = 0, max = 30, style = 3)
+CO <- matrix(nrow = 30, ncol = 100)
+for (i in 1:NROW(DATA$y))
+{
+  for (j in 1:NCOL(DATA$y))
+  {
+    t_p <- MCMCchains(out, paste0('p[',i,',',j,']'))
+    t_phi <- MCMCchains(out, paste0('phi[',i,',',j,']'))
+    CO[i,j] <- cor(t_p, t_phi)
+  }
+  setTxtProgressBar(pb, i)
+}
+close(pb)
+
+#saveRDS(CO, 'p_phi_cor.rds')
+
+
+
+
+#correlation of beta_p and beta_phi
 beta_p_ch <- MCMCchains(out, 'beta_p', excl = 'beta_phi')
 beta_phi_ch <- MCMCchains(out, 'beta_phi')
-
-mean_p_ch <- MCMCchains(out, 'mean_p', excl = 'mean_phi')
-mean_phi_ch <- MCMCchains(out, 'mean_phi')
-
-
 plot(beta_p_ch, beta_phi_ch, pch = '.')
 cor(beta_p_ch, beta_phi_ch)
 
+#correlation of mean_p and mean_phi
+mean_p_ch <- MCMCchains(out, 'mean_p', excl = 'mean_phi')
+mean_phi_ch <- MCMCchains(out, 'mean_phi')
 plot(mean_p_ch, mean_phi_ch, pch = '.')
 cor(mean_p_ch, mean_phi_ch)
 
@@ -499,13 +533,122 @@ cor(mean_p_ch, mean_phi_ch)
 
 
 
+#posterior estimates for p
+pb <- txtProgressBar(min = 0, max = 30, style = 3)
+est_p <- matrix(nrow = 30, ncol = 100)
+for (i in 1:NROW(DATA$y))
+{
+  for (j in 1:NCOL(DATA$y))
+  {
+    est_p[i,j] <- median(MCMCchains(out, paste0('p[',i,',',j,']')))
+  }
+  setTxtProgressBar(pb, i)
+}
+close(pb)
 
+
+#posterior estimates for phi
+pb <- txtProgressBar(min = 0, max = 30, style = 3)
+est_phi <- matrix(nrow = 30, ncol = 100)
+for (i in 1:NROW(DATA$y))
+{
+  for (j in 1:NCOL(DATA$y))
+  {
+    est_phi[i,j] <- median(MCMCchains(out, paste0('phi[',i,',',j,']')))
+  }
+  setTxtProgressBar(pb, i)
+}
+close(pb)
+
+
+
+#compare posteriors to actual quantities
+
+
+
+
+
+
+#plot posterior
+#1) betas - dnorm(0, 1) T(-1,1) - check
+#2) mean_phi and mean_p - dunif(0,0.1) - check
+#3) eps_phi and eps_p - dnorm(0, tau_p) T(-20,20) - p okay, phi not converged?
+
+beta_p_ch <- MCMCchains(out, 'beta_p', excl = 'beta_phi')
+plot(density(beta_p_ch))
+#prior
+a <- rnorm(100000, 0, 1)
+to.rm <- which(a > 1 | a < -1)
+b <- a[-to.rm]
+c <- b[1:7500] #first 5k
+lines(density(c), col = 'red')
+
+beta_phi_ch <- MCMCchains(out, 'beta_phi')
+plot(density(beta_phi_ch))
+#prior
+a <- rnorm(100000, 0, 1)
+to.rm <- which(a > 1 | a < -1)
+b <- a[-to.rm]
+c <- b[1:7500] #first 5k
+lines(density(c), col = 'red')
+
+mean_p_ch <- MCMCchains(out, 'mean_p', excl = 'mean_phi')
+plot(density(mean_p_ch))
+#prior
+a2 <- runif(5000, 0, 1)
+lines(density(a2), col = 'red')
+
+mean_phi_ch <- MCMCchains(out, 'mean_phi')
+plot(density(mean_phi_ch))
+#prior
+a2 <- runif(5000, 0, 1)
+lines(density(a2), col = 'red')
+
+
+sigma_p_ch <- sqrt(MCMCchains(out, 'sigma_p2'))
+eps_p_1_ch <- MCMCchains(out, 'eps_p[1]')
+plot(density(eps_p_1_ch))
+eps_p_2_ch <- MCMCchains(out, 'eps_p[2]')
+plot(density(eps_p_2_ch))
+eps_p_3_ch <- MCMCchains(out, 'eps_p[3]')
+plot(density(eps_p_2_ch))
+eps_p_4_ch <- MCMCchains(out, 'eps_p[4]')
+plot(density(eps_p_2_ch))
+#prior
+a3 <- rnorm(10000, 0, median(sigma_p_ch))
+to.rm3 <- which(a3 > 20 | a3 < -20)
+b3 <- a3#[-to.rm3]
+c3 <- b3[1:7500]
+lines(density(c3), col = 'red')
+
+sigma_phi_ch <- sqrt(MCMCchains(out, 'sigma_phi2'))
+eps_phi_1_ch <- MCMCchains(out, 'eps_phi[1]')
+plot(density(eps_phi_1_ch))
+eps_phi_2_ch <- MCMCchains(out, 'eps_phi[2]')
+plot(density(eps_phi_2_ch))
+eps_phi_3_ch <- MCMCchains(out, 'eps_phi[3]')
+plot(density(eps_phi_3_ch))
+eps_phi_4_ch <- MCMCchains(out, 'eps_phi[4]')
+plot(density(eps_phi_4_ch))
+eps_phi_5_ch <- MCMCchains(out, 'eps_phi[5]')
+plot(density(eps_phi_5_ch))
+#prior
+a3 <- rnorm(10000, 0, median(sigma_phi_ch))
+to.rm3 <- which(a3 > 20 | a3 < -20)
+b3 <- a3#[-to.rm3]
+c3 <- b3[1:7500]
+lines(density(c3), col = 'red')
+
+
+
+
+MCMCsummary(out, params = 'eps_phi', digits = 4)
 
 
 
 
 #trace plots
-MCMCtrace(out, params = 'beta', ind = TRUE)
+MCMCtrace(out, params = 'sigma', ind = TRUE, pdf = TRUE)
 
 #plots of beta parameters
 MCMCplot(out, params = 'beta', rank = FALSE, labels = NULL,
