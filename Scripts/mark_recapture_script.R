@@ -640,8 +640,3 @@ lines(density(c3), col = 'red')
 
 
 
-
-MCMCsummary(out, params = 'eps_phi', digits = 4)
-
-
-
