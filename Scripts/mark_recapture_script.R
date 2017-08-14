@@ -1,21 +1,20 @@
 ######################
 #Mark-recapture for penguin watch 
 #
-#Assumption that chicks are alive at start of analysis (though could have failed as eggs)
 #
 #Authors: Casey Youngflesh
 ######################
 
-#TODO
-#add posterior predictive check - see Schrimpf script
-#how to model more than one site?
-#might want to know when the chicks die - how do we do that? should just fit surv param as random effect and look at that change across time rather than linear model?
-#do the trends in both detection and survival make for nonidentifiability? non-id of surv and detect in a particular year - plot chains against one another (for params think might not be identifiable) p219 Kerry and Schaub 2012
-#maybe make function assymtotic rather than linear for varying surv and detection?
-#change sim data to linear
+#QUESTIONS about model
+#want to know how survival is changing. Add env covariates onto this
+#no replication over period of closure (how to treat night - all images over one day as a single observation? should each hour be a time step with NAs over night?) - are the parameters identifiable? p219 Kerry and Schaub 2012
+#should the random effect (time) for phi be in there? Is it necessary?
 
 
+#how to model more than one site? maybe code each nest/site as a different nest (one site)
 
+
+#nonidentifiability checks
 #plot p[1,1] against phi[1,1] - CHECK
 #check correlation p and phi - CHECK
 #compare estimates p and phi against true p and phi - 
@@ -50,15 +49,9 @@ pacman::p_load(rjags, MCMCvis, parallel)
 #setwd('Data')
 #data <- read.csv('XXXX.csv', header=TRUE)
 
-#ISSUES
-#also have possibly more than two chicks per cell in some cases when older
-#what to do about no observation over night - can't be ignored right? Treating each hour as one time step here
-#might not have to assume both chicks alive at start - first sighting of 2 chicks can be start - p182 Kerry and Schaub 2012
-#all years should be run hierarchically for a site, and all sites hierarchically for each species?
-
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 400 #number of time steps
+n_ts <- 100 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -338,20 +331,18 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
-n_adapt <- 10000  # number for initial adapt
-n_burn <- 40000 # number burnin
-n_draw <- 20000  # number of final draws to make
+JAGS_FILE <- 'mark_recapture.jags'
+n_adapt <- 100  # number for initial adapt
+n_burn <- 40 # number burnin
+n_draw <- 20  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
-Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
-n_max <- 1e5 # max allowable iterations
+Rhat_max <- 1.9 # max allowable Rhat (close to 1 = convergence)
+n_max <- 10 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
-
-
-#run_jags <- function(JAGS_FILE)
 
 #number of chains
 cl <- parallel::makeCluster(n_chain)
@@ -364,7 +355,7 @@ for(i in 1:n_chain)
   end <- nchar(pidNum)
   pid[i] <- substr(pidNum, (start + 4), end)
 }
-
+ 
 parallel::clusterExport(cl, 
                         c('DATA', 
                           'n_adapt', 
@@ -373,19 +364,19 @@ parallel::clusterExport(cl,
                           'n_thin',
                           'Pars', 
                           'pid',
-                          'F_Inits'
+                          'F_Inits',
+                          'JAGS_FILE'
                         ))
 
-
 ptm <- proc.time()
-out.1 <- clusterEvalQ(cl, 
+out.1 <- parallel::clusterEvalQ(cl, 
                       {
                         require(rjags)
                         processNum <- which(pid==Sys.getpid())
                         m.inits <- F_Inits[[processNum]]
                         
                         jm = jags.model(data = DATA, 
-                                        file = "mark_recapture.jags", 
+                                        file = paste0(JAGS_FILE), 
                                         inits = m.inits, 
                                         n.chains = 1, 
                                         n.adapt = n_adapt)
@@ -398,13 +389,13 @@ out.1 <- clusterEvalQ(cl,
                                                variable.names = Pars, 
                                                thin = n_thin)
                         return(samples)
-                      })
+                        })
 
 
-out <- mcmc.list(out.1[[1]][[1]], 
-                 out.1[[2]][[1]], 
-                 out.1[[3]][[1]])
-#(proc.time() - ptm)[3]/60 #minutes
+out <- coda::mcmc.list(out.1[[1]][[1]], 
+                       out.1[[2]][[1]], 
+                       out.1[[3]][[1]])
+
 
 
 
@@ -428,17 +419,23 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
                           return(samples)
                         })
   
-  out <- mcmc.list(out.2[[1]][[1]], 
-                   out.2[[2]][[1]], 
-                   out.2[[3]][[1]])
+  out <- coda::mcmc.list(out.2[[1]][[1]], 
+                         out.2[[2]][[1]], 
+                         out.2[[3]][[1]])
   
   n_extra <- n_extra + n_draw
   n_total <- n_total + n_draw
 }
+
 stopCluster(cl)
-(proc.time() - ptm)[3]/60 #minutes
 
 n_final <- floor((n_draw + n_extra)/n_thin)
+print(paste0('Total iterations: ', n_final))
+(proc.time() - ptm)[3]/60 #minutes
+
+
+
+
 
 
 # Run model - non-parallel ------------------------------------------------
@@ -487,9 +484,9 @@ n_final <- floor((n_draw + n_extra)/n_thin)
 
 #phi = survival prob
 #p = detection prob
-
+require(MCMCvis)
 saveRDS(out, 'model_l_out.rds')
-#out <- readRDS('model_out.rds')
+#out <- readRDS('model_l_out.rds')
 
 #summary
 MCMCtrace(out, ind = TRUE, pdf = TRUE)
