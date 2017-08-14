@@ -1,9 +1,10 @@
 #!/bin/bash
 
-#PBS -l nodes=1:ppn=28,walltime=00:00:10
+#PBS -l nodes=1:ppn=28,walltime=48:00:00
 #PBS -q long
-#PBS -N pwatch_test
-
+#PBS -N pwatch_10a_80b_20d_200t_102
+#PBS -o output.txt
+#PBS -e error.txt
 
 module load shared
 module load openblas/dynamic/0.2.18
@@ -14,4 +15,4 @@ module load anaconda/3
 cd /gpfs/home/cyoungflesh/PWATCH/HPC
 export R_LIBS=/gpfs/home/cyoungflesh/R_libs
 
-Rscript model_script.R
+Rscript model_script.R > results.txt

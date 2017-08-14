@@ -26,7 +26,7 @@ pacman::p_load(MCMCvis, rjags, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 100 #number of time steps
+n_ts <- 200 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -307,13 +307,13 @@ Pars <- c('mean_phi',
 # Inputs for MCMC ---------------------------------------------------------
 
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 10  # number for initial adapt
-n_burn <- 8 # number burnin
-n_draw <- 20  # number of final draws to make
+n_adapt <- 10000  # number for initial adapt
+n_burn <- 80000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
-Rhat_max <- 1.91 # max allowable Rhat (close to 1 = convergence)
+Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
 n_max <- 70000 # max allowable iterations
 
 
@@ -419,5 +419,6 @@ print(paste0('Total iterations: ', n_final))
 #phi = survival prob
 #p = detection prob
 
-saveRDS(out, 'out_10a_80b_20d_101.rds')
+#adapt_burn_draw_time_rhatthreshold
+saveRDS(out, 'out_10a_80b_20d_200t_102.rds')
 #out <- readRDS('model_l_out.rds')
