@@ -332,14 +332,14 @@ Pars <- c('mean_phi',
 # Inputs for MCMC ---------------------------------------------------------
 
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 100  # number for initial adapt
-n_burn <- 40 # number burnin
-n_draw <- 20  # number of final draws to make
+n_adapt <- 10000  # number for initial adapt
+n_burn <- 80000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
-Rhat_max <- 1.9 # max allowable Rhat (close to 1 = convergence)
-n_max <- 10 # max allowable iterations
+Rhat_max <- 1.01 # max allowable Rhat (close to 1 = convergence)
+n_max <- 70000 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -443,14 +443,19 @@ print(paste0('Total iterations: ', n_final))
 
 #phi = survival prob
 #p = detection prob
-require(MCMCvis)
-saveRDS(out, 'model_l_out.rds')
+
+saveRDS(out, 'out_10a_80b_20d_101.rds')
 #out <- readRDS('model_l_out.rds')
+
+
 
 #summary
 MCMCtrace(out, ind = TRUE, pdf = TRUE)
 
 MCMCsummary(out, digits = 4)
+
+
+
 
 #cor of posteriors of p with posteriors of phi
 pb <- txtProgressBar(min = 0, max = 30, style = 3)
