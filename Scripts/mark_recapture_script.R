@@ -434,47 +434,6 @@ print(paste0('Total iterations: ', n_final))
 (proc.time() - ptm)[3]/60 #minutes
 
 
-
-
-
-
-# Run model - non-parallel ------------------------------------------------
-
-
-# #rjags
-# ptm <- proc.time()
-# jm = jags.model(data = DATA,
-#                 file = "mark_recapture.jags",
-#                 inits = F_Inits,
-#                 n.chains = 3,
-#                 n.adapt = n_adapt)
-# 
-# update(jm, n.iter = n_burn)
-# 
-# out <- coda.samples(jm,
-#                    n.iter = n_draw,
-#                    variable.names = Pars,
-#                    thin = n_thin)
-# 
-# 
-# #extra draws if didn't converge
-# n_total <- n_burn + n_draw
-# n_extra <- 0
-# while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
-#       n_total < n_max)
-# {
-# 
-#   out <- coda.samples(jm,
-#                       n.iter = n_draw,
-#                       variable.names = Pars,
-#                       n.thin = n_thin)
-# 
-#   n_extra <- n_extra + n_draw
-#   n_total <- n_total + n_draw
-# }
-# #(proc.time() - ptm)[3]/60 #minutes
-# n_final <- floor((n_draw + n_extra)/n_thin)
-
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
 
