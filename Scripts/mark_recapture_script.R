@@ -345,7 +345,7 @@ n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
 Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
-n_max <- 1e6 # max allowable iterations
+n_max <- 1e5 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -488,14 +488,13 @@ n_final <- floor((n_draw + n_extra)/n_thin)
 #phi = survival prob
 #p = detection prob
 
-saveRDS(out, 'model_out.rds')
+saveRDS(out, 'model_l_out.rds')
 #out <- readRDS('model_out.rds')
 
 #summary
-#MCMCsummary(out, params = 'beta', digits = 4)
-MCMCtrace(out, pdf = TRUE)
+MCMCtrace(out, ind = TRUE, pdf = TRUE)
 
-
+MCMCsummary(out, digits = 4)
 
 #cor of posteriors of p with posteriors of phi
 pb <- txtProgressBar(min = 0, max = 30, style = 3)
@@ -611,9 +610,9 @@ plot(density(eps_p_1_ch))
 eps_p_2_ch <- MCMCchains(out, 'eps_p[2]')
 plot(density(eps_p_2_ch))
 eps_p_3_ch <- MCMCchains(out, 'eps_p[3]')
-plot(density(eps_p_2_ch))
+plot(density(eps_p_3_ch))
 eps_p_4_ch <- MCMCchains(out, 'eps_p[4]')
-plot(density(eps_p_2_ch))
+plot(density(eps_p_4_ch))
 #prior
 a3 <- rnorm(10000, 0, median(sigma_p_ch))
 to.rm3 <- which(a3 > 20 | a3 < -20)
@@ -645,12 +644,4 @@ lines(density(c3), col = 'red')
 MCMCsummary(out, params = 'eps_phi', digits = 4)
 
 
-
-
-#trace plots
-MCMCtrace(out, params = 'sigma', ind = TRUE, pdf = TRUE)
-
-#plots of beta parameters
-MCMCplot(out, params = 'beta', rank = FALSE, labels = NULL,
-         horiz = FALSE, ref_ovl = FALSE)
 
