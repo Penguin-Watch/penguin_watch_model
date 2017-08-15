@@ -216,23 +216,23 @@ DATA <- list(
       {
       for (t in 1:L)
       {
-      logit(phi[i,t]) <- mu_phi + beta_phi*x[t] #+ eps_phi[t]       #phi = survival prob
+      logit(phi[i,t]) <- mu_phi + + eps_phi[t] #beta_phi*x[t] + eps_phi[t]       #phi = survival prob
       logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]               #p = detection prob
       }
       }
       
       
       #priors
-      #for (t in 1:L)
-      #{
-      #eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10)
-      #}
+      for (t in 1:L)
+      {
+      eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10)
+      }
       
       mean_phi ~ dunif(0,1)
       mu_phi <- log(mean_phi / (1 - mean_phi))    
-      #tau_phi <- pow(sigma_phi, -2)
-      #sigma_phi ~ dunif(0, 10)
-      #sigma_phi2 <- pow(sigma_phi, 2)
+      tau_phi <- pow(sigma_phi, -2)
+      sigma_phi ~ dunif(0, 10)
+      sigma_phi2 <- pow(sigma_phi, 2)
       
       for (i in 1:N)
       {
@@ -247,7 +247,7 @@ DATA <- list(
       sigma_p ~ dunif(0, 10)
       sigma_p2 <- pow(sigma_p, 2)
       
-      beta_phi ~ dnorm(0, 1) T(-1,1)
+      #beta_phi ~ dnorm(0, 1) T(-1,1)
       beta_p ~ dnorm(0, 1) T(-1,1)
       
       
@@ -263,27 +263,27 @@ DATA <- list(
 
 Inits_1 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
-                #sigma_phi = runif(1, 0, 10),
+                sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
+                #beta_phi = 0,
                 beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
-                #sigma_phi = runif(1, 0, 10),
+                sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
+                #beta_phi = 0,
                 beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
-                #sigma_phi = runif(1, 0, 10),
+                sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
+                #beta_phi = 0,
                 beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
@@ -297,12 +297,12 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 Pars <- c('mean_phi',
           'mean_p',
           'sigma_p',
-          #'sigma_phi',
+          'sigma_phi',
           'beta_p',
-          'beta_phi',
+          #'beta_phi',
           'mu_phi',
           'mu_p',
-          #'eps_phi',
+          'eps_phi',
           'eps_p')
 
 
@@ -407,7 +407,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 stopCluster(cl)
 
 n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_10a_100b_20d_200t_102_noephi.rds'
+NAME <- 'out_10a_100b_20d_200t_102_nobetaphi.rds'
 print(NAME)
 print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes

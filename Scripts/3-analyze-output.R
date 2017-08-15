@@ -33,7 +33,7 @@ pacman::p_load(rjags, MCMCvis)
 #p = detection prob
 
 setwd('HPC')
-out <- readRDS('out_10a_100b_20d_200t_102.rds')
+out <- readRDS('out_10a_100b_20d_200t_102_noephi.rds')
 
 
 
@@ -41,7 +41,7 @@ out <- readRDS('out_10a_100b_20d_200t_102.rds')
 #summary
 MCMCtrace(out, ind = TRUE, pdf = TRUE)
 
-MCMCsummary(out, params = 'sigma', digits = 4)
+MCMCsummary(out, digits = 4)
 
 
 
