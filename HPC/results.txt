@@ -1,3 +1,4 @@
-[1] "Total iterations: 10000"
+[1] "Total iterations: 40000"
+[1] "out_10a_100b_20d_200t_102.rds"
  elapsed 
-103.2687 
+185.4146 
