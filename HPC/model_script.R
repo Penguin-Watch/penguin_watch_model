@@ -405,10 +405,11 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 stopCluster(cl)
 
 n_final <- floor((n_draw + n_extra)/n_thin)
-print(paste0('Total iterations: ', n_final))
 NAME <- 'out_10a_100b_20d_200t_102.rds'
 print(NAME)
-(proc.time() - ptm)[3]/60 #minutes
+print(paste0('Total iterations: ', n_final))
+tt <- (proc.time() - ptm)[3]/60 #minutes
+print(paste0('Total minutes: ', round(tt, digits = 2)))
 
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
