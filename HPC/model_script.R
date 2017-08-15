@@ -216,7 +216,7 @@ DATA <- list(
       {
       for (t in 1:L)
       {
-      logit(phi[i,t]) <- mu_phi + + eps_phi[t] #beta_phi*x[t] + eps_phi[t]       #phi = survival prob
+      logit(phi[i,t]) <- mu_phi + eps_phi[t] #beta_phi*x[t] + eps_phi[t]       #phi = survival prob
       logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]               #p = detection prob
       }
       }
