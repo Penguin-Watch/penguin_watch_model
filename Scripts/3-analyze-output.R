@@ -33,7 +33,7 @@ pacman::p_load(rjags, MCMCvis)
 #p = detection prob
 
 setwd('HPC')
-out <- readRDS('out_10a_100b_20d_200t_102_noephi.rds')
+out <- readRDS('out_10a_100b_20d_200t_102_nobetaphi.rds')
 
 
 
