@@ -310,13 +310,13 @@ Pars <- c('mean_phi',
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 10000  # number for initial adapt
-n_burn <- 100000 # number burnin
+n_burn <- 500000 # number burnin
 n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
 Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
-n_max <- 200000 # max allowable iterations
+n_max <- 600000 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -407,7 +407,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 stopCluster(cl)
 
 n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_10a_100b_20d_200t_102_nobetaphi.rds'
+NAME <- 'out_10a_500b_20d_200t_102_nobetaphi.rds'
 print(NAME)
 print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes
