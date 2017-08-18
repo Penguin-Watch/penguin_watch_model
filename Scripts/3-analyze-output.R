@@ -39,7 +39,7 @@ out <- readRDS('out_10a_500b_20d_200t_102_nobetaphi.rds')
 
 
 #summary
-MCMCtrace(out, ind = TRUE, pdf = TRUE)
+MCMCtrace(out, ind = TRUE, pdf = TRUE, iter = 10000)
 
 MCMCsummary(out, digits = 4)
 
