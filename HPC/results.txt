@@ -1,3 +1,0 @@
-[1] "out_10a_500b_20d_200t_102_nobetaphi.rds"
-[1] "Total iterations: 20000"
-[1] "Total minutes: 425.47"
