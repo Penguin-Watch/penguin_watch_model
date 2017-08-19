@@ -247,7 +247,7 @@ DATA <- list(
       sigma_p ~ dunif(0, 10)
       sigma_p2 <- pow(sigma_p, 2)
       
-      #beta_phi ~ dnorm(0, 1) T(-1,1)
+      beta_phi ~ dnorm(0, 1) T(-1,1)
       beta_p ~ dnorm(0, 1) T(-1,1)
       
       
