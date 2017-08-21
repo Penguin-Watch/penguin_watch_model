@@ -265,8 +265,8 @@ Inits_1 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = runif(1, 0, 1),
-                beta_p = runif(1, 0, 1),
+                beta_phi = 0.1,
+                beta_p = 0.1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -274,8 +274,8 @@ Inits_2 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = runif(1, 0, 1),
-                beta_p = runif(1, 0, 1),
+                beta_phi = 0.1,
+                beta_p = 0.1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -283,8 +283,8 @@ Inits_3 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = runif(1, 0, 1),
-                beta_p = runif(1, 0, 1),
+                beta_phi = 0.1,
+                beta_p = 0.1,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
