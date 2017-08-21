@@ -225,11 +225,11 @@ DATA <- list(
       #priors
       for (t in 1:L)
       {
-      eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10)
+      eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10) #the variance parameter here is estimated from these values - should it be constrained instead?
       }
       
-      mean_phi ~ dunif(0,1)
-      mu_phi <- log(mean_phi / (1 - mean_phi))    
+      mean_phi ~ dbeta(1.5,1.5)                 #Mean survival
+      mu_phi <- log(mean_phi / (1 - mean_phi))  
       tau_phi <- pow(sigma_phi, -2)
       sigma_phi ~ dunif(0, 10)
       sigma_phi2 <- pow(sigma_phi, 2)
@@ -239,16 +239,16 @@ DATA <- list(
       eps_p[i] ~ dnorm(0, tau_p) T(-10,10)
       }
       
-      mean_p ~ dunif(0,1)                        #Mean survival - could use alternative below
+      mean_p ~ dbeta(1.5,1.5)                    #Mean detection - could use alternative below
       mu_p <- log(mean_p / (1 - mean_p))         #Logit transform - could use alternative below
-      #mean_p <- 1 / (1+exp(-mu_p))              #Mean survival - Inv-logit transform    
+      #mean_p <- 1 / (1+exp(-mu_p))              #Mean detection - Inv-logit transform    
       #mu_p ~ dnorm(0, 0.001)                    #Prior for logit of mean survival
       tau_p <- pow(sigma_p, -2)
       sigma_p ~ dunif(0, 10)
       sigma_p2 <- pow(sigma_p, 2)
       
-      beta_phi ~ dnorm(0, 1) T(-1,1)
-      beta_p ~ dnorm(0, 1) T(-1,1)
+      beta_phi ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_p ~ dnorm(0, 10) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
       
       
       }",fill = TRUE)
@@ -265,8 +265,8 @@ Inits_1 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
-                beta_p = 0,
+                beta_phi = runif(1, 0, 1),
+                beta_p = runif(1, 0, 1),
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -274,8 +274,8 @@ Inits_2 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
-                beta_p = 0,
+                beta_phi = runif(1, 0, 1),
+                beta_p = runif(1, 0, 1),
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -283,8 +283,8 @@ Inits_3 <- list(mean_phi = runif(1, 0, 1),
                 mean_p = runif(1, 0, 1),
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
-                beta_p = 0,
+                beta_phi = runif(1, 0, 1),
+                beta_p = runif(1, 0, 1),
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -312,13 +312,13 @@ Pars <- c('mean_phi',
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 10000  # number for initial adapt
-n_burn <- 500000 # number burnin
+n_burn <- 100000 # number burnin
 n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
 Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
-n_max <- 600000 # max allowable iterations
+n_max <- 100000 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -409,7 +409,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 stopCluster(cl)
 
 n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_10a_500b_20d_200t_102_trackpphi.rds'
+NAME <- 'out_10a_100b_20d_200t_102_trackpphi_newpriors.rds'
 print(NAME)
 print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes
