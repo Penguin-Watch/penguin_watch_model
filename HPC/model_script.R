@@ -303,9 +303,7 @@ Pars <- c('mean_phi',
           'mu_phi',
           'mu_p',
           'eps_phi',
-          'eps_p',
-          'p',
-          'phi')
+          'eps_p')
 
 
 # Inputs for MCMC ---------------------------------------------------------
@@ -408,8 +406,8 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 
 stopCluster(cl)
 
-n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_10a_100b_20d_200t_102_trackpphi_newpriors.rds'
+n_final <- floor(`(n_draw + n_extra)/n_thin)
+NAME <- 'out_10a_100b_20d_200t_102i_newpriors.rds'
 print(NAME)
 print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes
