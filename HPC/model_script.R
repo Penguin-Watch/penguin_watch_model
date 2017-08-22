@@ -345,6 +345,7 @@ parallel::clusterExport(cl,
                           'JAGS_FILE'
                         ))
 
+
 ptm <- proc.time()
 out.1 <- parallel::clusterEvalQ(cl, 
                                 {
@@ -406,7 +407,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 
 stopCluster(cl)
 
-n_final <- floor(`(n_draw + n_extra)/n_thin)
+n_final <- floor((n_draw + n_extra)/n_thin)
 NAME <- 'out_10a_100b_20d_200t_102i_newpriors.rds'
 print(NAME)
 print(paste0('Total iterations: ', n_final))
