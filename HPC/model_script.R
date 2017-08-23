@@ -96,7 +96,7 @@ for (i in 1:length(dp))
 
 
 
-
+set.seed(1)
 #function to simulate time series
 sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
 {
@@ -318,7 +318,9 @@ Pars <- c('mean_phi',
           'mu_p',
           'eps_phi',
           'eps_p',
-          'y.new')
+          'y.new',
+          'p',
+          'phi')
 
 
 # Inputs for MCMC ---------------------------------------------------------
