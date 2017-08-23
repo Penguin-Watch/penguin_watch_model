@@ -207,8 +207,22 @@ DATA <- list(
       p[i,t] * z[i,t],
       p[i,t])
       
+
+      #PPC
+      y.new[i,j] ~ dbinom(p_sight[i,t], z[i,t])
       }
       }
+
+      #PPC
+      #mean
+      mn.y <- mean(y[i,t])
+      mn.y.new <- mean(y.new[i,t])
+      pv.mn <- step(mn.y.new - mn.y)
+
+      #sd
+      sd.y <- sd(y[i,t])
+      sd.y.new <- sd(y.new[i,t])
+      pv.sd <- step(sd.y.new - sd.y)
       
       
       #transforms
@@ -303,14 +317,16 @@ Pars <- c('mean_phi',
           'mu_phi',
           'mu_p',
           'eps_phi',
-          'eps_p')
+          'eps_p',
+          'pv.mn',
+          'pv.sd')
 
 
 # Inputs for MCMC ---------------------------------------------------------
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 10000  # number for initial adapt
-n_burn <- 100000 # number burnin
+n_burn <- 10000 # number burnin
 n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
@@ -408,7 +424,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 stopCluster(cl)
 
 n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_10a_100b_20d_200t_102i_newpriors.rds'
+NAME <- 'out_10a_10b_20d_200t_102i_newpriors_PPC.rds'
 print(NAME)
 print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes
