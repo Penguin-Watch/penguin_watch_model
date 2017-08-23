@@ -40,7 +40,7 @@ out <- readRDS('out_10a_100b_20d_200t_102i_newpriors.rds')
 #summary
 MCMCtrace(out, ind = TRUE, pdf = TRUE, iter = 10000)
 
-MCMCsummary(out, digits = 4,  params = 'sigma')
+MCMCsummary(out, digits = 4, excl = 'eps_p')
 
 
 
