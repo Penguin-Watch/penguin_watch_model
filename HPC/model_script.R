@@ -215,14 +215,14 @@ DATA <- list(
 
       #PPC
       #mean
-      mn.y <- mean(y)
-      mn.y.new <- mean(y.new)
-      pv.mn <- step(mn.y.new - mn.y)
+      #mn_y <- mean(y)
+      #mn.y.new <- mean(y.new)
+      #pv.mn <- step(mn.y.new - mn.y)
 
       #sd
-      sd.y <- sd(y)
-      sd.y.new <- sd(y.new)
-      pv.sd <- step(sd.y.new - sd.y)
+      #sd.y <- sd(y)
+      #sd.y.new <- sd(y.new)
+      #pv.sd <- step(sd.y.new - sd.y)
       
       
       #transforms
@@ -318,21 +318,20 @@ Pars <- c('mean_phi',
           'mu_p',
           'eps_phi',
           'eps_p',
-          'pv.mn',
-          'pv.sd')
+          'y.new')
 
 
 # Inputs for MCMC ---------------------------------------------------------
 
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 10000  # number for initial adapt
-n_burn <- 10000 # number burnin
-n_draw <- 20000  # number of final draws to make
+n_adapt <- 8000  # number for initial adapt
+n_burn <- 20000 # number burnin
+n_draw <- 10000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
 Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
-n_max <- 100000 # max allowable iterations
+n_max <- 10000 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
