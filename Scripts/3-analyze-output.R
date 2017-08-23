@@ -33,7 +33,7 @@ pacman::p_load(rjags, MCMCvis)
 #p = detection prob
 
 setwd('HPC/Archive')
-out <- readRDS('HPC/Archive/out_10a_100b_20d_200t_102_trackpphi_newpriors.rds')
+out <- readRDS('out_10a_10b_20d_200t_102i_newpriors_PPC.rds')
 
 
 
@@ -41,8 +41,15 @@ out <- readRDS('HPC/Archive/out_10a_100b_20d_200t_102_trackpphi_newpriors.rds')
 MCMCtrace(out, ind = TRUE, pdf = TRUE, iter = 10000)
 
 MCMCsummary(out, digits = 4, excl = 'p')
+y.new_ch <- MCMCchains(out, params = 'y.new')
+mn.y.new <- apply(y.new_ch, 2, mean)
+sd.y.new <- apply(y.new_ch, 2, sd)
 
+#plot mn(y) and mn(y.new)
+plot(mn.y.new, pch = '.')
 
+#plot sd(y) and sd(y.new)
+plot(mn.y.new, pch = '.')
 
 
 #cor of posteriors of p with posteriors of phi
