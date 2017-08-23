@@ -191,7 +191,8 @@ DATA <- list(
       {
       #both chicks alive at time step 1
       z[i,1] <- 2
-      
+      y.new[i,1] ~ dbinom(p[i,1], 2)      
+
       for (t in 2:L)
       { 
       
@@ -215,14 +216,14 @@ DATA <- list(
 
       #PPC
       #mean
-      #mn_y <- mean(y)
-      #mn.y.new <- mean(y.new)
-      #pv.mn <- step(mn.y.new - mn.y)
+      mn.y <- mean(y)
+      mn.y.new <- mean(y.new)
+      pv.mn <- step(mn.y.new - mn.y)
 
       #sd
-      #sd.y <- sd(y)
-      #sd.y.new <- sd(y.new)
-      #pv.sd <- step(sd.y.new - sd.y)
+      sd.y <- sd(y)
+      sd.y.new <- sd(y.new)
+      pv.sd <- step(sd.y.new - sd.y)
       
       
       #transforms
@@ -318,9 +319,10 @@ Pars <- c('mean_phi',
           'mu_p',
           'eps_phi',
           'eps_p',
-          'y.new',
           'p',
-          'phi')
+          'phi',
+          'pv.mn',
+          'pv.sd')
 
 
 # Inputs for MCMC ---------------------------------------------------------
