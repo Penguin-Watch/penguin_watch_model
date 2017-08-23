@@ -33,14 +33,14 @@ pacman::p_load(rjags, MCMCvis)
 #p = detection prob
 
 setwd('HPC/Archive')
-out <- readRDS('out_10a_100b_20d_200t_102i_newpriors.rds')
+out <- readRDS('HPC/Archive/out_10a_100b_20d_200t_102_trackpphi_newpriors.rds')
 
 
 
 #summary
 MCMCtrace(out, ind = TRUE, pdf = TRUE, iter = 10000)
 
-MCMCsummary(out, digits = 4, excl = 'eps_p')
+MCMCsummary(out, digits = 4, excl = 'p')
 
 
 
