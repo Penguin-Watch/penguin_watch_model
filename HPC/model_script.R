@@ -209,19 +209,19 @@ DATA <- list(
       
 
       #PPC
-      y.new[i,j] ~ dbinom(p_sight[i,t], z[i,t])
+      y.new[i,t] ~ dbinom(p_sight[i,t], z[i,t])
       }
       }
 
       #PPC
       #mean
-      mn.y <- mean(y[i,t])
-      mn.y.new <- mean(y.new[i,t])
+      mn.y <- mean(y)
+      mn.y.new <- mean(y.new)
       pv.mn <- step(mn.y.new - mn.y)
 
       #sd
-      sd.y <- sd(y[i,t])
-      sd.y.new <- sd(y.new[i,t])
+      sd.y <- sd(y)
+      sd.y.new <- sd(y.new)
       pv.sd <- step(sd.y.new - sd.y)
       
       
