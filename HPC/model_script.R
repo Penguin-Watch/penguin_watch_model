@@ -28,7 +28,7 @@ pacman::p_load(MCMCvis, rjags, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 200 #number of time steps
+n_ts <- 100 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -329,8 +329,8 @@ Pars <- c('mean_phi',
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 8000  # number for initial adapt
-n_burn <- 20000 # number burnin
-n_draw <- 10000  # number of final draws to make
+n_burn <- 50000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
@@ -457,9 +457,15 @@ MCMCsummary(out, digits = 4,
 
 
 
+# Save object to RDS -------------------------------------------------------
+
+#adapt_burn_draw_time_rhatthreshold_additional info
+saveRDS(out, paste0(NAME))
 
 
-# matrices to compare to generating data ----------------------------------
+
+
+# save matrices to compare to generating data to RDS ----------------------------------
 
 #p matrix
 est_p <- matrix(nrow = nests, ncol = n_ts)
@@ -498,11 +504,4 @@ for (i in 1:NROW(p_phi_cor))
 }
 saveRDS(p_phi_cor, 'p_phi_cor.rds')
 
-
-
-
-# Save object to RDS -------------------------------------------------------
-
-#adapt_burn_draw_time_rhatthreshold_additional info
-saveRDS(out, paste0(NAME))
 
