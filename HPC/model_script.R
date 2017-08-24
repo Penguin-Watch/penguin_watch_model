@@ -427,7 +427,7 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 stopCluster(cl)
 
 n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_10a_10b_20d_200t_102i_newpriors_PPC.rds'
+NAME <- 'out_8a_20b_10d_200t_PPC_diag.rds'
 print(NAME)
 print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes
@@ -436,14 +436,73 @@ print(paste0('Total minutes: ', round(tt, digits = 2)))
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
+#output summary
+MCMCsummary(out, digits = 4,
+            params = c('mean_phi',
+                            'mean_p',
+                            'sigma_p',
+                            'sigma_phi',
+                            'beta_p',
+                            'beta_phi',
+                            'mu_phi',
+                            'mu_p',
+                            'eps_phi',
+                            'eps_p',
+                            'pv.mn',
+                            'pv.sd'))[,5]
+
+#output PPC
+MCMCsummary(out, digits = 4,
+            params = c('pv.mn', 'pv.sd'))
 
 
 
-# Analyze posterior -------------------------------------------------------
 
-#phi = survival prob
-#p = detection prob
 
-#adapt_burn_draw_time_rhatthreshold
+# matrices to compare to generating data ----------------------------------
+
+#p matrix
+est_p <- matrix(nrow = nests, ncol = n_ts)
+for (i in 1:NROW(est_p))
+{
+  for (j in 1:NCOL(est_p))
+  {
+    est_p[i,j] <- median(MCMCchains(out, paste0('p[',i,',',j,']')))
+  }
+}
+saveRDS(est_p, 'est_p.rds')
+
+
+#phi matrix
+est_phi <- matrix(nrow = nests, ncol = n_ts)
+for (i in 1:NROW(est_phi))
+{
+  for (j in 1:NCOL(est_phi))
+  {
+    est_phi[i,j] <- median(MCMCchains(out, paste0('phi[',i,',',j,']')))
+  }
+}
+saveRDS(est_p, 'est_phi.rds')
+
+
+#cor of posteriors of p with posteriors of phi
+p_phi_cor <- matrix(nrow = nests, ncol = n_ts)
+for (i in 1:NROW(p_phi_cor))
+{
+  for (j in 1:NCOL(p_phi_cor))
+  {
+    t_p <- MCMCchains(out, paste0('p[',i,',',j,']'))
+    t_phi <- MCMCchains(out, paste0('phi[',i,',',j,']'))
+    p_phi_cor[i,j] <- cor(t_p, t_phi)
+  }
+}
+saveRDS(p_phi_cor, 'p_phi_cor.rds')
+
+
+
+
+# Save object to RDS -------------------------------------------------------
+
+#adapt_burn_draw_time_rhatthreshold_additional info
 saveRDS(out, paste0(NAME))
-#out <- readRDS('model_l_out.rds')
+
