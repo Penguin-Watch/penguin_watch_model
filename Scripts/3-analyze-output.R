@@ -55,8 +55,31 @@ MCMCsummary(out, digits = 4,
 
 
 pv.mn_ch <- MCMCchains(out, params = 'pv.mn')
-pv.mn_sd <- MCMCchains(out, params = 'pv.sd')
+pv.sd_ch <- MCMCchains(out, params = 'pv.sd')
 mean(pv.mn_ch)
+mean(pv.sd_ch)
+
+
+
+
+
+#correlation of beta_p and beta_phi
+beta_p_ch <- MCMCchains(out, 'beta_p', excl = 'beta_phi')
+beta_phi_ch <- MCMCchains(out, 'beta_phi')
+plot(beta_p_ch, beta_phi_ch, pch = '.')
+cor(beta_p_ch, beta_phi_ch)
+
+#correlation of mean_p and mean_phi
+mean_p_ch <- MCMCchains(out, 'mean_p', excl = 'mean_phi')
+mean_phi_ch <- MCMCchains(out, 'mean_phi')
+plot(mean_p_ch, mean_phi_ch, pch = '.')
+cor(mean_p_ch, mean_phi_ch)
+
+
+
+
+
+
 
 
 
@@ -76,25 +99,6 @@ for (i in 1:NROW(DATA$y))
 close(pb)
 
 #saveRDS(CO, 'p_phi_cor.rds')
-
-
-
-
-
-#need to track p and phi params
-#correlation of beta_p and beta_phi
-beta_p_ch <- MCMCchains(out, 'beta_p', excl = 'beta_phi')
-beta_phi_ch <- MCMCchains(out, 'beta_phi')
-plot(beta_p_ch, beta_phi_ch, pch = '.')
-cor(beta_p_ch, beta_phi_ch)
-
-#correlation of mean_p and mean_phi
-mean_p_ch <- MCMCchains(out, 'mean_p', excl = 'mean_phi')
-mean_phi_ch <- MCMCchains(out, 'mean_phi')
-plot(mean_p_ch, mean_phi_ch, pch = '.')
-cor(mean_p_ch, mean_phi_ch)
-
-
 
 
 
