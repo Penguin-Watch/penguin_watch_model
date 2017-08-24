@@ -427,12 +427,11 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 stopCluster(cl)
 
 n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_8a_20b_10d_200t_PPC_diag.rds'
+NAME <- 'out_8a_50b_20d_100t_PPC_diag'
 print(NAME)
 print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes
 print(paste0('Total minutes: ', round(tt, digits = 2)))
-
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
@@ -460,7 +459,7 @@ MCMCsummary(out, digits = 4,
 # Save object to RDS -------------------------------------------------------
 
 #adapt_burn_draw_time_rhatthreshold_additional info
-saveRDS(out, paste0(NAME))
+saveRDS(out, paste0(NAME, '.rds'))
 
 
 
@@ -476,7 +475,7 @@ for (i in 1:NROW(est_p))
     est_p[i,j] <- median(MCMCchains(out, paste0('p[',i,',',j,']')))
   }
 }
-saveRDS(est_p, 'est_p.rds')
+saveRDS(est_p, paste0(NAME,'_est_p.rds'))
 
 
 #phi matrix
@@ -488,7 +487,7 @@ for (i in 1:NROW(est_phi))
     est_phi[i,j] <- median(MCMCchains(out, paste0('phi[',i,',',j,']')))
   }
 }
-saveRDS(est_p, 'est_phi.rds')
+saveRDS(est_phi, paste0(NAME,'_est_phi.rds'))
 
 
 #cor of posteriors of p with posteriors of phi
@@ -502,6 +501,6 @@ for (i in 1:NROW(p_phi_cor))
     p_phi_cor[i,j] <- cor(t_p, t_phi)
   }
 }
-saveRDS(p_phi_cor, 'p_phi_cor.rds')
+saveRDS(p_phi_cor, paste0(NAME, '_p_phi_cor.rds'))
 
 
