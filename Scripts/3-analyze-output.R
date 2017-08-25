@@ -33,7 +33,10 @@ pacman::p_load(rjags, MCMCvis)
 #p = detection prob
 
 setwd('HPC/Archive')
-out <- readRDS('out_8a_20b_10d_200t_trackpphi_PPC.rds')
+NAME <- 'out_8a_50b_20d_200t_PPC_diag'
+
+
+out <- readRDS(paste0(NAME, '.rds'))
 
 
 
@@ -83,56 +86,92 @@ cor(mean_p_ch, mean_phi_ch)
 
 
 
+# Compare posterior p and phi estimates to generating params --------------
 
-#cor of posteriors of p with posteriors of phi
-pb <- txtProgressBar(min = 0, max = 30, style = 3)
-CO <- matrix(nrow = 30, ncol = 100)
-for (i in 1:NROW(DATA$y))
+#simulate new data - to match with data input to model
+n_ts <- 200 #number of time steps
+x <- 1:n_ts
+nests <- 30 #number of nests
+
+sim_p_fun <- function(START, RATE = 0.008, TOP = 1)
 {
-  for (j in 1:NCOL(DATA$y))
+  B <- rep(NA, n_ts-1)
+  
+  B[1] <- START
+  K <- TOP
+  r <- RATE
+  for(t in 1:(n_ts-2))
   {
-    t_p <- MCMCchains(out, paste0('p[',i,',',j,']'))
-    t_phi <- MCMCchains(out, paste0('phi[',i,',',j,']'))
-    CO[i,j] <- cor(t_p, t_phi)
+    B[t+1] <- B[t] + r*(1-B[t]/K)
   }
-  setTxtProgressBar(pb, i)
+  return(B)
 }
-close(pb)
-
-#saveRDS(CO, 'p_phi_cor.rds')
 
 
 
-#posterior estimates for p
-pb <- txtProgressBar(min = 0, max = 30, style = 3)
-est_p <- matrix(nrow = 30, ncol = 100)
-for (i in 1:NROW(DATA$y))
+
+
+#POSTERIOR p
+est_p_matrix <- readRDS(paste0('est_p_', NAME, '.rds'))
+
+
+#TRUE p - simualted in same way as model
+P <- matrix(rep(NA, nests*(n_ts-1)),
+            nrow = nests,
+            ncol = n_ts-1)
+
+set.seed(1) #to match with simulated data in HPC model script
+dp <- runif(30, 0.3, 0.8)
+for (i in 1:length(dp))
 {
-  for (j in 1:NCOL(DATA$y))
-  {
-    est_p[i,j] <- median(MCMCchains(out, paste0('p[',i,',',j,']')))
-  }
-  setTxtProgressBar(pb, i)
+  P[i,] <- sim_p_fun(dp[i], RATE = 0.005, TOP = 0.95)
+  #plot(p_data, type = 'l', ylim = c(0,1), main = paste0(i))
 }
-close(pb)
+sim_P <- cbind(rep(NA, nrow(P)), P)
 
+#compare two matrices - don't compare first time step, as those values are meaningless (do not affect simulated data bc those values are fixed in the fixed data - true state 2 chicks, 2 chick observed)
 
-#posterior estimates for phi
-pb <- txtProgressBar(min = 0, max = 30, style = 3)
-est_phi <- matrix(nrow = 30, ncol = 100)
-for (i in 1:NROW(DATA$y))
+#estimated in BLACK - simulated model input in RED
+plot(est_p_matrix[1,], type = 'l', ylim = c(0.3, 1))
+for (i in 1:NROW(est_p_matrix))
 {
-  for (j in 1:NCOL(DATA$y))
-  {
-    est_phi[i,j] <- median(MCMCchains(out, paste0('phi[',i,',',j,']')))
-  }
-  setTxtProgressBar(pb, i)
+  lines(est_p_matrix[i,])
 }
-close(pb)
+for (i in 1:NROW(sim_P))
+{
+  lines(sim_P[i,], col = 'red')
+}
 
 
 
-#compare posteriors to actual quantities
+#POSTERIOR PHI
+est_phi_matrix <- readRDS(paste0('est_phi_', NAME, '.rds'))
+
+#TRUE phi - simulated in same way as model input
+phi_data <- sim_p_fun(START = 0.985)
+PHI <- matrix(rep(phi_data, nests),
+              nrow = nests,
+              ncol = n_ts-1,
+              byrow = TRUE)
+sim_PHI <- cbind(rep(NA, nrow(PHI)), PHI)
+
+
+#compare two matrices
+plot(est_phi_matrix[1,], type = 'l', ylim = c(0.98, 1))
+lines(sim_PHI[1,], col = 'red')
+
+
+
+#correlation of posterior of p with posteriors of phi
+
+p_phi_cor_matrix <- readRDS(paste0('p_phi_cor_', NAME, '.rds'))
+
+hist(p_phi_cor_matrix) # no correlation
+
+
+
+
+
 
 
 
