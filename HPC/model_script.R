@@ -97,15 +97,21 @@ for (i in 1:length(dp))
 
 
 
-
 set.seed(1)
-#function to simulate time series
+#function to simulate time series - 12 hours classified, 12 hours non-classified
 sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
 {
   TS_LEN <- NCOL(PHI_MAT) + 1
   CH <- matrix(0, 
                ncol = TS_LEN, 
                nrow = N_NESTS)
+  
+  #SIMULTE LIGHT/DARK
+  NS <- TS_LEN %/% 24
+  LO <- TS_LEN %% 24
+  DN_SERIES <- c(rep(1,12), rep(0,12))
+  T_SERIES <- rep(DN_SERIES, NS)
+  F_SERIES <- c(T_SERIES, DN_SERIES[1:LO])
   
   for (i in 1:N_NESTS)
   {
@@ -122,6 +128,7 @@ sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
       t_DP <- rbinom(1, size = t_SP[t], prob = P_MAT[i,t-1])
       CH[i,t] <- t_DP
     }
+    CH[i,] <- CH[i,] * F_SERIES
   }
   return(CH)
 }
@@ -165,6 +172,18 @@ z_vals <- known.state.fun(sim_data)
 
 
 
+#light/dark matrix - 1 is light (have image for that hour), 0 is dark (misssing image for that hour)
+NS <- NCOL(sim_data) %/% 24
+LO <- NCOL(sim_data) %% 24
+DN_SERIES <- c(rep(1,12), rep(0,12))
+T_SERIES <- rep(DN_SERIES, NS)
+F_SERIES <- c(T_SERIES, DN_SERIES[1:LO])
+w_mat <- matrix(rep(F_SERIES, NROW(sim_data)), 
+                nrow = NROW(sim_data), 
+                ncol = NCOL(sim_data), 
+                byrow = TRUE)
+
+
 
 # Data for model ----------------------------------------------------------
 
@@ -174,7 +193,8 @@ DATA <- list(
   N = NROW(sim_data), #number of nests
   L = NCOL(sim_data), #number of time points
   z = z_vals,
-  x = 1:NCOL(sim_data)) 
+  x = 1:NCOL(sim_data),
+  w = w_mat) #binary day (1)/night (0)
 
 
 
@@ -205,7 +225,7 @@ DATA <- list(
       phi[i,t])
       
       #observation model
-      y[i,t] ~ dbinom(p_sight[i,t], z[i,t])
+      y[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #w is binary day/night
       p_sight[i,t] <- ifelse(z[i,t] < 2,
       p[i,t] * z[i,t],
       p[i,t])
