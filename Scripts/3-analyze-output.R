@@ -36,9 +36,10 @@ setwd('HPC/Archive')
 out <- readRDS('out_8a_20b_10d_200t_trackpphi_PPC.rds')
 
 
+
 #summary
 MCMCtrace(out, ind = TRUE, pdf = TRUE, iter = 10000)
-
+MCMCsummary(out, digits = 4)
 MCMCsummary(out, digits = 4, 
             params = c('mean_phi',
                        'mean_p',
