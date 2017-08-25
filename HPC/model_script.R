@@ -427,33 +427,62 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 stopCluster(cl)
 
 n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_8a_50b_20d_100t_PPC_diag'
-print(NAME)
-print(paste0('Total iterations: ', n_final))
+NAME <- 'out_8a_50b_20d_200t_PPC_diag'
+#print(NAME)
+#print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes
-print(paste0('Total minutes: ', round(tt, digits = 2)))
+#print(paste0('Total minutes: ', round(tt, digits = 2)))
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
-#output summary
-MCMCsummary(out, digits = 4,
-            params = c('mean_phi',
-                            'mean_p',
-                            'sigma_p',
-                            'sigma_phi',
-                            'beta_p',
-                            'beta_phi',
-                            'mu_phi',
-                            'mu_p',
-                            'eps_phi',
-                            'eps_p',
-                            'pv.mn',
-                            'pv.sd'))[,5]
+var_names <- colnames(out[[1]])
+
+params = c('mean_phi',
+           'mean_p',
+           'sigma_p',
+           'sigma_phi',
+           'beta_p',
+           'beta_phi',
+           'mu_phi',
+           'mu_p',
+           'eps_phi','eps_p',
+           'pv.mn',
+           'pv.sd')
+
+grouped <- c()
+for (i in 1:length(params)) 
+{
+  get.rows <- grep(paste(params[i]), var_names, fixed = TRUE)
+  grouped <- c(grouped, get.rows)
+}
+
+nlist <- coda::mcmc.list(out[[1]][,grouped], 
+                         out[[2]][,grouped], 
+                         out[[3]][,grouped])
+
+rhats <- round(gelman.diag(nlist, multivariate = FALSE)$psrf[,1], digits = 4)
+rh_df <- data.frame(param = names(rhats), rhat = rhats)
+
 
 #output PPC
-MCMCsummary(out, digits = 4,
-            params = c('pv.mn', 'pv.sd'))
+params = c('pv.mn', 'pv.sd')
+grouped <- c()
+for (i in 1:length(params)) 
+{
+  get.rows <- grep(paste(params[i]), var_names, fixed = TRUE)
+  grouped <- c(grouped, get.rows)
+}
 
+means <- apply(out[[1]][,grouped], 2, mean)
+
+sink(paste0(NAME,'.txt'))
+print(paste0(NAME))
+print(paste0('Total iterations: ', n_final))
+print(paste0('Total minutes: ', round(tt, digits = 2)))
+print(rh_df)
+print(paste0('Posterior Predictive Check:'))
+print(means)
+sink()
 
 
 # Save object to RDS -------------------------------------------------------
@@ -463,8 +492,10 @@ saveRDS(out, paste0(NAME, '.rds'))
 
 
 
-
 # save matrices to compare to generating data to RDS ----------------------------------
+
+#just one chains to speed operation
+var_names <- colnames(out[[1]])
 
 #p matrix
 est_p <- matrix(nrow = nests, ncol = n_ts)
@@ -472,10 +503,12 @@ for (i in 1:NROW(est_p))
 {
   for (j in 1:NCOL(est_p))
   {
-    est_p[i,j] <- median(MCMCchains(out, paste0('p[',i,',',j,']')))
+    cols <- grep(paste0('p[',i,',',j,']'), var_names, fixed = TRUE)
+    est_p[i,j] <- median(out[[1]][,cols])
   }
 }
 saveRDS(est_p, paste0(NAME,'_est_p.rds'))
+
 
 
 #phi matrix
@@ -484,7 +517,8 @@ for (i in 1:NROW(est_phi))
 {
   for (j in 1:NCOL(est_phi))
   {
-    est_phi[i,j] <- median(MCMCchains(out, paste0('phi[',i,',',j,']')))
+    cols <- grep(paste0('phi[',i,',',j,']'), var_names, fixed = TRUE)
+    est_phi[i,j] <- median(out[[1]][,cols])
   }
 }
 saveRDS(est_phi, paste0(NAME,'_est_phi.rds'))
@@ -496,9 +530,11 @@ for (i in 1:NROW(p_phi_cor))
 {
   for (j in 1:NCOL(p_phi_cor))
   {
-    t_p <- MCMCchains(out, paste0('p[',i,',',j,']'))
-    t_phi <- MCMCchains(out, paste0('phi[',i,',',j,']'))
-    p_phi_cor[i,j] <- cor(t_p, t_phi)
+    p_cols <- grep(paste0('p[',i,',',j,']'), var_names, fixed = TRUE)
+    phi_cols <- grep(paste0('phi[',i,',',j,']'), var_names, fixed = TRUE)
+    p_ch <- out[[1]][,p_cols]
+    phi_ch <- out[[1]][,phi_cols]
+    p_phi_cor[i,j] <- cor(p_ch, phi_ch)
   }
 }
 saveRDS(p_phi_cor, paste0(NAME, '_p_phi_cor.rds'))
