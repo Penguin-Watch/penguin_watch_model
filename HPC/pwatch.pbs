@@ -15,4 +15,4 @@ module load anaconda/3
 cd /gpfs/home/cyoungflesh/PWATCH/HPC
 export R_LIBS=/gpfs/home/cyoungflesh/R_libs
 
-Rscript model_script.R > results.txt
+Rscript model_script.R
