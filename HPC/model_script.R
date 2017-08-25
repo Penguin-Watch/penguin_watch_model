@@ -329,7 +329,7 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
-NAME <- 'out_8a_50b_20d_200t_PPC_diag'
+NAME <- 'out_8a_50b_20d_200t_PPC_diag_fixed'
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 8000  # number for initial adapt
