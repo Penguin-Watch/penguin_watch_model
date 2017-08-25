@@ -327,6 +327,8 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
+NAME <- 'out_8a_50b_20d_200t_PPC_diag'
+
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 8000  # number for initial adapt
 n_burn <- 50000 # number burnin
@@ -425,16 +427,15 @@ while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
 }
 
 stopCluster(cl)
-
 n_final <- floor((n_draw + n_extra)/n_thin)
-NAME <- 'out_8a_50b_20d_200t_PPC_diag'
-#print(NAME)
-#print(paste0('Total iterations: ', n_final))
 tt <- (proc.time() - ptm)[3]/60 #minutes
-#print(paste0('Total minutes: ', round(tt, digits = 2)))
+
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
+
+
+#calculate rhats
 var_names <- colnames(out[[1]])
 
 params = c('mean_phi',
@@ -464,7 +465,7 @@ rhats <- round(gelman.diag(nlist, multivariate = FALSE)$psrf[,1], digits = 4)
 rh_df <- data.frame(param = names(rhats), rhat = rhats)
 
 
-#output PPC
+#PPC
 params = c('pv.mn', 'pv.sd')
 grouped <- c()
 for (i in 1:length(params)) 
@@ -475,6 +476,9 @@ for (i in 1:length(params))
 
 means <- apply(out[[1]][,grouped], 2, mean)
 
+
+
+#write results to text file
 sink(paste0(NAME,'.txt'))
 print(paste0(NAME))
 print(paste0('Total iterations: ', n_final))
@@ -485,7 +489,9 @@ print(means)
 sink()
 
 
-# Save object to RDS -------------------------------------------------------
+
+
+# Save MCMC object to RDS -------------------------------------------------------
 
 #adapt_burn_draw_time_rhatthreshold_additional info
 saveRDS(out, paste0(NAME, '.rds'))
