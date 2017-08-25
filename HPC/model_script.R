@@ -349,7 +349,7 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
-NAME <- 'out_8a_50b_20d_200t_PPC_diag_fixed'
+NAME <- 'out_Aug_25_2017_R1_sim_daynight'
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 8000  # number for initial adapt
@@ -505,6 +505,13 @@ sink(paste0('results_', NAME,'.txt'))
 print(paste0(NAME))
 print(paste0('Total iterations: ', n_final))
 print(paste0('Total minutes: ', round(tt, digits = 2)))
+print(past0('n_adapt: ', n_adapt))
+print(past0('n_burn: ', n_burn))
+print(past0('n_draw: ', n_draw))
+print(past0('n_thin: ', n_thin))
+print(past0('n_chain: ', n_chain))
+print(past0('Rhat_max: ', Rhat_max))
+print(past0('n_max: ', n_max))
 print(rh_df)
 print(paste0('Posterior Predictive Check:'))
 print(means)
