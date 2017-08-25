@@ -479,7 +479,7 @@ means <- apply(out[[1]][,grouped], 2, mean)
 
 
 #write results to text file
-sink(paste0(NAME,'.txt'))
+sink(paste0('results_', NAME,'.txt'))
 print(paste0(NAME))
 print(paste0('Total iterations: ', n_final))
 print(paste0('Total minutes: ', round(tt, digits = 2)))
@@ -513,7 +513,7 @@ for (i in 1:NROW(est_p))
     est_p[i,j] <- median(out[[1]][,cols])
   }
 }
-saveRDS(est_p, paste0(NAME,'_est_p.rds'))
+saveRDS(est_p, paste0('est_p_', NAME, '.rds'))
 
 
 
@@ -527,7 +527,7 @@ for (i in 1:NROW(est_phi))
     est_phi[i,j] <- median(out[[1]][,cols])
   }
 }
-saveRDS(est_phi, paste0(NAME,'_est_phi.rds'))
+saveRDS(est_phi, paste0('est_phi_', NAME, '.rds'))
 
 
 #cor of posteriors of p with posteriors of phi
@@ -543,6 +543,5 @@ for (i in 1:NROW(p_phi_cor))
     p_phi_cor[i,j] <- cor(p_ch, phi_ch)
   }
 }
-saveRDS(p_phi_cor, paste0(NAME, '_p_phi_cor.rds'))
-
+saveRDS(p_phi_cor, paste0('p_phi_cor_', NAME, '.rds'))
 
