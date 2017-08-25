@@ -5,5 +5,5 @@
 *.jags
 out_10a_500b_20d_200t_102_trackpphi.rds
 out_10a_100b_20d_200t_102_trackpphi_newpriors.rds
-out_8a_20b_10d_200t_trackpphi_PPC.rd
+out_8a_20b_10d_200t_trackpphi_PPC.rds
 out_8a_50b_20d_200t_PPC_diag.rds
