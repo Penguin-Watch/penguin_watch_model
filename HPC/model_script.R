@@ -68,16 +68,18 @@ phi_data <- sim_p_fun(0.985)
 
 PHI <- matrix(rep(phi_data, nests),
               nrow = nests,
-              ncol = n_ts-1)
+              ncol = n_ts-1,
+              byrow = TRUE)
 
 
 #detection probability
 #starting probs for each nest
-dp <- runif(30, 0.3, 0.8)
-
 P <- matrix(rep(NA, nests*(n_ts-1)),
             nrow = nests,
             ncol = n_ts-1)
+
+set.seed(1)
+dp <- runif(30, 0.3, 0.8)
 
 for (i in 1:length(dp))
 {
