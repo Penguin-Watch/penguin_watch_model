@@ -101,6 +101,10 @@ set.seed(1)
 #function to simulate time series - 12 hours classified, 12 hours non-classified
 sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
 {
+ # PHI_MAT <- PHI
+ # P_MAT <- P
+ # N_NESTS <- nests
+  
   TS_LEN <- NCOL(PHI_MAT) + 1
   CH <- matrix(0,
                ncol = TS_LEN,
@@ -111,10 +115,11 @@ sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
   LO <- TS_LEN %% 24
   DN_SERIES <- c(rep(1,12), rep(0,12))
   T_SERIES <- rep(DN_SERIES, NS)
-  F_SERIES <- c(T_SERIES, DN_SERIES[1:LO])
+  F_SERIES <- c(T_SERIES, DN_SERIES[0:LO])
 
   for (i in 1:N_NESTS)
   {
+    i <- 1
     #both chicks alive at start
     CH[i,1] <- 2
 
