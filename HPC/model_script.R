@@ -349,17 +349,18 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
-NAME <- 'out_Aug_25_2017_R1_sim_daynight'
+NAME <- 'out_Aug_25_2017_R1_sim_daynight_TEST'
 
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 8000  # number for initial adapt
-n_burn <- 50000 # number burnin
-n_draw <- 20000  # number of final draws to make
+n_adapt <- 8 #8000  # number for initial adapt
+n_burn <- 5 #50000 # number burnin
+n_draw <- 20 #20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
+EXTRA <- FALSE
 Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
-n_max <- 10000 # max allowable iterations
+n_max <- 1 #10000 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -419,35 +420,36 @@ out <- coda::mcmc.list(out.1[[1]][[1]],
 
 
 
-
-#more iterations if not converged
-n_total <- n_burn + n_draw
-n_extra <- 0
-while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
-      n_total < n_max)
+if (EXTRA == TRUE)
 {
+  #more iterations if not converged - calculation of rhat somewhat expensive with large numbers of parameters/large chains
+  n_total <- n_burn + n_draw
+  n_extra <- 0
+  while(max(MCMCsummary(out)[,6], na.rm = TRUE) > Rhat_max &
+        n_total < n_max)
+  {
 
-  out.2 <- clusterEvalQ(cl,
-                        {
-                          require(rjags)
-                          processNum <- which(pid==Sys.getpid())
-                          m.inits <- F_Inits[[processNum]]
+    out.2 <- clusterEvalQ(cl,
+                          {
+                            require(rjags)
+                            processNum <- which(pid==Sys.getpid())
+                            m.inits <- F_Inits[[processNum]]
 
-                          samples = coda.samples(jm,
-                                                 n.iter = n_draw,
-                                                 variable.names = Pars,
-                                                 thin = n_thin)
-                          return(samples)
-                        })
+                            samples = coda.samples(jm,
+                                                   n.iter = n_draw,
+                                                   variable.names = Pars,
+                                                   thin = n_thin)
+                            return(samples)
+                          })
 
-  out <- coda::mcmc.list(out.2[[1]][[1]],
-                         out.2[[2]][[1]],
-                         out.2[[3]][[1]])
+    out <- coda::mcmc.list(out.2[[1]][[1]],
+                           out.2[[2]][[1]],
+                           out.2[[3]][[1]])
 
-  n_extra <- n_extra + n_draw
-  n_total <- n_total + n_draw
+    n_extra <- n_extra + n_draw
+    n_total <- n_total + n_draw
+  }
 }
-
 stopCluster(cl)
 n_final <- floor((n_draw + n_extra)/n_thin)
 tt <- (proc.time() - ptm)[3]/60 #minutes
@@ -468,9 +470,8 @@ params = c('mean_phi',
            'beta_phi',
            'mu_phi',
            'mu_p',
-           'eps_phi','eps_p',
-           'pv.mn',
-           'pv.sd')
+           'eps_phi',
+           'eps_p')
 
 grouped <- c()
 for (i in 1:length(params))
@@ -479,24 +480,25 @@ for (i in 1:length(params))
   grouped <- c(grouped, get.rows)
 }
 
-nlist <- coda::mcmc.list(out[[1]][,grouped],
-                         out[[2]][,grouped],
-                         out[[3]][,grouped])
+#only params of interest - put back into mcmc.list object
+nlist <- do.call(coda::mcmc.list, out[,grouped])
 
+#calculate rhat
 rhats <- round(gelman.diag(nlist, multivariate = FALSE)$psrf[,1], digits = 4)
 rh_df <- data.frame(param = names(rhats), rhat = rhats)
 
 
+
 #PPC
 params = c('pv.mn', 'pv.sd')
-grouped <- c()
+grouped2 <- c()
 for (i in 1:length(params))
 {
   get.rows <- grep(paste(params[i]), var_names, fixed = TRUE)
-  grouped <- c(grouped, get.rows)
+  grouped2 <- c(grouped2, get.rows)
 }
 
-means <- apply(out[[1]][,grouped], 2, mean)
+means <- apply(out[[1]][,grouped2], 2, mean)
 
 
 
@@ -513,13 +515,13 @@ sink(paste0('results_', NAME,'.txt'))
 print(paste0(NAME))
 print(paste0('Total iterations: ', n_final))
 print(paste0('Total minutes: ', round(tt, digits = 2)))
-print(past0('n_adapt: ', n_adapt))
-print(past0('n_burn: ', n_burn))
-print(past0('n_draw: ', n_draw))
-print(past0('n_thin: ', n_thin))
-print(past0('n_chain: ', n_chain))
-print(past0('Rhat_max: ', Rhat_max))
-print(past0('n_max: ', n_max))
+print(paste0('n_adapt: ', n_adapt))
+print(paste0('n_burn: ', n_burn))
+print(paste0('n_draw: ', n_draw))
+print(paste0('n_thin: ', n_thin))
+print(paste0('n_chain: ', n_chain))
+print(paste0('Rhat_max: ', Rhat_max))
+print(paste0('n_max: ', n_max))
 print(rh_df)
 print(paste0('Posterior Predictive Check:'))
 print(means)
