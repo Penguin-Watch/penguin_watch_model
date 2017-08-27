@@ -28,7 +28,7 @@ pacman::p_load(MCMCvis, rjags, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 100 #number of time steps
+n_ts <- 600 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
