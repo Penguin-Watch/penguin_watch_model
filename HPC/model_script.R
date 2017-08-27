@@ -28,7 +28,7 @@ pacman::p_load(MCMCvis, rjags, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 200 #number of time steps
+n_ts <- 100 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -349,18 +349,18 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
-NAME <- 'out_Aug_25_2017_R1_sim_daynight_TEST'
+NAME <- 'out_Aug_27_2017_R1_sim_daynight'
 
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 8 #8000  # number for initial adapt
-n_burn <- 5 #50000 # number burnin
-n_draw <- 20 #20000  # number of final draws to make
+n_adapt <- 8000  # number for initial adapt
+n_burn <- 10000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
 EXTRA <- FALSE
 Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
-n_max <- 1 #10000 # max allowable iterations
+n_max <- 100000 # max allowable iterations
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -418,13 +418,12 @@ out <- coda::mcmc.list(out.1[[1]][[1]],
                        out.1[[2]][[1]],
                        out.1[[3]][[1]])
 
-
+n_total <- n_burn + n_draw
+n_extra <- 0
 
 if (EXTRA == TRUE)
 {
   #more iterations if not converged - calculation of rhat somewhat expensive with large numbers of parameters/large chains
-  n_total <- n_burn + n_draw
-  n_extra <- 0
   while(max(MCMCsummary(out)[,6], na.rm = TRUE) > Rhat_max &
         n_total < n_max)
   {
@@ -513,13 +512,16 @@ setwd(paste0(NAME))
 #write results to text file
 sink(paste0('results_', NAME,'.txt'))
 print(paste0(NAME))
-print(paste0('Total iterations: ', n_final))
+print(paste0('Number of nests: ', nests))
+print(paste0('Number of time steps: ', n_ts))
 print(paste0('Total minutes: ', round(tt, digits = 2)))
+print(paste0('Total iterations: ', n_final))
 print(paste0('n_adapt: ', n_adapt))
 print(paste0('n_burn: ', n_burn))
 print(paste0('n_draw: ', n_draw))
 print(paste0('n_thin: ', n_thin))
 print(paste0('n_chain: ', n_chain))
+print(paste0('Extra: ', EXTRA))
 print(paste0('Rhat_max: ', Rhat_max))
 print(paste0('n_max: ', n_max))
 print(rh_df)
