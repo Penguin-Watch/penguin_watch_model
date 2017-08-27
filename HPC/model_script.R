@@ -424,7 +424,7 @@ n_extra <- 0
 if (EXTRA == TRUE)
 {
   #more iterations if not converged - calculation of rhat somewhat expensive with large numbers of parameters/large chains
-  while(max(MCMCsummary(out)[,6], na.rm = TRUE) > Rhat_max &
+  while(max(coda::gelman.diag(out, multivariate = FALSE)$psrf[,1], na.rm = TRUE) > Rhat_max &
         n_total < n_max)
   {
 
