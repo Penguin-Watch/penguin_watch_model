@@ -38,7 +38,7 @@ nests <- 30 #number of nests
 sim_p_fun <- function(START, RATE = 0.008, TOP = 1)
 {
   B <- rep(NA, n_ts-1)
-  
+
   B[1] <- START
   K <- TOP
   r <- RATE
@@ -102,28 +102,28 @@ set.seed(1)
 sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
 {
   TS_LEN <- NCOL(PHI_MAT) + 1
-  CH <- matrix(0, 
-               ncol = TS_LEN, 
+  CH <- matrix(0,
+               ncol = TS_LEN,
                nrow = N_NESTS)
-  
+
   #SIMULTE LIGHT/DARK
   NS <- TS_LEN %/% 24
   LO <- TS_LEN %% 24
   DN_SERIES <- c(rep(1,12), rep(0,12))
   T_SERIES <- rep(DN_SERIES, NS)
   F_SERIES <- c(T_SERIES, DN_SERIES[1:LO])
-  
+
   for (i in 1:N_NESTS)
   {
     #both chicks alive at start
-    CH[i,1] <- 2 
-    
+    CH[i,1] <- 2
+
     t_SP <- c(2, rep(NA, TS_LEN-1))
     for (t in 2:TS_LEN)
     {
       #TRUE STATE
       t_SP[t] <- rbinom(1, size = t_SP[t-1], prob = PHI_MAT[i,t-1])
-      
+
       #OBSERVED STATE
       t_DP <- rbinom(1, size = t_SP[t], prob = P_MAT[i,t-1])
       CH[i,t] <- t_DP
@@ -148,19 +148,19 @@ known.state.fun <- function(INPUT)
   for (i in 1:NROW(INPUT))
   {
     n1 <- 1
-    
+
     if (sum(state[i,] == 2) > 0)
     {
       n2 <- max(which(INPUT[i,] == 2))
       state[i,n1:n2] <- 2
     }
-    
+
     if (sum(state[i,] == 1) > 0)
     {
       n3 <- max(which(state[i,] == 1))
       state[i,(n2+1):n3] <- 1
     }
-    
+
     state[i,n1] <- NA
   }
   state[state == 0] <- NA
@@ -178,9 +178,9 @@ LO <- NCOL(sim_data) %% 24
 DN_SERIES <- c(rep(1,12), rep(0,12))
 T_SERIES <- rep(DN_SERIES, NS)
 F_SERIES <- c(T_SERIES, DN_SERIES[1:LO])
-w_mat <- matrix(rep(F_SERIES, NROW(sim_data)), 
-                nrow = NROW(sim_data), 
-                ncol = NCOL(sim_data), 
+w_mat <- matrix(rep(F_SERIES, NROW(sim_data)),
+                nrow = NROW(sim_data),
+                ncol = NCOL(sim_data),
                 byrow = TRUE)
 
 
@@ -205,31 +205,31 @@ DATA <- list(
 
 {
   sink("mark_recapture.jags")
-  
+
   cat("
       model {
-      
+
       for (i in 1:N)
       {
       #both chicks alive at time step 1
       z[i,1] <- 2
-      y.new[i,1] ~ dbinom(p[i,1], 2)      
+      y.new[i,1] ~ dbinom(p[i,1], 2)
 
       for (t in 2:L)
-      { 
-      
+      {
+
       #state model
       z[i,t] ~ dbinom(p_alive[i,t], z[i,t-1])
       p_alive[i,t] <- ifelse(z[i,t-1] < 2,
       phi[i,t] * z[i,t-1],
       phi[i,t])
-      
+
       #observation model
       y[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #w is binary day/night
       p_sight[i,t] <- ifelse(z[i,t] < 2,
       p[i,t] * z[i,t],
       p[i,t])
-      
+
 
       #PPC
       y.new[i,t] ~ dbinom(p_sight[i,t], z[i,t])
@@ -246,8 +246,8 @@ DATA <- list(
       sd.y <- sd(y)
       sd.y.new <- sd(y.new)
       pv.sd <- step(sd.y.new - sd.y)
-      
-      
+
+
       #transforms
       for (i in 1:N)
       {
@@ -257,37 +257,37 @@ DATA <- list(
       logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]               #p = detection prob
       }
       }
-      
-      
+
+
       #priors
       for (t in 1:L)
       {
       eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10) #the variance parameter here is estimated from these values - should it be constrained instead?
       }
-      
+
       mean_phi ~ dbeta(1.5,1.5)                 #Mean survival
-      mu_phi <- log(mean_phi / (1 - mean_phi))  
+      mu_phi <- log(mean_phi / (1 - mean_phi))
       tau_phi <- pow(sigma_phi, -2)
       sigma_phi ~ dunif(0, 10)
       sigma_phi2 <- pow(sigma_phi, 2)
-      
+
       for (i in 1:N)
       {
       eps_p[i] ~ dnorm(0, tau_p) T(-10,10)
       }
-      
+
       mean_p ~ dbeta(1.5,1.5)                    #Mean detection - could use alternative below
       mu_p <- log(mean_p / (1 - mean_p))         #Logit transform - could use alternative below
-      #mean_p <- 1 / (1+exp(-mu_p))              #Mean detection - Inv-logit transform    
+      #mean_p <- 1 / (1+exp(-mu_p))              #Mean detection - Inv-logit transform
       #mu_p ~ dnorm(0, 0.001)                    #Prior for logit of mean survival
       tau_p <- pow(sigma_p, -2)
       sigma_p ~ dunif(0, 10)
       sigma_p2 <- pow(sigma_p, 2)
-      
+
       beta_phi ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
       beta_p ~ dnorm(0, 10) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
-      
-      
+
+
       }",fill = TRUE)
 
   sink()
@@ -376,13 +376,13 @@ for(i in 1:n_chain)
   pid[i] <- substr(pidNum, (start + 4), end)
 }
 
-parallel::clusterExport(cl, 
-                        c('DATA', 
-                          'n_adapt', 
-                          'n_burn', 
+parallel::clusterExport(cl,
+                        c('DATA',
+                          'n_adapt',
+                          'n_burn',
                           'n_draw',
                           'n_thin',
-                          'Pars', 
+                          'Pars',
                           'pid',
                           'F_Inits',
                           'JAGS_FILE'
@@ -390,31 +390,31 @@ parallel::clusterExport(cl,
 
 
 ptm <- proc.time()
-out.1 <- parallel::clusterEvalQ(cl, 
+out.1 <- parallel::clusterEvalQ(cl,
                                 {
                                   require(rjags)
                                   processNum <- which(pid==Sys.getpid())
                                   m.inits <- F_Inits[[processNum]]
-                                  
-                                  jm = jags.model(data = DATA, 
-                                                  file = paste0(JAGS_FILE), 
-                                                  inits = m.inits, 
-                                                  n.chains = 1, 
+
+                                  jm = jags.model(data = DATA,
+                                                  file = paste0(JAGS_FILE),
+                                                  inits = m.inits,
+                                                  n.chains = 1,
                                                   n.adapt = n_adapt)
-                                  
-                                  update(jm, 
+
+                                  update(jm,
                                          n.iter = n_burn)
-                                  
-                                  samples = coda.samples(jm, 
-                                                         n.iter = n_draw, 
-                                                         variable.names = Pars, 
+
+                                  samples = coda.samples(jm,
+                                                         n.iter = n_draw,
+                                                         variable.names = Pars,
                                                          thin = n_thin)
                                   return(samples)
                                 })
 
 
-out <- coda::mcmc.list(out.1[[1]][[1]], 
-                       out.1[[2]][[1]], 
+out <- coda::mcmc.list(out.1[[1]][[1]],
+                       out.1[[2]][[1]],
                        out.1[[3]][[1]])
 
 
@@ -426,24 +426,24 @@ n_extra <- 0
 while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
       n_total < n_max)
 {
-  
-  out.2 <- clusterEvalQ(cl, 
+
+  out.2 <- clusterEvalQ(cl,
                         {
                           require(rjags)
                           processNum <- which(pid==Sys.getpid())
                           m.inits <- F_Inits[[processNum]]
-                          
-                          samples = coda.samples(jm, 
-                                                 n.iter = n_draw, 
-                                                 variable.names = Pars, 
+
+                          samples = coda.samples(jm,
+                                                 n.iter = n_draw,
+                                                 variable.names = Pars,
                                                  thin = n_thin)
                           return(samples)
                         })
-  
-  out <- coda::mcmc.list(out.2[[1]][[1]], 
-                         out.2[[2]][[1]], 
+
+  out <- coda::mcmc.list(out.2[[1]][[1]],
+                         out.2[[2]][[1]],
                          out.2[[3]][[1]])
-  
+
   n_extra <- n_extra + n_draw
   n_total <- n_total + n_draw
 }
@@ -473,14 +473,14 @@ params = c('mean_phi',
            'pv.sd')
 
 grouped <- c()
-for (i in 1:length(params)) 
+for (i in 1:length(params))
 {
   get.rows <- grep(paste(params[i]), var_names, fixed = TRUE)
   grouped <- c(grouped, get.rows)
 }
 
-nlist <- coda::mcmc.list(out[[1]][,grouped], 
-                         out[[2]][,grouped], 
+nlist <- coda::mcmc.list(out[[1]][,grouped],
+                         out[[2]][,grouped],
                          out[[3]][,grouped])
 
 rhats <- round(gelman.diag(nlist, multivariate = FALSE)$psrf[,1], digits = 4)
@@ -490,13 +490,21 @@ rh_df <- data.frame(param = names(rhats), rhat = rhats)
 #PPC
 params = c('pv.mn', 'pv.sd')
 grouped <- c()
-for (i in 1:length(params)) 
+for (i in 1:length(params))
 {
   get.rows <- grep(paste(params[i]), var_names, fixed = TRUE)
   grouped <- c(grouped, get.rows)
 }
 
 means <- apply(out[[1]][,grouped], 2, mean)
+
+
+
+
+#create directory
+system(paste0('mkdir ', NAME))
+setwd(paste0(NAME))
+
 
 
 
