@@ -17,7 +17,7 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
 {
   install.packages('pacman', repos = "http://cran.case.edu")
 }
-pacman::p_load(MCMCvis, rjags, parallel)
+pacman::p_load(rjags, parallel)
 
 
 # Load data ---------------------------------------------------------------
