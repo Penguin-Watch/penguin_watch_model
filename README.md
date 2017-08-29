@@ -1,5 +1,4 @@
 # penguin_watch
-Private pwatch repo for mark recapture model
+Private pwatch repo for mark-recapture model for Penguin Watch
 
-Most data processing in pwatch repo (public)
-Needed somewhere clean to work on markrecapture models
+Data processing scripts largely written in Summer 2018 located in 'pwatch' repo (public)
