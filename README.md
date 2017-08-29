@@ -7,4 +7,6 @@ The most recent working script is located in `HPC/model_script`. Tweaks are cont
 
 All model runs being performed on high performance computing cluster. PBS script for cluster is `HPC/pwatch.pbs`. Model output is located in `HPC/Archive`, though some data objects are too large to be commited to git and were transfered to local machine via `scp`.
 
+**General model structure:**
+
 ![](model_notes_SESYNC.JPG)
