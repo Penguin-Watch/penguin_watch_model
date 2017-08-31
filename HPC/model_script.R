@@ -20,6 +20,10 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
 pacman::p_load(rjags, parallel)
 
 
+#JAGS module
+#load.module("glm")
+
+
 # Load data ---------------------------------------------------------------
 
 
@@ -28,14 +32,14 @@ pacman::p_load(rjags, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 600 #number of time steps
+n_ts <- 400 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
 
 #survival probability
 
-sim_p_fun <- function(START, RATE = 0.008, TOP = 1)
+sim_p_fun <- function(START, RATE = 0.01, TOP = 1)
 {
   B <- rep(NA, n_ts-1)
 
@@ -49,7 +53,8 @@ sim_p_fun <- function(START, RATE = 0.008, TOP = 1)
   return(B)
 }
 
-phi_data <- sim_p_fun(0.985)
+phi_data <- sim_p_fun(START = 0.99)
+
 
 #check trend
 #cov <- c(1:length(phi_data))
@@ -117,9 +122,10 @@ sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
   T_SERIES <- rep(DN_SERIES, NS)
   F_SERIES <- c(T_SERIES, DN_SERIES[0:LO])
 
+  
   for (i in 1:N_NESTS)
   {
-    i <- 1
+    #i <- 1
     #both chicks alive at start
     CH[i,1] <- 2
 
@@ -133,13 +139,12 @@ sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
       t_DP <- rbinom(1, size = t_SP[t], prob = P_MAT[i,t-1])
       CH[i,t] <- t_DP
     }
-    CH[i,] <- CH[i,] * F_SERIES
+    #CH[i,] <- CH[i,] * F_SERIES
   }
   return(CH)
 }
 
 sim_data <- sim_data_fun(PHI, P, nests)
-
 
 
 #known info regarding z-state
@@ -152,6 +157,7 @@ known.state.fun <- function(INPUT)
   state <- INPUT
   for (i in 1:NROW(INPUT))
   {
+    #i <- 1
     n1 <- 1
 
     if (sum(state[i,] == 2) > 0)
@@ -165,7 +171,7 @@ known.state.fun <- function(INPUT)
       n3 <- max(which(state[i,] == 1))
       state[i,(n2+1):n3] <- 1
     }
-
+    #NA at first state because model designates 2 chicks at time step 1
     state[i,n1] <- NA
   }
   state[state == 0] <- NA
@@ -173,16 +179,21 @@ known.state.fun <- function(INPUT)
 }
 
 z_vals <- known.state.fun(sim_data)
+na.vals <- which(is.na(z_vals), arr.ind = TRUE)
+
+z_inits <- matrix(nrow = NROW(z_vals), ncol = NCOL(z_vals))
+z_inits[na.vals] <- 0# rbinom(NROW(na.vals), 1, 0.5)
+z_inits[,1] <- NA
 
 
-
-
-#light/dark matrix - 1 is light (have image for that hour), 0 is dark (misssing image for that hour)
+#SIMULTE LIGHT/DARK
 NS <- NCOL(sim_data) %/% 24
 LO <- NCOL(sim_data) %% 24
 DN_SERIES <- c(rep(1,12), rep(0,12))
 T_SERIES <- rep(DN_SERIES, NS)
-F_SERIES <- c(T_SERIES, DN_SERIES[1:LO])
+F_SERIES <- c(T_SERIES, DN_SERIES[0:LO])
+
+#light/dark matrix - 1 is light (have image for that hour), 0 is dark (misssing image for that hour)
 w_mat <- matrix(rep(F_SERIES, NROW(sim_data)),
                 nrow = NROW(sim_data),
                 ncol = NCOL(sim_data),
@@ -218,7 +229,7 @@ DATA <- list(
       {
       #both chicks alive at time step 1
       z[i,1] <- 2
-      y.new[i,1] ~ dbinom(p[i,1], 2)
+      #y.new[i,1] ~ dbinom(p[i,1], 2)
 
       for (t in 2:L)
       {
@@ -230,27 +241,28 @@ DATA <- list(
       phi[i,t])
 
       #observation model
-      y[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #w is binary day/night
+      #y[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #w is binary day/night
+      y[i,t] ~ dbinom(p_sight[i,t], z[i,t]) #w is binary day/night      
       p_sight[i,t] <- ifelse(z[i,t] < 2,
       p[i,t] * z[i,t],
       p[i,t])
 
 
       #PPC
-      y.new[i,t] ~ dbinom(p_sight[i,t], z[i,t])
+      #y.new[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t])
       }
       }
 
       #PPC
       #mean
-      mn.y <- mean(y)
-      mn.y.new <- mean(y.new)
-      pv.mn <- step(mn.y.new - mn.y)
+      #mn.y <- mean(y)
+      #mn.y.new <- mean(y.new)
+      #pv.mn <- step(mn.y.new - mn.y)
 
       #sd
-      sd.y <- sd(y)
-      sd.y.new <- sd(y.new)
-      pv.sd <- step(sd.y.new - sd.y)
+      #sd.y <- sd(y)
+      #sd.y.new <- sd(y.new)
+      #pv.sd <- step(sd.y.new - sd.y)
 
 
       #transforms
@@ -259,7 +271,7 @@ DATA <- list(
       for (t in 1:L)
       {
       logit(phi[i,t]) <- mu_phi + beta_phi*x[t] + eps_phi[t]       #phi = survival prob
-      logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]               #p = detection prob
+      logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]            #p = detection prob
       }
       }
 
@@ -289,8 +301,8 @@ DATA <- list(
       sigma_p ~ dunif(0, 10)
       sigma_p2 <- pow(sigma_p, 2)
 
-      beta_phi ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
-      beta_p ~ dnorm(0, 10) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_phi ~ dnorm(0, 100) #T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_p ~ dnorm(0, 10) #T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
 
 
       }",fill = TRUE)
@@ -303,30 +315,33 @@ DATA <- list(
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mean_phi = runif(1, 0, 1),
-                mean_p = runif(1, 0, 1),
-                sigma_phi = runif(1, 0, 10),
-                sigma_p = runif(1, 0, 10),
+Inits_1 <- list(mean_phi = 0.5, #runif(1, 0, 1),
+                mean_p = 0.5, #runif(1, 0, 1),
+                sigma_phi = 0.5, #runif(1, 0, 10),
+                sigma_p = 0.5, #runif(1, 0, 10),
                 beta_phi = 0.1,
                 beta_p = 0.1,
+                z = z_inits,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mean_phi = runif(1, 0, 1),
-                mean_p = runif(1, 0, 1),
+Inits_2 <- list(mean_phi = 0.4,
+                mean_p = 0.4,
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
                 beta_phi = 0.1,
                 beta_p = 0.1,
+                z = z_inits,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mean_phi = runif(1, 0, 1),
-                mean_p = runif(1, 0, 1),
+Inits_3 <- list(mean_phi = 0.6,
+                mean_p = 0.6,
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
                 beta_phi = 0.1,
                 beta_p = 0.1,
+                z = z_inits,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -346,8 +361,8 @@ Pars <- c('mean_phi',
           'mu_p',
           'eps_phi',
           'eps_p',
-          'p',
-          'phi',
+          #'p',
+          #'phi',
           'pv.mn',
           'pv.sd')
 
@@ -357,15 +372,44 @@ Pars <- c('mean_phi',
 NAME <- 'out_Aug_27_2017_R1_sim_daynight'
 
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 8000  # number for initial adapt
-n_burn <- 10000 # number burnin
-n_draw <- 20000  # number of final draws to make
+n_adapt <- 8#000  # number for initial adapt
+n_burn <- 10#000 # number burnin
+n_draw <- 20#000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
 EXTRA <- FALSE
 Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
 n_max <- 100000 # max allowable iterations
+
+
+jm = jags.model(data = DATA,
+                file = paste0(JAGS_FILE),
+                inits = F_Inits[[1]],#m.inits,
+                n.chains = 3,
+                n.adapt = n_adapt)
+
+
+
+
+
+
+update(jm,n.iter = n_burn)
+
+samples = coda.samples(jm,
+                       n.iter = n_draw,
+                       variable.names = Pars,
+                       thin = n_thin)
+MCMCsummary(samples, params = 'sigma', ISB = FALSE)
+
+
+
+
+
+
+
+
+
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -404,8 +448,8 @@ out.1 <- parallel::clusterEvalQ(cl,
 
                                   jm = jags.model(data = DATA,
                                                   file = paste0(JAGS_FILE),
-                                                  inits = m.inits,
-                                                  n.chains = 1,
+                                                  inits = F_Inits[[1]],#m.inits,
+                                                  n.chains = 3,
                                                   n.adapt = n_adapt)
 
                                   update(jm,
