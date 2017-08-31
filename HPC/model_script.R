@@ -166,15 +166,11 @@ known.state.fun <- function(INPUT)
       state[i,n1:n2] <- 2
     }
 
-    if (sum(state[i,] == 1) > 0)
-    {
-      n3 <- max(which(state[i,] == 1))
-      state[i,(n2+1):n3] <- 1
-    }
     #NA at first state because model designates 2 chicks at time step 1
     state[i,n1] <- NA
   }
-  state[state == 0] <- NA
+  state[state == 0] <- NA #after there aren't two, don't know if there are actually 2, 1, or 0 so NA
+  state[state == 1] <- NA
   return(state)
 }
 
