@@ -1,7 +1,5 @@
 # penguin_watch
-Private repo for Penguin Watch mark-recapture model.
-
-Data processing scripts (largely written in Spring/Summer 2018) located in 'pwatch' repo (public).
+Repo for Penguin Watch mark-recapture model.
 
 The most recent working script for model is `HPC/model_script.R`. Tweaks are continually being made. 
 
