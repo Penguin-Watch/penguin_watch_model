@@ -175,11 +175,31 @@ known.state.fun <- function(INPUT)
 }
 
 z_vals <- known.state.fun(sim_data)
-na.vals <- which(is.na(z_vals), arr.ind = TRUE)
 
-z_inits <- matrix(nrow = NROW(z_vals), ncol = NCOL(z_vals))
-z_inits[na.vals] <- 0# rbinom(NROW(na.vals), 1, 0.5)
-z_inits[,1] <- NA
+
+#initial values for z where values not being fed into data
+# DOESN'T WORK
+# na.vals <- which(z_vals == 2, arr.ind = TRUE)
+# z_inits_t <- sim_data
+# z_inits_t[na.vals] <- NA
+# z_inits_t[,1] <- NA
+# 
+# z_inits <- z_inits_t
+# for (i in 1:NROW(z_inits_t))
+# {
+#   #i <- 30
+#   if (sum(z_inits_t[i,] == 1, na.rm = TRUE) > 0)
+#   {
+#     n1 <- min(which(z_inits_t[i,] == 1), na.rm = TRUE)
+#   }
+#   
+#   if (sum(z_inits_t[i,] == 0, na.rm = TRUE) > 0)
+#   {
+#     n2 <- max(which(z_inits_t[i,] == 1), na.rm = TRUE)
+#     z_inits[i,n1:n2] <- 1
+#   }
+# }
+
 
 
 #SIMULTE LIGHT/DARK
