@@ -3,7 +3,7 @@ rm(list = ls())
 require(rjags)
 
 #CHANGE SIZE OF RESPONSE DATA HERE
-n_ts <- 400 #number of time steps
+n_ts <- 300 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -95,6 +95,9 @@ known.state.fun <- function(INPUT)
 }
 
 z_vals <- known.state.fun(sim_data)
+
+
+
 
 # Data for model ----------------------------------------------------------
 
