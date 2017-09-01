@@ -1,5 +1,5 @@
 # penguin_watch
-Repo for Penguin Watch mark-recapture model.
+Repo for Penguin Watch mark-recapture survivorship model.
 
 The most recent working script for model is `HPC/model_script.R`. Tweaks are continually being made. 
 
