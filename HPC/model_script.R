@@ -516,7 +516,7 @@ nlist <- do.call(coda::mcmc.list, out[,grouped])
 
 #calculate rhat
 rhats <- round(gelman.diag(nlist, multivariate = FALSE)$psrf[,1], digits = 4)
-rh_df <- data.frame(param = names(rhats), rhat = rhats)
+rh_df <- data.frame(rhat = rhats)
 
 
 #PPC
@@ -537,8 +537,8 @@ means <- apply(out[[1]][,grouped2], 2, mean)
 system(paste0('mkdir ', NAME))
 setwd(paste0(NAME))
 
-
-
+#set max number of rows to print to 5k
+options(max.print = 5000)
 
 #write results to text file
 sink(paste0('results_', NAME,'.txt'))
