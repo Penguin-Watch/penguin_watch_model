@@ -363,9 +363,9 @@ Pars <- c('mean_phi',
 NAME <- 'out_Sep_04_2017_R1_sim_daynight'
 
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 8#000  # number for initial adapt
-n_burn <- 10#000 # number burnin
-n_draw <- 20#000  # number of final draws to make
+n_adapt <- 8000  # number for initial adapt
+n_burn <- 10000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
