@@ -352,20 +352,20 @@ Pars <- c('mean_phi',
           'mu_p',
           'eps_phi',
           'eps_p',
-          #'p',
-          #'phi',
+          'p',
+          'phi',
           'pv.mn',
           'pv.sd')
 
 
 # Inputs for MCMC ---------------------------------------------------------
 
-NAME <- 'out_Aug_27_2017_R1_sim_daynight'
+NAME <- 'out_Sep_04_2017_R1_sim_daynight'
 
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 8#000  # number for initial adapt
-n_burn <- 10#000 # number burnin
-n_draw <- 20#000  # number of final draws to make
+n_adapt <- 8000  # number for initial adapt
+n_burn <- 10000 # number burnin
+n_draw <- 20000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
@@ -374,32 +374,22 @@ Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
 n_max <- 100000 # max allowable iterations
 
 
-
-
-
 # DEBUG -------------------------------------------------------------------
 
-jm = jags.model(data = DATA,
-                file = paste0(JAGS_FILE),
-                inits = F_Inits,
-                n.chains = 3,
-                n.adapt = n_adapt)
-
-update(jm,n.iter = n_burn)
-
-samples = coda.samples(jm,
-                       n.iter = n_draw,
-                       variable.names = Pars,
-                       thin = n_thin)
-
-MCMCsummary(samples, ISB = FALSE)
-
-
-
-
-
-
-
+# jm = jags.model(data = DATA,
+#                 file = paste0(JAGS_FILE),
+#                 inits = F_Inits,
+#                 n.chains = 3,
+#                 n.adapt = n_adapt)
+# 
+# update(jm,n.iter = n_burn)
+# 
+# samples = coda.samples(jm,
+#                        n.iter = n_draw,
+#                        variable.names = Pars,
+#                        thin = n_thin)
+# 
+# MCMCsummary(samples, ISB = FALSE)
 
 
 
@@ -440,7 +430,7 @@ out.1 <- parallel::clusterEvalQ(cl,
 
                                   jm = jags.model(data = DATA,
                                                   file = paste0(JAGS_FILE),
-                                                  inits = F_Inits[[1]],#m.inits,
+                                                  inits = m.inits,
                                                   n.chains = 3,
                                                   n.adapt = n_adapt)
 
