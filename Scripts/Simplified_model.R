@@ -19,6 +19,7 @@
 #Look at correaltion between all PHI and P params, not just among PHI params and among P params
 #Look at overlap betwen posterior and prior - put uniform (or broad) priors on betas and mus to look at this. Don't think this can be used for the error term, as this is modeled hierarchically - those parameters are themselves drawn from a distirbution.
 
+#starting values of beta_p must be 0 when many time steps bc inv.logit(mu + beta_p*[large index for cov]) = 1 and if y = 0 at that index, JAGS doesn't like it
 
 rm(list = ls())
 require(rjags)
@@ -116,30 +117,34 @@ known.state.fun <- function(INPUT)
 }
 
 z_vals <- known.state.fun(sim_data)
-
-
-#initial values for z where values not being fed into data
-#DOES WORK
-na.vals <- which(z_vals == 2, arr.ind = TRUE)
-z_inits_t <- sim_data
-z_inits_t[na.vals] <- NA
-z_inits_t[,1] <- NA
-
-z_inits <- z_inits_t
-for (i in 1:NROW(z_inits_t))
-{
-  #i <- 10
-  if (sum(z_inits_t[i,] == 1, na.rm = TRUE) > 0)
-  {
-    n1 <- min(which(z_inits_t[i,] == 1), na.rm = TRUE)
-  }
-  
-  if (sum(z_inits_t[i,] == 0, na.rm = TRUE) > 0)
-  {
-    n2 <- max(which(z_inits_t[i,] == 1), na.rm = TRUE)
-    z_inits[i,n1:n2] <- 1
-  }
-}
+# 
+# z_vals[1:5, 1:5]
+# sim_data[1:5, 1:5]
+# #initial values for z where values not being fed into data
+# #DOES WORK
+# na.vals <- which(z_vals == 2, arr.ind = TRUE)
+# z_inits_t <- sim_data
+# #put NAs wherever there are 2s in data object
+# z_inits_t[na.vals] <- NA
+# z_inits_t[,1] <- NA
+# 
+# 
+# 
+# z_inits <- z_inits_t
+# for (i in 1:NROW(z_inits_t))
+# {
+#   #i <- 10
+#   if (sum(z_inits_t[i,] == 1, na.rm = TRUE) > 0)
+#   {
+#     n1 <- min(which(z_inits_t[i,] == 1), na.rm = TRUE)
+#   }
+#   
+#   if (sum(z_inits_t[i,] == 0, na.rm = TRUE) > 0)
+#   {
+#     n2 <- max(which(z_inits_t[i,] == 1), na.rm = TRUE)
+#     z_inits[i,n1:n2] <- 1
+#   }
+# }
 
 
 
@@ -231,8 +236,7 @@ Inits <- list(mean_phi = 0.5,
               sigma_phi = 0.5,
               sigma_p = 0.5,
               beta_phi = 0.1,
-              beta_p = 0.1,
-              z = z_inits,
+              beta_p = 0,
               .RNG.name = "base::Mersenne-Twister",
               .RNG.seed = 1)
 
