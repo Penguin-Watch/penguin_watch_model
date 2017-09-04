@@ -490,7 +490,8 @@ tt <- (proc.time() - ptm)[3]/60 #minutes
 
 
 #calculate rhats
-var_names <- colnames(out[[1]])
+var_names <- vapply(strsplit(colnames(out[[1]]), 
+                             split = "[", fixed = TRUE), `[`, 1, FUN.VALUE=character(1))
 
 params = c('mean_phi',
            'mean_p',
@@ -506,7 +507,7 @@ params = c('mean_phi',
 grouped <- c()
 for (i in 1:length(params))
 {
-  get.rows <- grep(paste(params[i]), var_names, fixed = TRUE)
+  get.rows <- which(var_names %in% params[i])
   grouped <- c(grouped, get.rows)
 }
 
@@ -518,13 +519,12 @@ rhats <- round(gelman.diag(nlist, multivariate = FALSE)$psrf[,1], digits = 4)
 rh_df <- data.frame(param = names(rhats), rhat = rhats)
 
 
-
 #PPC
 params = c('pv.mn', 'pv.sd')
 grouped2 <- c()
 for (i in 1:length(params))
 {
-  get.rows <- grep(paste(params[i]), var_names, fixed = TRUE)
+  get.rows <- which(var_names %in% params[i])
   grouped2 <- c(grouped2, get.rows)
 }
 
