@@ -177,31 +177,6 @@ known.state.fun <- function(INPUT)
 z_vals <- known.state.fun(sim_data)
 
 
-#initial values for z where values not being fed into data
-# DOESN'T WORK
-# na.vals <- which(z_vals == 2, arr.ind = TRUE)
-# z_inits_t <- sim_data
-# z_inits_t[na.vals] <- NA
-# z_inits_t[,1] <- NA
-# 
-# z_inits <- z_inits_t
-# for (i in 1:NROW(z_inits_t))
-# {
-#   #i <- 30
-#   if (sum(z_inits_t[i,] == 1, na.rm = TRUE) > 0)
-#   {
-#     n1 <- min(which(z_inits_t[i,] == 1), na.rm = TRUE)
-#   }
-#   
-#   if (sum(z_inits_t[i,] == 0, na.rm = TRUE) > 0)
-#   {
-#     n2 <- max(which(z_inits_t[i,] == 1), na.rm = TRUE)
-#     z_inits[i,n1:n2] <- 1
-#   }
-# }
-
-
-
 #SIMULTE LIGHT/DARK
 NS <- NCOL(sim_data) %/% 24
 LO <- NCOL(sim_data) %% 24
@@ -336,8 +311,7 @@ Inits_1 <- list(mean_phi = 0.5, #runif(1, 0, 1),
                 sigma_phi = 0.5, #runif(1, 0, 10),
                 sigma_p = 0.5, #runif(1, 0, 10),
                 beta_phi = 0.1,
-                beta_p = 0.1,
-                z = z_inits,
+                beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -346,8 +320,7 @@ Inits_2 <- list(mean_phi = 0.4,
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
                 beta_phi = 0.1,
-                beta_p = 0.1,
-                z = z_inits,
+                beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -356,8 +329,7 @@ Inits_3 <- list(mean_phi = 0.6,
                 sigma_phi = runif(1, 0, 10),
                 sigma_p = runif(1, 0, 10),
                 beta_phi = 0.1,
-                beta_p = 0.1,
-                z = z_inits,
+                beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
