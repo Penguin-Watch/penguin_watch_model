@@ -17,11 +17,11 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
 {
   install.packages('pacman', repos = "http://cran.case.edu")
 }
-pacman::p_load(rjags, parallel)
+pacman::p_load(rjags, parallel, MCMCvis)
 
 
 #JAGS module
-#load.module("glm")
+load.module("glm")
 
 
 # Load data ---------------------------------------------------------------
@@ -32,7 +32,7 @@ pacman::p_load(rjags, parallel)
 
 
 #simulate new data - script modified from Kerry and Schaub 2012
-n_ts <- 400 #number of time steps
+n_ts <- 600 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -139,7 +139,7 @@ sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
       t_DP <- rbinom(1, size = t_SP[t], prob = P_MAT[i,t-1])
       CH[i,t] <- t_DP
     }
-    #CH[i,] <- CH[i,] * F_SERIES
+    CH[i,] <- CH[i,] * F_SERIES
   }
   return(CH)
 }
@@ -169,7 +169,9 @@ known.state.fun <- function(INPUT)
     #NA at first state because model designates 2 chicks at time step 1
     state[i,n1] <- NA
   }
-  state[state == 0] <- NA #after there aren't two, don't know if there are actually 2, 1, or 0 so NA
+  
+  #after there aren't two, don't know if there are actually 2, 1, or 0 so NA
+  state[state == 0] <- NA
   state[state == 1] <- NA
   return(state)
 }
@@ -177,7 +179,7 @@ known.state.fun <- function(INPUT)
 z_vals <- known.state.fun(sim_data)
 
 
-#SIMULTE LIGHT/DARK
+#SIMULTE LIGHT/DARK - will be coded in from actual data
 NS <- NCOL(sim_data) %/% 24
 LO <- NCOL(sim_data) %% 24
 DN_SERIES <- c(rep(1,12), rep(0,12))
@@ -220,7 +222,7 @@ DATA <- list(
       {
       #both chicks alive at time step 1
       z[i,1] <- 2
-      #y.new[i,1] ~ dbinom(p[i,1], 2)
+      y.new[i,1] ~ dbinom(p[i,1], 2)
 
       for (t in 2:L)
       {
@@ -232,28 +234,29 @@ DATA <- list(
       phi[i,t])
 
       #observation model
-      #y[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #w is binary day/night
-      y[i,t] ~ dbinom(p_sight[i,t], z[i,t]) #w is binary day/night      
+      y[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #binary day/night
+      #y[i,t] ~ dbinom(p_sight[i,t], z[i,t]) #NO DAY/NGHT
       p_sight[i,t] <- ifelse(z[i,t] < 2,
       p[i,t] * z[i,t],
       p[i,t])
 
 
       #PPC
-      #y.new[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t])
+      y.new[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #binary day/night
+      #y.new[i,t] ~ dbinom(p_sight[i,t], z[i,t]) #NO DAY/NIGHT
       }
       }
 
       #PPC
       #mean
-      #mn.y <- mean(y)
-      #mn.y.new <- mean(y.new)
-      #pv.mn <- step(mn.y.new - mn.y)
+      mn.y <- mean(y)
+      mn.y.new <- mean(y.new)
+      pv.mn <- step(mn.y.new - mn.y)
 
       #sd
-      #sd.y <- sd(y)
-      #sd.y.new <- sd(y.new)
-      #pv.sd <- step(sd.y.new - sd.y)
+      sd.y <- sd(y)
+      sd.y.new <- sd(y.new)
+      pv.sd <- step(sd.y.new - sd.y)
 
 
       #transforms
@@ -306,28 +309,28 @@ DATA <- list(
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mean_phi = 0.5, #runif(1, 0, 1),
-                mean_p = 0.5, #runif(1, 0, 1),
-                sigma_phi = 0.5, #runif(1, 0, 10),
-                sigma_p = 0.5, #runif(1, 0, 10),
+Inits_1 <- list(mean_phi = 0.5,
+                mean_p = 0.5,
+                sigma_phi = 0.1,
+                sigma_p = 0.1,
                 beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mean_phi = 0.4,
-                mean_p = 0.4,
-                sigma_phi = runif(1, 0, 10),
-                sigma_p = runif(1, 0, 10),
+Inits_2 <- list(mean_phi = 0.6,
+                mean_p = 0.3,
+                sigma_phi = 0.11,
+                sigma_p = 0.11,
                 beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mean_phi = 0.6,
-                mean_p = 0.6,
-                sigma_phi = runif(1, 0, 10),
-                sigma_p = runif(1, 0, 10),
+Inits_3 <- list(mean_phi = 0.7,
+                mean_p = 0.4,
+                sigma_phi = 0.09,
+                sigma_p = 0.09,
                 beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
@@ -371,16 +374,16 @@ Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
 n_max <- 100000 # max allowable iterations
 
 
+
+
+
+# DEBUG -------------------------------------------------------------------
+
 jm = jags.model(data = DATA,
                 file = paste0(JAGS_FILE),
-                inits = F_Inits[[1]],#m.inits,
+                inits = F_Inits,
                 n.chains = 3,
                 n.adapt = n_adapt)
-
-
-
-
-
 
 update(jm,n.iter = n_burn)
 
@@ -388,7 +391,8 @@ samples = coda.samples(jm,
                        n.iter = n_draw,
                        variable.names = Pars,
                        thin = n_thin)
-MCMCsummary(samples, params = 'sigma', ISB = FALSE)
+
+MCMCsummary(samples, ISB = FALSE)
 
 
 
