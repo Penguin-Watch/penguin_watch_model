@@ -67,6 +67,8 @@ mean(pv.sd_ch)
 
 
 
+
+
 #correlation of beta_p and beta_phi
 beta_p_ch <- MCMCchains(out, 'beta_p', excl = 'beta_phi')
 beta_phi_ch <- MCMCchains(out, 'beta_phi')
@@ -177,11 +179,56 @@ hist(p_phi_cor_matrix) # no correlation
 
 
 
+#plot posteriors on top of priors
+# beta_p
+# beta_phi
+# mean_p
+# mean_phi
+# sigma_p
+# sigma_phi
+# eps_p
+# eps_phi
+
+
 
 #plot posterior
 #1) betas - dnorm(0, 1) T(-1,1) - check
 #2) mean_phi and mean_p - dunif(0,0.1) - check
 #3) eps_phi and eps_p - dnorm(0, tau_p) T(-20,20) - p okay, phi not converged?
+
+#https://stats.stackexchange.com/questions/97596/how-to-calculate-overlap-between-empirical-probability-densities
+#define limits of where overlap is to be calculated
+#prior (chain of prior)
+#post (chain of posterior)
+lower <- min(c(a, b)) - 1 
+upper <- max(c(a, b)) + 1
+
+# generate kernel densities
+d_prior <- density(prior, from = lower, to = upper)
+d_post <- density(post, from = lower, to = upper)
+d <- data.frame(x = d_prior$x, prior = d_prior$y, post = d_post$y)
+
+# calculate intersection densities
+d$int <- pmin(d$prior, d$post)
+
+#plot
+plot(d$x, d$prior, xlim = c(lower, upper), ylim = c(0, 0.5), type = 'l') #prior
+lines(d$x, d$post, col = 'red') #posterior
+lines(d$x, d$int, col = 'green') #intersection
+
+# integrate areas under curves
+library(sfsmisc)
+total <- integrate.xy(d$x, d$prior) + integrate.xy(d$x, d$posterior) #total area
+#area of just to intersecting bit
+intersection <- integrate.xy(d$x, d$int)
+
+# compute overlap coefficient
+(overlap <- 2 * intersection / total)
+
+
+
+
+
 
 beta_p_ch <- MCMCchains(out, 'beta_p', excl = 'beta_phi')
 plot(density(beta_p_ch))
