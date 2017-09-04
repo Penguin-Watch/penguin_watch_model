@@ -69,6 +69,9 @@ mean(pv.sd_ch)
 
 
 
+# Correlation of parameters -----------------------------------------------
+
+
 #correlation of beta_p and beta_phi
 beta_p_ch <- MCMCchains(out, 'beta_p', excl = 'beta_phi')
 beta_phi_ch <- MCMCchains(out, 'beta_phi')
@@ -80,6 +83,8 @@ mean_p_ch <- MCMCchains(out, 'mean_p', excl = 'mean_phi')
 mean_phi_ch <- MCMCchains(out, 'mean_phi')
 plot(mean_p_ch, mean_phi_ch, pch = '.')
 cor(mean_p_ch, mean_phi_ch)
+
+
 
 
 
@@ -177,6 +182,7 @@ hist(p_phi_cor_matrix) # no correlation
 
 
 
+# Posterior prior overlap -------------------------------------------------
 
 
 #plot posteriors on top of priors
@@ -224,6 +230,9 @@ intersection <- integrate.xy(d$x, d$int)
 
 # compute overlap coefficient
 (overlap <- 2 * intersection / total)
+
+
+
 
 
 
