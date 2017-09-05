@@ -101,7 +101,7 @@ for (i in 1:length(dp))
 
 
 
-
+#simulate observed data
 set.seed(1)
 #function to simulate time series - 12 hours classified, 12 hours non-classified
 sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS)
@@ -487,6 +487,10 @@ tt <- (proc.time() - ptm)[3]/60 #minutes
 
 #Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
 
+
+
+
+# Summarize output -------------------------------------------------------
 
 
 #calculate rhats
