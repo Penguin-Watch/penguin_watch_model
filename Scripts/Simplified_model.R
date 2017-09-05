@@ -17,12 +17,30 @@
 
 #PHI depends on time, but P depends on individual identity, so I think it's fine
 #Look at correaltion between all PHI and P params, not just among PHI params and among P params
-#Look at overlap betwen posterior and prior - put uniform (or broad) priors on betas and mus to look at this. Don't think this can be used for the error term, as this is modeled hierarchically - those parameters are themselves drawn from a distirbution.
+#Look at overlap betwen posterior and prior - put uniform (or broad) priors on betas and mus to look at this. Don't think this can be used for the error term, as this is modeled hierarchically - those parameters are themselves drawn from a distribution.
 
 #starting values of beta_p must be 0 when many time steps bc inv.logit(mu + beta_p*[large index for cov]) = 1 and if y = 0 at that index, JAGS doesn't like it
 
+# Clear environment -------------------------------------------------------
+
 rm(list = ls())
-require(rjags)
+
+
+# Load packages -----------------------------------------------------------
+
+if('pacman' %in% rownames(installed.packages()) == FALSE)
+{
+  install.packages('pacman', repos = "http://cran.case.edu")
+}
+pacman::p_load(rjags, parallel, MCMCvis)
+
+
+#JAGS module
+load.module("glm")
+
+
+# Load data ---------------------------------------------------------------
+
 
 #CHANGE SIZE OF RESPONSE DATA HERE
 n_ts <- 100 #number of time steps
@@ -144,6 +162,8 @@ DATA <- list(
       {
       #both alive at time step 1
       z[i,1] <- 2
+      y.new[i,1] ~ dbinom(p[i,1], 2)
+
       
       for (t in 2:L)
       {
@@ -159,77 +179,298 @@ DATA <- list(
       p_sight[i,t] <- ifelse(z[i,t] < 2,
       p[i,t] * z[i,t],
       p[i,t])
+
+      y.new[i,t] ~ dbinom(p_sight[i,t], z[i,t])
       }
       }
       
+
+
+      #PPC
+      #mean
+      mn.y <- mean(y)
+      mn.y.new <- mean(y.new)
+      pv.mn <- step(mn.y.new - mn.y)
+      
+      #sd
+      sd.y <- sd(y)
+      sd.y.new <- sd(y.new)
+      pv.sd <- step(sd.y.new - sd.y)
+
+
+
+
       #transforms
       for (i in 1:N)
       {
       for (t in 1:L)
       {
-      logit(phi[i,t]) <- mu_phi + beta_phi*x[t] + eps_phi[t]       #phi = survival prob
-      logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]            #p = detection prob
+      logit(phi[i,t]) <- mu_phi# + beta_phi*x[t] + eps_phi[t]       #phi = survival prob
+      logit(p[i,t]) <- mu_p# + beta_p*x[t] + eps_p[i]            #p = detection prob
       }
       }
       
+
       #priors
-      for (t in 1:L)
-      {
-      eps_phi[t] ~ dnorm(0, tau_phi)
-      }
+      # for (t in 1:L)
+      # {
+      # eps_phi[t] ~ dnorm(0, tau_phi) T(-10, 10)
+      # }
       
-      mean_phi ~ dbeta(1.5,1.5)                 #Mean survival
+      mean_phi ~ dbeta(1,1)                 #Mean survival
       mu_phi <- log(mean_phi / (1 - mean_phi))
-      tau_phi <- pow(sigma_phi, -2)
-      sigma_phi ~ dunif(0, 10)
+      # tau_phi <- pow(sigma_phi, -2)
+      # sigma_phi ~ dunif(0, 10)
       
-      for (i in 1:N)
-      {
-      eps_p[i] ~ dnorm(0, tau_p)
-      }
+      # for (i in 1:N)
+      # {
+      # eps_p[i] ~ dnorm(0, tau_p) T(-10, 10)
+      # }
       
-      mean_p ~ dbeta(1.5,1.5)                    #Mean detection
+      mean_p ~ dbeta(1,1)                    #Mean detection
       mu_p <- log(mean_p / (1 - mean_p))
-      tau_p <- pow(sigma_p, -2)
-      sigma_p ~ dunif(0, 10)
+      # tau_p <- pow(sigma_p, -2)
+      # sigma_p ~ dunif(0, 10)
       
-      beta_phi ~ dnorm(0, 100)
-      beta_p ~ dnorm(0, 10)
+      # beta_phi ~ dnorm(0, 1000) T(0,1)
+      # beta_p ~ dnorm(0, 100) T(0,1)
       
       }",fill = TRUE)
 
   sink()
 }
 
+
+
+
 # Starting values ---------------------------------------------------------
 
-Inits <- list(mean_phi = 0.5,
-              mean_p = 0.5,
-              sigma_phi = 0.5,
-              sigma_p = 0.5,
-              beta_phi = 0.1,
-              beta_p = 0,
-              .RNG.name = "base::Mersenne-Twister",
-              .RNG.seed = 1)
+Inits_1 <- list(mean_phi = 0.9,
+                mean_p = 0.5,
+                #sigma_phi = 0.1,
+                #sigma_p = 0.1,
+                #beta_phi = 0.1,
+                #beta_p = 0,
+                .RNG.name = "base::Mersenne-Twister",
+                .RNG.seed = 1)
+
+Inits_2 <- list(mean_phi = 0.9,
+                mean_p = 0.6,
+                #sigma_phi = 0.11,
+                #sigma_p = 0.11,
+                #beta_phi = 0.1,
+                #beta_p = 0,
+                .RNG.name = "base::Wichmann-Hill",
+                .RNG.seed = 2)
+
+Inits_3 <- list(mean_phi = 0.9,
+                mean_p = 0.4,
+                #sigma_phi = 0.09,
+                #sigma_p = 0.09,
+                #beta_phi = 0.1,
+                #beta_p = 0,
+                .RNG.name = "base::Marsaglia-Multicarry",
+                .RNG.seed = 3)
+
+F_Inits <- list(Inits_1, Inits_2, Inits_3)
+
+
+
 
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mean_phi',
           'mean_p',
-          'sigma_p',
-          'sigma_phi')
+          'sd.y',
+          'sd.y.new',
+          'mn.y',
+          'mn.y.new')
+
+
+
 
 # Inputs for MCMC ---------------------------------------------------------
 
+NAME <- 'out_Sep_05_2017_R1_simplified'
+
 JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 8  # number for initial adapt
-n_burn <- 10  # number burnin
-n_draw <- 20  # number of final draws to make
-n_thin <- 2   # thinning rate
+n_adapt <- 5000  # number for initial adapt
+n_burn <- 1000 # number burnin
+n_draw <- 2000  # number of final draws to make
+n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
-jm = jags.model(data = DATA,
-                file = paste0(JAGS_FILE),
-                inits = Inits,
-                n.chains = 3,
-                n.adapt = n_adapt)
+EXTRA <- FALSE
+Rhat_max <- 1.02 # max allowable Rhat (close to 1 = convergence)
+n_max <- 100000 # max allowable iterations
+
+
+# DEBUG -------------------------------------------------------------------
+
+# jm = jags.model(data = DATA,
+#                 file = paste0(JAGS_FILE),
+#                 inits = F_Inits,
+#                 n.chains = 3,
+#                 n.adapt = n_adapt)
+# 
+# update(jm,n.iter = n_burn)
+# 
+# samples = coda.samples(jm,
+#                        n.iter = n_draw,
+#                        variable.names = Pars,
+#                        thin = n_thin)
+# 
+# MCMCsummary(samples, ISB = FALSE)
+
+
+
+# Run model (parallel) ---------------------------------------------------------------
+
+#number of chains
+cl <- parallel::makeCluster(n_chain)
+
+pid <- NA
+for(i in 1:n_chain)
+{
+  pidNum <- capture.output(cl[[i]])
+  start <- regexpr("pid", pidNum)[[1]]
+  end <- nchar(pidNum)
+  pid[i] <- substr(pidNum, (start + 4), end)
+}
+
+parallel::clusterExport(cl,
+                        c('DATA',
+                          'n_adapt',
+                          'n_burn',
+                          'n_draw',
+                          'n_thin',
+                          'Pars',
+                          'pid',
+                          'F_Inits',
+                          'JAGS_FILE'
+                        ))
+
+
+ptm <- proc.time()
+out.1 <- parallel::clusterEvalQ(cl,
+                                {
+                                  require(rjags)
+                                  processNum <- which(pid==Sys.getpid())
+                                  m.inits <- F_Inits[[processNum]]
+                                  
+                                  jm = jags.model(data = DATA,
+                                                  file = paste0(JAGS_FILE),
+                                                  inits = m.inits,
+                                                  n.chains = 1,
+                                                  n.adapt = n_adapt)
+                                  
+                                  update(jm,
+                                         n.iter = n_burn)
+                                  
+                                  samples = coda.samples(jm,
+                                                         n.iter = n_draw,
+                                                         variable.names = Pars,
+                                                         thin = n_thin)
+                                  return(samples)
+                                })
+
+
+out <- coda::mcmc.list(out.1[[1]][[1]],
+                       out.1[[2]][[1]],
+                       out.1[[3]][[1]])
+stopCluster(cl)
+tt <- (proc.time() - ptm)[3]/60 #minutes
+
+
+
+
+
+
+#calculate rhats
+var_names <- vapply(strsplit(colnames(out[[1]]), 
+                             split = "[", fixed = TRUE), `[`, 1, FUN.VALUE=character(1))
+
+params = c('mean_phi',
+           'mean_p',
+           'sigma_p',
+           'sigma_phi',
+           'beta_p',
+           'beta_phi',
+           'mu_phi',
+           'mu_p')
+
+grouped <- c()
+for (i in 1:length(params))
+{
+  get.rows <- which(var_names %in% params[i])
+  grouped <- c(grouped, get.rows)
+}
+
+#only params of interest - put back into mcmc.list object
+nlist <- do.call(coda::mcmc.list, out[,grouped])
+
+#calculate rhat
+rhats <- round(gelman.diag(nlist, multivariate = FALSE)$psrf[,1], digits = 4)
+rh_df <- data.frame(rhat = rhats)
+
+
+#PPC
+params = c('pv.mn', 'pv.sd')
+grouped2 <- c()
+for (i in 1:length(params))
+{
+  get.rows <- which(var_names %in% params[i])
+  grouped2 <- c(grouped2, get.rows)
+}
+
+means <- apply(out[[1]][,grouped2], 2, mean)
+
+
+
+
+#create directory
+system(paste0('mkdir ', NAME))
+setwd(paste0(NAME))
+
+#set max number of rows to print to 5k
+options(max.print = 5000)
+
+#write results to text file
+sink(paste0('results_', NAME,'.txt'))
+print(paste0(NAME))
+print(paste0('Number of nests: ', nests))
+print(paste0('Number of time steps: ', n_ts))
+print(paste0('Total minutes: ', round(tt, digits = 2)))
+print(paste0('Total iterations: ', n_final))
+print(paste0('n_adapt: ', n_adapt))
+print(paste0('n_burn: ', n_burn))
+print(paste0('n_draw: ', n_draw))
+print(paste0('n_thin: ', n_thin))
+print(paste0('n_chain: ', n_chain))
+print(paste0('Extra: ', EXTRA))
+print(paste0('Rhat_max: ', Rhat_max))
+print(paste0('n_max: ', n_max))
+print(rh_df)
+print(paste0('Posterior Predictive Check:'))
+print(means)
+sink()
+
+
+
+
+MCMCsummary(out, digits = 4)
+sd.y.ch <- MCMCchains(out, params = 'sd.y')
+sd.y.new.ch <- MCMCchains(out, params = 'sd.y.new')
+
+plot(sd.y.ch, sd.y.new.ch, pch = '.',
+     ylim = c(0.6, 0.8), xlim = c(0.6, 0.8))
+abline(0,1, col = 'red')
+
+
+mn.y.ch <- MCMCchains(out, params = 'mn.y')
+mn.y.new.ch <- MCMCchains(out, params = 'mn.y.new')
+
+plot(mn.y.ch, mn.y.new.ch, pch = '.',
+     ylim = c(0.9, 1.1), xlim = c(0.9, 1.1))
+abline(0,1, col = 'red')
+
