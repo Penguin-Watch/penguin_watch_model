@@ -185,17 +185,18 @@ DATA <- list(
       # }
       
       mean_phi ~ dbeta(1,1)                 #Mean survival
-      mu_phi <- log(mean_phi / (1 - mean_phi))
+      mu_phi <- logit(mean_phi)             #log(mean_phi / (1 - mean_phi))
       # tau_phi <- pow(sigma_phi, -2)
       # sigma_phi ~ dunif(0, 10)
       
       for (i in 1:N)
       {
       eps_p[i] ~ dnorm(0, tau_p) T(-10, 10)
+      n_p[i] <- ilogit(mu_p + eps_p[i])
       }
       
       mean_p ~ dbeta(1,1)                    #Mean detection
-      mu_p <- log(mean_p / (1 - mean_p))
+      mu_p <- logit(mean_p)                  #(mean_p / (1 - mean_p))
       tau_p <- pow(sigma_p, -2)
       sigma_p ~ dunif(0, 10)
       
@@ -249,7 +250,7 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 Pars <- c('mean_phi',
           'mean_p',
           'sigma_p',
-          'eps_p',
+          'n_p',
           'sd.y',
           'sd.y.new',
           'mn.y',
@@ -431,14 +432,13 @@ MCMCsummary(out, digits = 4)
 sd.y.ch <- MCMCchains(out, params = 'sd.y')
 sd.y.new.ch <- MCMCchains(out, params = 'sd.y.new')
 
-plot(sd.y.ch, sd.y.new.ch, pch = '.',
-     ylim = c(0.6, 0.8), xlim = c(0.6, 0.8))
+plot(sd.y.ch, sd.y.new.ch, pch = '.', asp = 1)
 abline(0,1, col = 'red')
 
 
 mn.y.ch <- MCMCchains(out, params = 'mn.y')
 mn.y.new.ch <- MCMCchains(out, params = 'mn.y.new')
 
-plot(mn.y.ch, mn.y.new.ch, pch = '.',
-     ylim = c(0.7, 0.9), xlim = c(0.7, 0.9))
+plot(mn.y.ch, mn.y.new.ch, pch = '.', asp = 1)
 abline(0,1, col = 'red')
+
