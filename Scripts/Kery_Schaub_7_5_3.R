@@ -1,11 +1,13 @@
 
 # 7.5.3. Individual random effects
 # modified to simulate data where all individuals are marked at time step 1
+# does not give what might be considered excellent results from PPC - could be due to prior on eps being infomative on logit scale
 
 rm(list = ls())
 
-require(R2jags)
-
+require(rjags)
+require(MCMCvis)
+require(parallel)
 
 n.occasions <- 20                 # Number of capture occasions
 marked <- 570
@@ -34,7 +36,7 @@ sim_data_fun <- function(PHI_MAT, P_MAT, N_NESTS = 570)
   CH <- matrix(0,
                ncol = TS_LEN,
                nrow = N_NESTS)
-
+  
   for (i in 1:N_NESTS)
   {
     #i <- 1
@@ -73,25 +75,11 @@ known.state.cjs <- function(ch)
 }
 
 
-# # Function to create a matrix of initial values for latent state z
-# cjs.init.z <- function(ch,f){
-#   for (i in 1:dim(ch)[1]){
-#     if (sum(ch[i,])==1) next
-#     n2 <- max(which(ch[i,]==1))
-#     ch[i,f[i]:n2] <- NA
-#   }
-#   for (i in 1:dim(ch)[1]){
-#     ch[i,1:f[i]] <- NA
-#   }
-#   return(ch)
-# }
-
-
 # Simulate capture-histories
 CH <- sim_data_fun(PHI, P)
 
 # Bundle data
-jags.data <- list(y = CH, n.occasions = dim(CH)[2], z = known.state.cjs(CH))
+DATA <- list(y = CH, n.occasions = dim(CH)[2], z = known.state.cjs(CH))
 
 
 # Specify model in BUGS language
@@ -105,7 +93,7 @@ cat("
     # Define latent state at first capture
     z[i,1] <- 1
     y.new[i,1] ~ dbern(p[i,1])
-
+    
     for (t in (2:20))
     {
     
@@ -116,12 +104,12 @@ cat("
     # Observation process
     y[i,t] ~ dbern(mu2[i,t])
     mu2[i,t] <- p[i,t-1] * z[i,t]
-
+    
     y.new[i,t] ~ dbern(mu2[i,t])
     
     } #t
     } #i
-
+    
     #PPC
     #mean
     mn.y <- mean(y)
@@ -132,8 +120,8 @@ cat("
     sd.y <- sd(y)
     sd.y.new <- sd(y.new)
     pv.sd <- step(sd.y.new - sd.y)   
-
-
+    
+    
     # Priors and constraints
     for (i in 1:570)
     {
@@ -155,38 +143,143 @@ cat("
     tau <- pow(sigma, -2)
     sigma2 <- pow(sigma, 2)
     mean.p ~ dunif(0, 1)                     # Prior for mean recapture 
-
-
+    
+    
     }
     ",fill = TRUE)
 sink()
 
 
+# Inits -------------------------------------------------------------------
+
+
 # Initial values 
-inits <- function(){list(mean.phi = runif(1, 0, 1), mean.p = runif(1, 0, 1), sigma = runif(1, 0, 2))}  
+
+Inits_1 <- list(mean_phi = runif(1, 0, 1),
+                mean_p = runif(1, 0, 1),
+                sigma = runif(1, 0, 2),
+                .RNG.name = "base::Mersenne-Twister",
+                .RNG.seed = 1)
+
+Inits_2 <- list(mean_phi = runif(1, 0, 1),
+                mean_p = runif(1, 0, 1),
+                sigma = runif(1, 0, 2),
+                .RNG.name = "base::Wichmann-Hill",
+                .RNG.seed = 2)
+
+Inits_3 <- list(mean_phi = runif(1, 0, 1),
+                mean_p = runif(1, 0, 1),
+                sigma = runif(1, 0, 2),
+                .RNG.name = "base::Marsaglia-Multicarry",
+                .RNG.seed = 3)
+
+F_Inits <- list(Inits_1, Inits_2, Inits_3)
+
+
+# params ------------------------------------------------------------------
+
 
 # Parameters monitored
-parameters <- c("mean.phi", 
+Pars <- c("mean.phi", 
                 "mean.p", 
-                "sigma2",
+                "sigma",
                 "pv.mn",
-                "pv.sd")
+                "pv.sd",
+                "sd.y",
+                "sd.y.new",
+                "mn.y",
+                "mn.y.new")
 
-# MCMC settings
-ni <- 5000
-nt <- 6
-nb <- 2000
-nc <- 3
 
-# Call JAGS from R (BRT 73 min)
-cjs.ind <- jags(jags.data, inits, parameters, "cjs-ind-raneff.jags", n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, working.directory = getwd())
 
-# Summarize posteriors
-print(cjs.ind, digits = 3)
 
-# Produce graph
-par(mfrow = c(1, 2), las = 1)
-hist(cjs.ind$BUGSoutput$sims.list$mean.phi, nclass = 25, col = "gray", main = "", xlab = expression(bar(phi)), ylab = "Frequency")
-abline(v = mean.phi, col = "red", lwd = 2)
-hist(cjs.ind$BUGSoutput$sims.list$sigma2, nclass = 15, col = "gray", main = "", xlab = expression(sigma^2), ylab = "Frequency", xlim = c(0, 3))
-abline(v = v.ind, col = "red", lwd = 2)
+
+# Inputs for MCMC ---------------------------------------------------------
+
+JAGS_FILE <- 'cjs-ind-raneff.jags'
+n_adapt <- 5000  # number for initial adapt
+n_burn <- 20000 # number burnin
+n_draw <- 10000  # number of final draws to make
+n_thin <- 2    # thinning rate
+n_chain <- 3  # number of chains
+
+
+# Run model (parallel) ---------------------------------------------------------------
+
+#number of chains
+cl <- parallel::makeCluster(n_chain)
+
+pid <- NA
+for(i in 1:n_chain)
+{
+  pidNum <- capture.output(cl[[i]])
+  start <- regexpr("pid", pidNum)[[1]]
+  end <- nchar(pidNum)
+  pid[i] <- substr(pidNum, (start + 4), end)
+}
+
+parallel::clusterExport(cl,
+                        c('DATA',
+                          'n_adapt',
+                          'n_burn',
+                          'n_draw',
+                          'n_thin',
+                          'Pars',
+                          'pid',
+                          'F_Inits',
+                          'JAGS_FILE'
+                        ))
+
+
+ptm <- proc.time()
+out.1 <- parallel::clusterEvalQ(cl,
+                                {
+                                  require(rjags)
+                                  processNum <- which(pid==Sys.getpid())
+                                  m.inits <- F_Inits[[processNum]]
+                                  
+                                  jm = jags.model(data = DATA,
+                                                  file = paste0(JAGS_FILE),
+                                                  inits = m.inits,
+                                                  n.chains = 1,
+                                                  n.adapt = n_adapt)
+                                  
+                                  update(jm,
+                                         n.iter = n_burn)
+                                  
+                                  samples = coda.samples(jm,
+                                                         n.iter = n_draw,
+                                                         variable.names = Pars,
+                                                         thin = n_thin)
+                                  return(samples)
+                                })
+
+
+out <- coda::mcmc.list(out.1[[1]][[1]],
+                       out.1[[2]][[1]],
+                       out.1[[3]][[1]])
+stopCluster(cl)
+tt <- (proc.time() - ptm)[3]/60 #minutes
+
+
+
+
+
+MCMCsummary(out, digits = 4)
+
+
+sd.y.ch <- MCMCchains(out, params = 'sd.y')
+sd.y.new.ch <- MCMCchains(out, params = 'sd.y.new')
+
+plot(sd.y.ch, sd.y.new.ch, pch = '.', asp = 1)
+abline(0,1, col = 'red')
+
+
+mn.y.ch <- MCMCchains(out, params = 'mn.y')
+mn.y.new.ch <- MCMCchains(out, params = 'mn.y.new')
+
+plot(mn.y.ch, mn.y.new.ch, pch = '.', asp = 1)
+abline(0,1, col = 'red')
+
+
+
