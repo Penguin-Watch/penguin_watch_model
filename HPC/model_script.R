@@ -295,8 +295,8 @@ DATA <- list(
       sigma_p ~ dunif(0, 10)
       sigma_p2 <- pow(sigma_p, 2)
 
-      beta_phi ~ dnorm(0, 100) #T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
-      beta_p ~ dnorm(0, 10) #T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
 
 
       }",fill = TRUE)
