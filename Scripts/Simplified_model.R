@@ -25,7 +25,7 @@ rm(list = ls())
 require(rjags)
 
 #CHANGE SIZE OF RESPONSE DATA HERE
-n_ts <- 1200 #number of time steps
+n_ts <- 100 #number of time steps
 x <- 1:n_ts
 nests <- 30 #number of nests
 
@@ -117,34 +117,6 @@ known.state.fun <- function(INPUT)
 }
 
 z_vals <- known.state.fun(sim_data)
-# 
-# z_vals[1:5, 1:5]
-# sim_data[1:5, 1:5]
-# #initial values for z where values not being fed into data
-# #DOES WORK
-# na.vals <- which(z_vals == 2, arr.ind = TRUE)
-# z_inits_t <- sim_data
-# #put NAs wherever there are 2s in data object
-# z_inits_t[na.vals] <- NA
-# z_inits_t[,1] <- NA
-# 
-# 
-# 
-# z_inits <- z_inits_t
-# for (i in 1:NROW(z_inits_t))
-# {
-#   #i <- 10
-#   if (sum(z_inits_t[i,] == 1, na.rm = TRUE) > 0)
-#   {
-#     n1 <- min(which(z_inits_t[i,] == 1), na.rm = TRUE)
-#   }
-#   
-#   if (sum(z_inits_t[i,] == 0, na.rm = TRUE) > 0)
-#   {
-#     n2 <- max(which(z_inits_t[i,] == 1), na.rm = TRUE)
-#     z_inits[i,n1:n2] <- 1
-#   }
-# }
 
 
 
