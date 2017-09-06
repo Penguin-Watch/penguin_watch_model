@@ -5,6 +5,8 @@
 # Model p constant across time - random effect of nest
 # Model phi constant across time and nest
 #
+# Justification for priors for parameters that contirbute to logit(p) and logit(phi)
+#
 # PPC (sd) results indicate mark-recapture with nest as random effect doesn't predict sd well - probably not an appropriate statistic to use in larger model
 # PPC (mean) results suggest model is appropriate
 ##############################
@@ -362,6 +364,11 @@ hist(b)
 a <- rnorm(1000, 2, 2)
 b <- inv.logit(a)
 hist(b)
+
+#justification of priors on beta_p and beta_phi
+#a <- rnorm(1000, 0, )
+
+
 
 
 #summarize
