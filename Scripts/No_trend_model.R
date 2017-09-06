@@ -1,11 +1,12 @@
 ##############################
-#SIMPLE MODEL
+# SIMPLE MODEL
 #
-#model p constant across time - random effect of nest
-#model phi constant across time and nest
+# Penguin Watch Data simulated (no trend across time) - detection probability different for each nest (no day/night)
+# Model p constant across time - random effect of nest
+# Model phi constant across time and nest
 #
-#PPC (sd) results indicate mark-recapture with nest as random effect doesn't predict sd well - probably not an appropriate statistic to use in larger model
-#PPC (mean) results suggest model is appropriate
+# PPC (sd) results indicate mark-recapture with nest as random effect doesn't predict sd well - probably not an appropriate statistic to use in larger model
+# PPC (mean) results suggest model is appropriate
 ##############################
 
 # Clear environment -------------------------------------------------------
