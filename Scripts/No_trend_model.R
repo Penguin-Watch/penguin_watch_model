@@ -177,31 +177,26 @@ DATA <- list(
       for (t in 1:L)
       {
       logit(phi[i,t]) <- mu_phi                   #phi = survival prob
-      logit(p[i,t]) <- mu_p[i] #+ eps_p[i]            #p = detection prob
+      logit(p[i,t]) <- mu_p + eps_p[i]            #p = detection prob
       }
       }
-      
       
       mean_phi ~ dbeta(1,1)                 #Mean survival
       mu_phi <- logit(mean_phi)             #log(mean_phi / (1 - mean_phi))
       
-
       for (i in 1:N)
       {
-      #want to shoot for sd of 1.7 for vague prior on p (constrain sigma_p to be between 1 and 3?)      
-      #eps_p[i] ~ dnorm(0, tau_p) T(-10, 10) 
-
-      mean_p[i] ~ dbeta(1,1)                    #Mean detection
-      mu_p[i] <- logit(mean_p[i])               #(mean_p / (1 - mean_p))
+      #want to shoot for sd of 1.7 for vague prior on p (i.e., constrain sigma_p)     
+      eps_p[i] ~ dnorm(0, tau_p) T(-10, 10) 
 
       #n_p is detection probability for each nest
-      #n_p[i] <- ilogit(mu_p + eps_p[i])
+      n_p[i] <- ilogit(mu_p + eps_p[i])
       }
       
-      #mean_p ~ dbeta(1,1)                    #Mean detection
-      #mu_p <- logit(mean_p)                  #(mean_p / (1 - mean_p))
+      mean_p ~ dbeta(1.5,1.5)                    #Mean detection
+      mu_p <- logit(mean_p)                  #(mean_p / (1 - mean_p))
       tau_p <- pow(sigma_p, -2)
-      sigma_p ~ dunif(0.25, 3)              #was dunif(0,10) but that's informative on p on logit scale
+      sigma_p ~ dunif(0.25, 3)
 
       
       }",fill = TRUE)
@@ -215,27 +210,27 @@ DATA <- list(
 # Starting values ---------------------------------------------------------
 
 Inits_1 <- list(mean_phi = 0.9,
-                mean_p = rep(0.5 ,30),
+                mean_p = 0.5,
                 #sigma_phi = 0.1,
-                #sigma_p = 1.1,
+                sigma_p = 1.1,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(mean_phi = 0.9,
-                mean_p = rep(0.6, 30),
+                mean_p = 0.6,
                 #sigma_phi = 0.11,
-                #sigma_p = 1.5,
+                sigma_p = 1.5,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(mean_phi = 0.9,
-                mean_p = rep(0.4, 30),
+                mean_p = 0.4,
                 #sigma_phi = 0.09,
-                #sigma_p = 1.75,
+                sigma_p = 1.75,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
@@ -250,9 +245,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 Pars <- c('mean_phi',
           'mean_p',
-          #'sigma_p',
-          #'n_p',
-          'mean_p',
+          'sigma_p',
+          'n_p',
           'sd.y',
           'sd.y.new',
           'mn.y',
