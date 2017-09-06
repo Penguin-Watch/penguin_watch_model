@@ -283,21 +283,21 @@ DATA <- list(
       mean_phi ~ dbeta(1.5,1.5)                 #Mean survival
       mu_phi <- log(mean_phi / (1 - mean_phi))
       tau_phi <- pow(sigma_phi, -2)
-      sigma_phi ~ dunif(0, 10)
-      sigma_phi2 <- pow(sigma_phi, 2)
+      sigma_phi ~ dunif(0.25, 3)
+
 
       for (i in 1:N)
       {
       eps_p[i] ~ dnorm(0, tau_p) T(-10,10)
       }
 
+
       mean_p ~ dbeta(1.5,1.5)                    #Mean detection - could use alternative below
       mu_p <- log(mean_p / (1 - mean_p))         #Logit transform - could use alternative below
       #mean_p <- 1 / (1+exp(-mu_p))              #Mean detection - Inv-logit transform
       #mu_p ~ dnorm(0, 0.001)                    #Prior for logit of mean survival
       tau_p <- pow(sigma_p, -2)
-      sigma_p ~ dunif(0, 10)
-      sigma_p2 <- pow(sigma_p, 2)
+      sigma_p ~ dunif(0.25, 3)
 
       beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
       beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
@@ -315,8 +315,8 @@ DATA <- list(
 
 Inits_1 <- list(mean_phi = 0.5,
                 mean_p = 0.5,
-                sigma_phi = 0.1,
-                sigma_p = 0.1,
+                sigma_phi = 0.26,
+                sigma_p = 0.26,
                 beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
@@ -324,8 +324,8 @@ Inits_1 <- list(mean_phi = 0.5,
 
 Inits_2 <- list(mean_phi = 0.6,
                 mean_p = 0.3,
-                sigma_phi = 0.11,
-                sigma_p = 0.11,
+                sigma_phi = 1,
+                sigma_p = 1,
                 beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
@@ -333,8 +333,8 @@ Inits_2 <- list(mean_phi = 0.6,
 
 Inits_3 <- list(mean_phi = 0.7,
                 mean_p = 0.4,
-                sigma_phi = 0.09,
-                sigma_p = 0.09,
+                sigma_phi = 1.5,
+                sigma_p = 1.5,
                 beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
@@ -364,7 +364,7 @@ Pars <- c('mean_phi',
 
 # Inputs for MCMC ---------------------------------------------------------
 
-NAME <- 'out_Sep_04_2017_R1_sim_daynight'
+NAME <- 'out_Sep_06_2017_R1_sim'
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 8000  # number for initial adapt
