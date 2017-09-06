@@ -191,14 +191,14 @@ DATA <- list(
       
       for (i in 1:N)
       {
-      eps_p[i] ~ dnorm(0, tau_p) T(-10, 10)
+      eps_p[i] ~ dnorm(0, tau_p) T(-10, 10) #want to shoot for sd of 1.7 for vague prior on p (constrain sigma_p to be between 1 and 3?)
       n_p[i] <- ilogit(mu_p + eps_p[i])
       }
       
       mean_p ~ dbeta(1,1)                    #Mean detection
       mu_p <- logit(mean_p)                  #(mean_p / (1 - mean_p))
       tau_p <- pow(sigma_p, -2)
-      sigma_p ~ dunif(0, 10)
+      sigma_p ~ dunif(1, 3)                  #was dunif(0,10) but that's informative on p on logit scale
       
       # beta_phi ~ dnorm(0, 1000) T(0,1)
       # beta_p ~ dnorm(0, 100) T(0,1)
@@ -216,7 +216,7 @@ DATA <- list(
 Inits_1 <- list(mean_phi = 0.9,
                 mean_p = 0.5,
                 #sigma_phi = 0.1,
-                sigma_p = 0.1,
+                sigma_p = 1.1,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
@@ -225,7 +225,7 @@ Inits_1 <- list(mean_phi = 0.9,
 Inits_2 <- list(mean_phi = 0.9,
                 mean_p = 0.6,
                 #sigma_phi = 0.11,
-                sigma_p = 0.11,
+                sigma_p = 2.1,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
@@ -234,7 +234,7 @@ Inits_2 <- list(mean_phi = 0.9,
 Inits_3 <- list(mean_phi = 0.9,
                 mean_p = 0.4,
                 #sigma_phi = 0.09,
-                sigma_p = 0.09,
+                sigma_p = 1.5,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
