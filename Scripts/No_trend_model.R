@@ -1,5 +1,12 @@
-#no trend in phi or p - same p and phi for every nests
-
+##############################
+#SIMPLE MODEL
+#
+#model p constant across time - random effect of nest
+#model phi constant across time and nest
+#
+#PPC (sd) results indicate mark-recapture with nest as random effect doesn't predict sd well - probably not an appropriate statistic to use in larger model
+#PPC (mean) results suggest model is appropriate
+##############################
 
 # Clear environment -------------------------------------------------------
 
@@ -152,7 +159,6 @@ DATA <- list(
       }
       
       
-      
       #PPC
       #mean
       mn.y <- mean(y)
@@ -165,43 +171,38 @@ DATA <- list(
       pv.sd <- step(sd.y.new - sd.y)
       
       
-      
-      
       #transforms
       for (i in 1:N)
       {
       for (t in 1:L)
       {
-      logit(phi[i,t]) <- mu_phi# + beta_phi*x[t] + eps_phi[t]       #phi = survival prob
-      logit(p[i,t]) <- mu_p + eps_p[i]# + #beta_p*x[t] + eps_p[i]            #p = detection prob
+      logit(phi[i,t]) <- mu_phi                   #phi = survival prob
+      logit(p[i,t]) <- mu_p[i] #+ eps_p[i]            #p = detection prob
       }
       }
       
-      
-      #priors
-      # for (t in 1:L)
-      # {
-      # eps_phi[t] ~ dnorm(0, tau_phi) T(-10, 10)
-      # }
       
       mean_phi ~ dbeta(1,1)                 #Mean survival
       mu_phi <- logit(mean_phi)             #log(mean_phi / (1 - mean_phi))
-      # tau_phi <- pow(sigma_phi, -2)
-      # sigma_phi ~ dunif(0, 10)
       
+
       for (i in 1:N)
       {
-      eps_p[i] ~ dnorm(0, tau_p) T(-10, 10) #want to shoot for sd of 1.7 for vague prior on p (constrain sigma_p to be between 1 and 3?)
-      n_p[i] <- ilogit(mu_p + eps_p[i])
+      #want to shoot for sd of 1.7 for vague prior on p (constrain sigma_p to be between 1 and 3?)      
+      #eps_p[i] ~ dnorm(0, tau_p) T(-10, 10) 
+
+      mean_p[i] ~ dbeta(1,1)                    #Mean detection
+      mu_p[i] <- logit(mean_p[i])               #(mean_p / (1 - mean_p))
+
+      #n_p is detection probability for each nest
+      #n_p[i] <- ilogit(mu_p + eps_p[i])
       }
       
-      mean_p ~ dbeta(1,1)                    #Mean detection
-      mu_p <- logit(mean_p)                  #(mean_p / (1 - mean_p))
+      #mean_p ~ dbeta(1,1)                    #Mean detection
+      #mu_p <- logit(mean_p)                  #(mean_p / (1 - mean_p))
       tau_p <- pow(sigma_p, -2)
-      sigma_p ~ dunif(1, 2)                  #was dunif(0,10) but that's informative on p on logit scale
-      
-      # beta_phi ~ dnorm(0, 1000) T(0,1)
-      # beta_p ~ dnorm(0, 100) T(0,1)
+      sigma_p ~ dunif(0.25, 3)              #was dunif(0,10) but that's informative on p on logit scale
+
       
       }",fill = TRUE)
 
@@ -214,27 +215,27 @@ DATA <- list(
 # Starting values ---------------------------------------------------------
 
 Inits_1 <- list(mean_phi = 0.9,
-                mean_p = 0.5,
+                mean_p = rep(0.5 ,30),
                 #sigma_phi = 0.1,
-                sigma_p = 1.1,
+                #sigma_p = 1.1,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(mean_phi = 0.9,
-                mean_p = 0.6,
+                mean_p = rep(0.6, 30),
                 #sigma_phi = 0.11,
-                sigma_p = 2.1,
+                #sigma_p = 1.5,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(mean_phi = 0.9,
-                mean_p = 0.4,
+                mean_p = rep(0.4, 30),
                 #sigma_phi = 0.09,
-                sigma_p = 1.5,
+                #sigma_p = 1.75,
                 #beta_phi = 0.1,
                 #beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
@@ -249,8 +250,9 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 Pars <- c('mean_phi',
           'mean_p',
-          'sigma_p',
-          'n_p',
+          #'sigma_p',
+          #'n_p',
+          'mean_p',
           'sd.y',
           'sd.y.new',
           'mn.y',
@@ -355,85 +357,14 @@ tt <- (proc.time() - ptm)[3]/60 #minutes
 
 
 
-
-#calculate rhats
-var_names <- vapply(strsplit(colnames(out[[1]]), 
-                             split = "[", fixed = TRUE), `[`, 1, FUN.VALUE=character(1))
-
-params = c('mean_phi',
-           'mean_p',
-           'sigma_p',
-           'sigma_phi',
-           'beta_p',
-           'beta_phi',
-           'mu_phi',
-           'mu_p')
-
-grouped <- c()
-for (i in 1:length(params))
-{
-  get.rows <- which(var_names %in% params[i])
-  grouped <- c(grouped, get.rows)
-}
-
-#only params of interest - put back into mcmc.list object
-nlist <- do.call(coda::mcmc.list, out[,grouped])
-
-#calculate rhat
-rhats <- round(gelman.diag(nlist, multivariate = FALSE)$psrf[,1], digits = 4)
-rh_df <- data.frame(rhat = rhats)
-
-
-#PPC
-params = c('pv.mn', 'pv.sd')
-grouped2 <- c()
-for (i in 1:length(params))
-{
-  get.rows <- which(var_names %in% params[i])
-  grouped2 <- c(grouped2, get.rows)
-}
-
-means <- apply(out[[1]][,grouped2], 2, mean)
-
-
-
-
-#create directory
-system(paste0('mkdir ', NAME))
-setwd(paste0(NAME))
-
-#set max number of rows to print to 5k
-options(max.print = 5000)
-
-#write results to text file
-sink(paste0('results_', NAME,'.txt'))
-print(paste0(NAME))
-print(paste0('Number of nests: ', nests))
-print(paste0('Number of time steps: ', n_ts))
-print(paste0('Total minutes: ', round(tt, digits = 2)))
-print(paste0('Total iterations: ', n_final))
-print(paste0('n_adapt: ', n_adapt))
-print(paste0('n_burn: ', n_burn))
-print(paste0('n_draw: ', n_draw))
-print(paste0('n_thin: ', n_thin))
-print(paste0('n_chain: ', n_chain))
-print(paste0('Extra: ', EXTRA))
-print(paste0('Rhat_max: ', Rhat_max))
-print(paste0('n_max: ', n_max))
-print(rh_df)
-print(paste0('Posterior Predictive Check:'))
-print(means)
-sink()
-
-
 #justification of priors on tau_p
 require(boot)
 #lower bounds
-a <- rnorm(1000, 0, 0.25)
+a <- rnorm(1000, 0, 1)
 b <- inv.logit(a)
 hist(b)
 #upper bounds
-a <- rnorm(1000, 0, 3)
+a <- rnorm(1000, 2, 2)
 b <- inv.logit(a)
 hist(b)
 
@@ -441,6 +372,7 @@ hist(b)
 #summarize
 MCMCsummary(out, digits = 4)
 MCMCtrace(out)
+
 
 #PPC
 sd.y.ch <- MCMCchains(out, params = 'sd.y')
