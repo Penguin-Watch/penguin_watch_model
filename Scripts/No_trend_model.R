@@ -198,7 +198,7 @@ DATA <- list(
       mean_p ~ dbeta(1,1)                    #Mean detection
       mu_p <- logit(mean_p)                  #(mean_p / (1 - mean_p))
       tau_p <- pow(sigma_p, -2)
-      sigma_p ~ dunif(1, 3)                  #was dunif(0,10) but that's informative on p on logit scale
+      sigma_p ~ dunif(1, 2)                  #was dunif(0,10) but that's informative on p on logit scale
       
       # beta_phi ~ dnorm(0, 1000) T(0,1)
       # beta_p ~ dnorm(0, 100) T(0,1)
@@ -426,14 +426,29 @@ print(means)
 sink()
 
 
+#justification of priors on tau_p
+require(boot)
+#lower bounds
+a <- rnorm(1000, 0, 0.25)
+b <- inv.logit(a)
+hist(b)
+#upper bounds
+a <- rnorm(1000, 0, 3)
+b <- inv.logit(a)
+hist(b)
 
 
+#summarize
 MCMCsummary(out, digits = 4)
+MCMCtrace(out)
+
+#PPC
 sd.y.ch <- MCMCchains(out, params = 'sd.y')
 sd.y.new.ch <- MCMCchains(out, params = 'sd.y.new')
 
 plot(sd.y.ch, sd.y.new.ch, pch = '.', asp = 1)
 abline(0,1, col = 'red')
+sum(sd.y.new.ch > sd.y.ch)/length(sd.y.ch)
 
 
 mn.y.ch <- MCMCchains(out, params = 'mn.y')
@@ -441,4 +456,4 @@ mn.y.new.ch <- MCMCchains(out, params = 'mn.y.new')
 
 plot(mn.y.ch, mn.y.new.ch, pch = '.', asp = 1)
 abline(0,1, col = 'red')
-
+sum(mn.y.ch > mn.y.new.ch)/length(mn.y.ch)
