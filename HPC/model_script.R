@@ -1,7 +1,13 @@
 ################
-#Run pwatch mark-recapture script
+# Penguin Watch mark-recapture script
 #
-#to be run on HPC cluster
+# Run on SBU HPC cluster
+# Penguin Watch data simulated with positive trend in both survival and detection probabilities
+# Data simulated with Day and Night (p = 0 during half the observations)
+#
+# Model survival with random effect for time
+# Model detection with random effect for nest
+# Model survival and detection with trend as a function of time
 ################
 
 
@@ -235,7 +241,6 @@ DATA <- list(
 
       #observation model
       y[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #binary day/night
-      #y[i,t] ~ dbinom(p_sight[i,t], z[i,t]) #NO DAY/NGHT
       p_sight[i,t] <- ifelse(z[i,t] < 2,
       p[i,t] * z[i,t],
       p[i,t])
@@ -243,7 +248,6 @@ DATA <- list(
 
       #PPC
       y.new[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #binary day/night
-      #y.new[i,t] ~ dbinom(p_sight[i,t], z[i,t]) #NO DAY/NIGHT
       }
       }
 
@@ -273,7 +277,7 @@ DATA <- list(
       #priors
       for (t in 1:L)
       {
-      eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10) #the variance parameter here is estimated from these values - should it be constrained instead?
+      eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10)
       }
 
       mean_phi ~ dbeta(1.5,1.5)                 #Mean survival
