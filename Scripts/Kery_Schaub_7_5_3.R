@@ -1,7 +1,16 @@
+##############################
+# Kerry and Schaub 2012 - 7.5.3. Individual random effects
+#
+# Data simulated - no trend across time - survival different for each individual
+# Mark-recapture for single individuals (1/0 rather than 2/1/0)
+# Model p constant across time and individuals
+# Model phi constant across time - random effect for individual
+#
+# Code modified to simulate data where all individuals are marked at time step 1
+#
+# Similar to No_trend_model.R, PPC (sd) indicates model doesn't replicate data sd well. sd not a good PPC metric in mark-recapture
+##############################
 
-# 7.5.3. Individual random effects
-# modified to simulate data where all individuals are marked at time step 1
-# does not give what might be considered excellent results from PPC - could be due to prior on eps being infomative on logit scale
 
 rm(list = ls())
 
