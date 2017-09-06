@@ -1,0 +1,29 @@
+#################
+# NOTES
+#
+# Previously at the top of 'Simplified_model.R'
+#
+#################
+
+
+#FIXED EFFECT FOR EPS_PHI - though should use random effect if we want to estimate temporal variabilty in EPS_PHI
+#RANDOM EFFECT FOR EPS_P
+
+#Probably want to remove EPS_PHI as a time step effect once we have covariates. For one site, something like logit(phi[i,j]) <- mu_phi + beta1*TIME[t] + beta2*SIC[t] + beta3*KRILL[t] + error[t]
+#beta1 contrained time effect
+#beta2 effect of SIC
+#beta3 effect of KRILL
+#error is variation not accounted for by these other covariates
+
+#should also probably model (FOR PHI PARAMS) those beta parameters with site as a random effect (using group index) - mu should probably have a random effect as well - there may be simply be differences at sites that we aren't accounting for in our model
+
+#probably don't need a random effect on any of the P PARAMS. Everything to do with detection probability should probably be kept the same. All nests can vary, so they are essentially treated as coming from one big colony for estimation of P.
+
+#should just simulate two covariates that impact survival on a fine time scale (i.e., every time step) and remove EPS_PHI as time effect - do need to include EPS_PHI[t] as an error term though (or if modeling colony as a random effect, being sure to give each colony it's own EPS_PHI[t])
+
+
+#PHI depends on time, but P depends on individual identity, so I think it's fine
+#Look at correaltion between all PHI and P params, not just among PHI params and among P params
+#Look at overlap betwen posterior and prior - put uniform (or broad) priors on betas and mus to look at this. Don't think this can be used for the error term, as this is modeled hierarchically - those parameters are themselves drawn from a distribution.
+
+#starting values of beta_p must be 0 when many time steps bc inv.logit(mu + beta_p*[large index for cov]) = 1 and if y = 0 at that index, JAGS doesn't like it
