@@ -7,4 +7,4 @@ All model runs being performed on high performance computing cluster at SBU. PBS
 
 **General model structure:**
 
-![](model_notes_SESYNC.JPG)
+![](Reference/model_notes_SESYNC.JPG)
