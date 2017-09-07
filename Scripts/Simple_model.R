@@ -9,6 +9,7 @@
 #
 # PPC (sd) results indicate mark-recapture with nest as random effect doesn't predict sd well - probably not an appropriate statistic to use in larger model
 # PPC (mean) results suggest model is appropriate
+# Kery and Schaub 2012 p 223 states that modeling using this format, you can't conduct the typical GOF stat, because we have individual data (they are doing something similar to a chi-square test for each iteration on both real and simualted data)
 ##############################
 
 # Clear environment -------------------------------------------------------
@@ -157,7 +158,12 @@ DATA <- list(
       p[i,t] * z[i,t],
       p[i,t])
       
+      #PPC - simulate data
       y.new[i,t] ~ dbinom(p_sight[i,t], z[i,t])
+      
+      #calculate likelihood for each data point
+      t.act.like[i,t] <- dbin(y[i,t], p_sight[i,t], z[i,t])
+      t.sim.like[i,t] <- dbin(y.new[i,t], p_sight[i,t], z[i,t])
       }
       }
       
@@ -173,6 +179,16 @@ DATA <- list(
       sd.y.new <- sd(y.new)
       pv.sd <- step(sd.y.new - sd.y)
       
+      #likelihood - King and Brook 2002 - p. 804 (not sure if this is acutally the full likelihood though)
+      for (i in 1:N)
+      {
+      t2.act.like[i] <- prod(t.act.like)
+      t2.sim.like[i] <- prod(t.sim.like)
+      }
+
+      #act.like <- prod(t2.act.like)
+      #sim.like <- prod(t2.sim.like)
+
       
       #transforms
       for (i in 1:N)
@@ -253,7 +269,9 @@ Pars <- c('mean_phi',
           'sd.y',
           'sd.y.new',
           'mn.y',
-          'mn.y.new')
+          'mn.y.new',
+          'act.like',
+          'sim.like')
 
 
 
