@@ -142,7 +142,10 @@ DATA <- list(
       z[i,1] <- 2
       y.new[i,1] ~ dbinom(p[i,1], 2)
       
-      
+      #calculate likelihood for each data point
+      t.act.like[i,1] <- logdensity.bin(y[i,1], p[i,1], z[i,1])
+      t.sim.like[i,1] <- logdensity.bin(y.new[i,1], p[i,1], z[i,1])
+
       for (t in 2:L)
       {
       
@@ -162,8 +165,8 @@ DATA <- list(
       y.new[i,t] ~ dbinom(p_sight[i,t], z[i,t])
       
       #calculate likelihood for each data point
-      t.act.like[i,t] <- dbin(y[i,t], p_sight[i,t], z[i,t])
-      t.sim.like[i,t] <- dbin(y.new[i,t], p_sight[i,t], z[i,t])
+      t.act.like[i,t] <- logdensity.bin(y[i,t], p_sight[i,t], z[i,t])
+      t.sim.like[i,t] <- logdensity.bin(y.new[i,t], p_sight[i,t], z[i,t])
       }
       }
       
@@ -179,15 +182,10 @@ DATA <- list(
       sd.y.new <- sd(y.new)
       pv.sd <- step(sd.y.new - sd.y)
       
-      #likelihood - King and Brook 2002 - p. 804 (not sure if this is acutally the full likelihood though)
-      for (i in 1:N)
-      {
-      t2.act.like[i] <- prod(t.act.like)
-      t2.sim.like[i] <- prod(t.sim.like)
-      }
+      #likelihood - King and Brook 2002 - p. 804 (not sure if acutally the full likelihood here though)
 
-      #act.like <- prod(t2.act.like)
-      #sim.like <- prod(t2.sim.like)
+      act.like <- sum(t.act.like)
+      sim.like <- sum(t.sim.like)
 
       
       #transforms
@@ -306,9 +304,6 @@ n_max <- 100000 # max allowable iterations
 #                        n.iter = n_draw,
 #                        variable.names = Pars,
 #                        thin = n_thin)
-# 
-# MCMCsummary(samples, ISB = FALSE)
-
 
 
 # Run model (parallel) ---------------------------------------------------------------
@@ -371,8 +366,9 @@ tt <- (proc.time() - ptm)[3]/60 #minutes
 
 
 
+# justification of priors on tau_p ----------------------------------------
 
-#justification of priors on tau_p
+
 require(boot)
 #lower bounds
 a <- rnorm(1000, 0, 1)
@@ -388,13 +384,16 @@ hist(b)
 
 
 
+# Summarize data ----------------------------------------------------------
 
-#summarize
 MCMCsummary(out, digits = 4)
 MCMCtrace(out)
 
 
-#PPC
+
+# PPC ---------------------------------------------------------------------
+
+#sd
 sd.y.ch <- MCMCchains(out, params = 'sd.y')
 sd.y.new.ch <- MCMCchains(out, params = 'sd.y.new')
 
@@ -402,10 +401,19 @@ plot(sd.y.ch, sd.y.new.ch, pch = '.', asp = 1)
 abline(0,1, col = 'red')
 sum(sd.y.new.ch > sd.y.ch)/length(sd.y.ch)
 
-
+#mean
 mn.y.ch <- MCMCchains(out, params = 'mn.y')
 mn.y.new.ch <- MCMCchains(out, params = 'mn.y.new')
 
 plot(mn.y.ch, mn.y.new.ch, pch = '.', asp = 1)
 abline(0,1, col = 'red')
 sum(mn.y.ch > mn.y.new.ch)/length(mn.y.ch)
+
+#likelihood
+act.like.ch <- MCMCchains(out, params = 'act.like')
+sim.like.ch <- MCMCchains(out, params = 'sim.like')
+
+plot(act.like.ch, sim.like.ch, pch = '.', asp = 1)
+abline(0,1, col = 'red')
+sum(act.like.ch > sim.like.ch)/length(act.like.ch)
+
