@@ -569,6 +569,7 @@ print(means)
 sink()
 
 
+file.remove(paste0(JAGS_FILE))
 
 
 # Save MCMC object to RDS -------------------------------------------------------
