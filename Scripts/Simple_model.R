@@ -46,7 +46,7 @@ PHI <- matrix(rep(0.995, nests*(n_ts-1)),
               byrow = TRUE)
 
 #simulate P
-set.seed(1)
+set.seed(2)
 dp <- runif(30, 0.3, 0.8)
 
 P <- matrix(rep(NA, nests*(n_ts-1)),
@@ -140,7 +140,7 @@ DATA <- list(
       {
       #both alive at time step 1
       z[i,1] <- 2
-      y.new[i,1] ~ dbinom(p[i,1], 2)
+      y.new[i,1] <- 2 #~ dbinom(p[i,1], 2)
       
       #calculate likelihood for each data point
       t.act.like[i,1] <- logdensity.bin(y[i,1], p[i,1], z[i,1])
@@ -183,7 +183,6 @@ DATA <- list(
       pv.sd <- step(sd.y.new - sd.y)
       
       #likelihood - King and Brook 2002 - p. 804 (not sure if acutally the full likelihood here though)
-
       act.like <- sum(t.act.like)
       sim.like <- sum(t.sim.like)
 
@@ -264,6 +263,7 @@ Pars <- c('mean_phi',
           'mean_p',
           'sigma_p',
           'n_p',
+          'eps_p',
           'sd.y',
           'sd.y.new',
           'mn.y',
@@ -280,8 +280,8 @@ NAME <- 'out_Sep_05_2017_R1_simplified'
 
 JAGS_FILE <- 'mark_recapture.jags'
 n_adapt <- 5000  # number for initial adapt
-n_burn <- 5000 # number burnin
-n_draw <- 4000  # number of final draws to make
+n_burn <- 50000 # number burnin
+n_draw <- 10000  # number of final draws to make
 n_thin <- 2    # thinning rate
 n_chain <- 3  # number of chains
 
@@ -389,7 +389,7 @@ hist(b)
 MCMCsummary(out, digits = 4)
 MCMCtrace(out)
 
-
+DATA$y[9,]
 
 # PPC ---------------------------------------------------------------------
 
