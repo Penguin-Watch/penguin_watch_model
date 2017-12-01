@@ -23,7 +23,9 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
 {
   install.packages('pacman', repos = "http://cran.case.edu")
 }
-pacman::p_load(rjags, parallel, MCMCvis)
+pacman::p_load(rjags, parallel, update = TRUE)
+
+pacman::p_load_gh('caseyyoungflesh/MCMCvis', dependencies = TRUE, update = TRUE)
 
 
 #JAGS module
