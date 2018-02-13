@@ -3,10 +3,5 @@
 .RData
 .Ruserdata
 *.jags
-out_10a_500b_20d_200t_102_trackpphi.rds
-out_10a_100b_20d_200t_102_trackpphi_newpriors.rds
-out_8a_20b_10d_200t_trackpphi_PPC.rds
-out_8a_50b_20d_200t_PPC_diag.rds
-out_8a_50b_20d_200t_PPC_diag_fixed.rds
-out_Sep_04_2017_R1_sim_daynight.rds
-MCMCtrace.pdf
+/Data
+/Results
