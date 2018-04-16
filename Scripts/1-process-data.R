@@ -159,7 +159,17 @@ for (i in 1:length(cam_sites))
 
 
 
+#determine which years match for both krill and PW data (need to determine how to make the cutoff between years [and remember that Fiona used 2007 for 2006/2007 season - double check this])
+str(master_krill)
 
+for (i in 1:length(cam_sites))
+{
+  i <- 1
+  temp <- filter(master_krill, col_id == cam_sites[i])
+  str(temp)
+  
+  site_year  
+}
 
 
 
