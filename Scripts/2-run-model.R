@@ -89,7 +89,7 @@ last_date <- format(as.Date('02-01', format = '%m-%d'), '%m-%d')
 
 
 
-# Create PW arrays -------------------------------------------
+# Create nests_array -------------------------------------------
 
 #just nest time series columns 
 #all colnames
@@ -149,6 +149,9 @@ for (k in 1:n_sites)
 
 
 
+
+# create real_nests matrix ------------------------------------------------
+
 #create matrix that has number of nests at each site/year
 #rows are years, columns are sites
 real_nests <- matrix(NA, nrow = n_yrs, ncol = n_sites)
@@ -173,6 +176,10 @@ for (k in 1:dim(nests_array)[4])
 }
 
 
+
+
+
+# create w_array ----------------------------------------------------------
 
 #create w_array (day and night)
 w_array <- nests_array
@@ -200,9 +207,43 @@ for (k in 1:dim(nests_array)[4])
 #w_array[1:15, 1:10, 2, 1]
 
 
-z_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 
 
+# create z_array ----------------------------------------------------------
+
+#z_array - array of known true values
+
+z_array <- nests_array
+
+for (k in 1:dim(nests_array)[4])
+{
+  #k <- 1
+  for (j in 1:dim(nests_array)[3])
+  {
+    #j <- 2
+    for (i in 1:real_nests[j,k])
+    {
+      n1 <- 1
+      if (sum(z_array[,i,j,k] == 2, na.rm = TRUE) > 0)
+      {
+        #last sight with two chicks
+        n2 <- max(which(z_array[,i,j,k] == 2))
+        #fill 2 for all between first val and last sight of 2
+        z_array[n1:n2,i,j,k] <- 2
+      }
+      
+      #NA at first state because model designates 2 chicks at time step 1
+      z_array[n1,i,j,k] <- NA
+    }
+  }
+}
+
+
+#after there aren't two, don't know if there are actually 2, 1, or 0 so NA
+zeros <- which(z_array == 0, arr.ind = TRUE)
+ones <- which(z_array == 1, arr.ind = TRUE)
+z_array[zeros] <- NA
+z_array[ones] <- NA
 
 
 
@@ -215,7 +256,6 @@ z_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 #dim3 [j] = years
 #dim4 [k] = sites
 
-#need array that has nights 
 #need array that has z vals
 
 
