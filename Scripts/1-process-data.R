@@ -110,7 +110,7 @@ cam_sites <- c(cam_sites_p, 'PCHA')
 
 setwd('../../Krill_data')
 
-krill_data <- read.csv('krill_data_CLEAN.csv')
+krill_data <- read.csv('krill_data_CLEAN.csv', stringsAsFactors = FALSE)
 points <- data.frame(longitude = krill_data$lon_st, 
                      latitude = krill_data$lat_st,
                      krill = krill_data$krill_green_weight,
@@ -159,27 +159,46 @@ for (i in 1:length(cam_sites))
 
 
 
-#determine which years match for both krill and PW data (need to determine how to make the cutoff between years [and remember that Fiona used 2007 for 2006/2007 season - double check this])
-str(master_krill)
+# thoughts ----------------------------------------------------------------
 
+#2 ways to look at impact of krill
+#-for each season (june - mid Feb [or wherever creche point is set])
+#-do years with more krill fishing lead to lower breeding success at that site
+#-total krill caught (average of year totals) within that site buffer
+#-does this impact the colony intercept for breeding success
+
+
+
+
+# Total krill catch for each site -----------------------------------------
+
+
+total_krill <- c()
 for (i in 1:length(cam_sites))
 {
-  i <- 1
+  #i <- 1
+  #krill data
   temp <- filter(master_krill, col_id == cam_sites[i])
-  str(temp)
-  
-  site_year  
+  kr_total <- sum(temp$krill_green_weight)
+  tt <- data.frame(site = cam_sites[i], kr_total = kr_total)
+  total_krill <- rbind(total_krill, tt)
 }
 
 
 
 
 
-# thoughts ----------------------------------------------------------------
+# Krill catch in each season ----------------------------------------------
+
+#determine which years match for both krill and PW data (remember that Fiona used 2007 for 2006/2007 season)
 
 
-#-might want to look at over trawl density (average of where most krill is caught spatially) - could be covariate in model
-#-additionally/alternatively might want to look at temporal component of krill catch
+#Convert dates to POSIX - extract year, month, day, julian 
+pos_dates <- as.POSIXct(master_krill$date_st, format = "%d-%B-%y")
+#as.numeric(format(pos_dates, format = "%Y"))
+#as.numeric(format(pos_dates, format = "%m"))
+#as.numeric(format(pos_dates, format = "%d"))
+#as.numeric(format(pos_dates, format = "%j"))
 
 
 
@@ -187,7 +206,12 @@ for (i in 1:length(cam_sites))
 
 
 
-# plot all krill data -----------------------------------------------------
+
+
+
+
+
+# plot all krill trawl data -----------------------------------------------------
 
 #need to find better way to visualize krill catch
 
