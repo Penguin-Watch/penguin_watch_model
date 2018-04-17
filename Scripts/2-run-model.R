@@ -89,7 +89,7 @@ last_date <- format(as.Date('02-01', format = '%m-%d'), '%m-%d')
 
 
 
-# Create PW array -------------------------------------------
+# Create PW arrays -------------------------------------------
 
 #just nest time series columns 
 #all colnames
@@ -120,12 +120,9 @@ n_sites <- length(un_sites)
 
 #create blank array
 nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
-w_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
-z_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 
 
-
-#fill array
+#fill response data array
 for (k in 1:n_sites)
 {
   #k <- 1
@@ -151,6 +148,8 @@ for (k in 1:n_sites)
 }
 
 
+
+#create matrix that has number of nests at each site/year
 #rows are years, columns are sites
 real_nests <- matrix(NA, nrow = n_yrs, ncol = n_sites)
 for (k in 1:dim(nests_array)[4])
@@ -174,7 +173,41 @@ for (k in 1:dim(nests_array)[4])
 }
 
 
-# Create PW array ---------------------------------------------------------
+
+#create w_array (day and night)
+w_array <- nests_array
+#assign 1 to values with observations (either 0/1/2 for nests_array)
+w_array[which(!is.na(w_array), arr.ind = TRUE)] <- 1
+
+#only fille in 0 if this was a night (there is data on either side and not just missing nests)
+for (k in 1:dim(nests_array)[4])
+{
+  #k <- 1
+  for (j in 1:dim(nests_array)[3])
+  {
+    #j <- 2
+    #if there are more than 0 nests in that year (there is data for that site/year)
+    if (real_nests[j,k] > 0)
+    {
+      sub_i <- real_nests[j,k]
+      w_array[cbind(which(is.na(w_array[,1:sub_i,j,k]), arr.ind = TRUE), j, k)] <- 0
+    }
+  }
+}
+
+#checks:
+#nests_array[1:15, 1:10, 2, 1]
+#w_array[1:15, 1:10, 2, 1]
+
+
+z_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
+
+
+
+
+
+
+# Create Data for JAGS ---------------------------------------------------------
 
 #nests_array:
 #dim1 (rows) [t] = time steps
@@ -235,13 +268,13 @@ for (k in 1:NK)
                                 phi[t,i,j,k])
     
         #observation model
-        y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #binary day/night
+        y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
         p_sight[t,i,j,k] <- ifelse(z[t,i,j,k] < 2,
                                 p[t,i,j,k] * z[t,i,j,k],
                                 p[t,i,j,k])
     
         #PPC
-        #y.new[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #binary day/night
+        #y.new[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
       }
     }
   }
