@@ -44,16 +44,24 @@ rm(list = ls())
 #devtools::install_github('caseyyoungflesh/jagsRun')
 
 require(jagsRun)
+require(abind)
 
 
-# Data for model ----------------------------------------------------------
 
 
-un_sites <- unique(PW_data$site)
-for (i in 1:length(un_sites))
+# determine PW dates to use -----------------------------------------------
+
+
+
+#remove HALF bc it's not a full season
+un_sites_p <- unique(PW_data$site)
+un_sites <- un_sites_p[which(un_sites_p != 'HALF')]
+
+min_date <- as.Date(NA)
+for (k in 1:length(un_sites))
 {
-  #i <- 1
-  temp <- filter(PW_data, site == un_sites[i])
+  #k <- 1
+  temp <- filter(PW_data, site == un_sites[k])
   un_yrs <- unique(temp$season_year)
   
   for (j in 1:length(un_yrs))
@@ -61,15 +69,107 @@ for (i in 1:length(un_sites))
     #j <- 1
     temp2 <- filter(temp, season_year == un_yrs[j])
     
+    temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
+    t_min_date <- min(temp_dates)
+    min_date <- c(min_date, t_min_date)
+  }
+}
+
+
+#first date of season to use (add 1 to start on full day)
+f_min_date <- format((min_date+1), '%m-%d')
+first_date <- max(f_min_date, na.rm = TRUE)
+
+#use Feb 1 as last date of season to use
+last_date <- format(as.Date('02-01', format = '%m-%d'), '%m-%d')
+
+
+
+
+# Create PW array -------------------------------------------
+
+#just nest time series columns 
+#all colnames
+cols <- colnames(PW_data)
+#just columns with 'nest'
+ind <- grep('nest', cols)
+#which columns have x.coord and y.coord
+to.rm1 <- grep('x.coord', cols)
+to.rm2 <- grep('y.coord', cols)
+to.rm <- c(to.rm1, to.rm2)
+#which columns just have 'nest'
+tog <- c(ind, to.rm)
+tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
+
+PW_nests <- PW_data[,tog2]
+
+
+dims <- c()
+for (k in 1:length(un_sites))
+{
+  #k <- 5
+  temp <- filter(PW_data, site == un_sites[k])
+  un_yrs <- unique(temp$season_year)
+  
+  for (j in 1:length(un_yrs))
+  {
+    #j <- 2
+    temp2 <- filter(temp, season_year == un_yrs[j])
+    temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
+    
+    #first and last days in season
+    FIRST <- as.Date(paste0((un_yrs[j]-1), '-', first_date), format = "%Y-%m-%d")
+    LAST <- as.Date(paste0(un_yrs[j], '-', last_date), format = "%Y-%m-%d")
+    
+    valid_dates <- which(temp_dates > FIRST & temp_dates < LAST)
+    
+    #appropriate date range and appropriate columns for nests
+    temp_nests <- temp2[valid_dates, tog2]
+    dims <- rbind(dims, dim(temp_nests))
+  }
+}
+
+dims
+
+
+
+
+
+
+max_rows <- max(dims[,1])
+
+# Create PW array ---------------------------------------------------------
+
+
+nests_array <- c()
+un_sites <- unique(PW_data$site)
+for (k in 1:length(un_sites))
+{
+  #k <- 2
+  temp <- filter(PW_data, site == un_sites[k])
+  un_yrs <- unique(temp$season_year)
+  
+  years_array <- c()
+  for (j in 1:length(un_yrs))
+  {
+    #j <- 1
+    temp2 <- filter(temp, season_year == un_yrs[j])
+    temp_nests <- temp2[,tog2]
+    years_array <- abind(years_array, temp_nests, along = 3)
   }
   
+  nests_array <- abind(nests_array, years_array, along = 4)
 }
 
 
 
 
-sim_data <- readRDS('sim_data.rds')
-z_vals <- readRDS('z_vals.rds')
+
+
+#structure into 4 dimensional array ([X,,,] = i (nest_id), [,X,,] = t (time_step), 
+#[,,X,] = j (year), [,,,X] = k (site))
+
+
 
 
 DATA <- list(
@@ -77,7 +177,8 @@ DATA <- list(
   N = NROW(sim_data), #number of nests
   L = NCOL(sim_data), #number of time points
   z = z_vals,
-  x = 1:NCOL(sim_data)) 
+  x = 1:NCOL(sim_data),
+  w = w_mat) #binary day (1)/night (0)
 
 
 
@@ -87,12 +188,12 @@ DATA <- list(
 #N = number of nests (5)
 
 {
-sink("mark_recapture.jags")
+sink("pwatch_surv.jags")
 
 cat("
     model {
   
-      for (i in 1:N)
+    for (i in 1:N)
     {
     #both chicks alive at time step 1
     z[i,1] <- 2
@@ -181,29 +282,29 @@ sink()
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mean_phi = runif(1, 0, 1),
-                mean_p = runif(1, 0, 1),
-                sigma_phi = runif(1, 0, 10),
-                sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
+Inits_1 <- list(mean_phi = 0.5,
+                mean_p = 0.5,
+                sigma_phi = 0.26,
+                sigma_p = 0.26,
+                beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mean_phi = runif(1, 0, 1),
-                mean_p = runif(1, 0, 1),
-                sigma_phi = runif(1, 0, 10),
-                sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
+Inits_2 <- list(mean_phi = 0.6,
+                mean_p = 0.3,
+                sigma_phi = 1,
+                sigma_p = 1,
+                beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mean_phi = runif(1, 0, 1),
-                mean_p = runif(1, 0, 1),
-                sigma_phi = runif(1, 0, 10),
-                sigma_p = runif(1, 0, 10),
-                beta_phi = 0,
+Inits_3 <- list(mean_phi = 0.7,
+                mean_p = 0.4,
+                sigma_phi = 1.5,
+                sigma_p = 1.5,
+                beta_phi = 0.1,
                 beta_p = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
@@ -223,117 +324,26 @@ Pars <- c('mean_phi',
           'mu_phi',
           'mu_p',
           'eps_phi',
-          'eps_p')
+          'eps_p',
+          'p',
+          'phi',
+          'pv.mn',
+          'pv.sd')
 
 
-# Inputs for MCMC ---------------------------------------------------------
+# Run model ---------------------------------------------------------------
 
-JAGS_FILE <- 'mark_recapture.jags'
-n_adapt <- 10000  # number for initial adapt
-n_burn <- 80000 # number burnin
-n_draw <- 20000  # number of final draws to make
-n_thin <- 2    # thinning rate
-n_chain <- 3  # number of chains
-
-Rhat_max <- 1.01 # max allowable Rhat (close to 1 = convergence)
-n_max <- 70000 # max allowable iterations
-
-
-# Run model (parallel) ---------------------------------------------------------------
-
-#number of chains
-cl <- parallel::makeCluster(n_chain)
-
-pid <- NA
-for(i in 1:n_chain)
-{
-  pidNum <- capture.output(cl[[i]])
-  start <- regexpr("pid", pidNum)[[1]]
-  end <- nchar(pidNum)
-  pid[i] <- substr(pidNum, (start + 4), end)
-}
- 
-parallel::clusterExport(cl, 
-                        c('DATA', 
-                          'n_adapt', 
-                          'n_burn', 
-                          'n_draw',
-                          'n_thin',
-                          'Pars', 
-                          'pid',
-                          'F_Inits',
-                          'JAGS_FILE'
-                        ))
-
-ptm <- proc.time()
-out.1 <- parallel::clusterEvalQ(cl, 
-                      {
-                        require(rjags)
-                        processNum <- which(pid==Sys.getpid())
-                        m.inits <- F_Inits[[processNum]]
-                        
-                        jm = jags.model(data = DATA, 
-                                        file = paste0(JAGS_FILE), 
-                                        inits = m.inits, 
-                                        n.chains = 1, 
-                                        n.adapt = n_adapt)
-                        
-                        update(jm, 
-                               n.iter = n_burn)
-                        
-                        samples = coda.samples(jm, 
-                                               n.iter = n_draw, 
-                                               variable.names = Pars, 
-                                               thin = n_thin)
-                        return(samples)
-                        })
-
-
-out <- coda::mcmc.list(out.1[[1]][[1]], 
-                       out.1[[2]][[1]], 
-                       out.1[[3]][[1]])
-
-
-
-
-#more iterations if not converged
-n_total <- n_burn + n_draw
-n_extra <- 0
-while(max(MCMCsummary(out)[,5], na.rm = TRUE) > Rhat_max &
-      n_total < n_max)
-{
-  
-  out.2 <- clusterEvalQ(cl, 
-                        {
-                          require(rjags)
-                          processNum <- which(pid==Sys.getpid())
-                          m.inits <- F_Inits[[processNum]]
-                          
-                          samples = coda.samples(jm, 
-                                                 n.iter = n_draw, 
-                                                 variable.names = Pars, 
-                                                 thin = n_thin)
-                          return(samples)
-                        })
-  
-  out <- coda::mcmc.list(out.2[[1]][[1]], 
-                         out.2[[2]][[1]], 
-                         out.2[[3]][[1]])
-  
-  n_extra <- n_extra + n_draw
-  n_total <- n_total + n_draw
-}
-
-stopCluster(cl)
-
-n_final <- floor((n_draw + n_extra)/n_thin)
-print(paste0('Total iterations: ', n_final))
-(proc.time() - ptm)[3]/60 #minutes
-
-
-#saveRDS(out, 'out_10a_80b_20d_101.rds')
-
-
-#Inferences were derived from $`r n_final`$ samples drawn following an adaptation period of $`r n_adapt`$ draws, and a burn-in period of $`r (n_total - n_draw)`$ draws using $`r n_chain`$ chains and a thinning rate of $`r n_thin`$.
+jagsRun(jagsData = DATA,
+        jagsModel = 'pwatch_surv.jags',
+        jagsInits = F_Inits,
+        params = Pars,
+        jagsID = 'April_17_2018',
+        jagsDsc = 'First go with real data',
+        n_chain = 3,
+        n_adapt = 8000,
+        n_burn = 50000,
+        n_draw = 50000,
+        n_thin = 10,
+        DEBUG = TRUE)
 
 
