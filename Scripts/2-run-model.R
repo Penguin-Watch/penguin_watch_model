@@ -35,16 +35,37 @@ rm(list = ls())
 
 # Load packages -----------------------------------------------------------
 
-if('pacman' %in% rownames(installed.packages()) == FALSE)
-{
-  install.packages('pacman')
-}
+# if('pacman' %in% rownames(installed.packages()) == FALSE)
+# {
+#   install.packages('pacman')
+# }
+# 
+# pacman::p_load(rjags, MCMCvis, parallel)
+#devtools::install_github('caseyyoungflesh/jagsRun')
 
-pacman::p_load(rjags, MCMCvis, parallel)
-
+require(jagsRun)
 
 
 # Data for model ----------------------------------------------------------
+
+
+un_sites <- unique(PW_data$site)
+for (i in 1:length(un_sites))
+{
+  #i <- 1
+  temp <- filter(PW_data, site == un_sites[i])
+  un_yrs <- unique(temp$season_year)
+  
+  for (j in 1:length(un_yrs))
+  {
+    #j <- 1
+    temp2 <- filter(temp, season_year == un_yrs[j])
+    
+  }
+  
+}
+
+
 
 
 sim_data <- readRDS('sim_data.rds')
@@ -70,71 +91,86 @@ sink("mark_recapture.jags")
 
 cat("
     model {
-    
-    for (i in 1:N)
+  
+      for (i in 1:N)
     {
-      #both chicks alive at time step 1
-      z[i,1] <- 2
-
-      for (t in 2:L)
-      { 
-
-        #state model
-        z[i,t] ~ dbinom(p_alive[i,t], z[i,t-1])
-        p_alive[i,t] <- ifelse(z[i,t-1] < 2,
-                              phi[i,t] * z[i,t-1],
-                              phi[i,t])
-
-        #observation model
-        y[i,t] ~ dbinom(p_sight[i,t], z[i,t])
-        p_sight[i,t] <- ifelse(z[i,t] < 2,
-                              p[i,t] * z[i,t],
-                              p[i,t])
-
-      }
+    #both chicks alive at time step 1
+    z[i,1] <- 2
+    y.new[i,1] ~ dbinom(p[i,1], 2)
+    
+    for (t in 2:L)
+    {
+    
+    #state model
+    z[i,t] ~ dbinom(p_alive[i,t], z[i,t-1])
+    p_alive[i,t] <- ifelse(z[i,t-1] < 2, 
+                        phi[i,t] * z[i,t-1],
+                        phi[i,t])
+    
+    #observation model
+    y[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #binary day/night
+    p_sight[i,t] <- ifelse(z[i,t] < 2,
+                        p[i,t] * z[i,t],
+                        p[i,t])
+    
+    
+    #PPC
+    y.new[i,t] ~ dbinom(p_sight[i,t] * w[i,t], z[i,t]) #binary day/night
     }
-
-
+    }
+    
+    #PPC
+    #mean
+    mn.y <- mean(y)
+    mn.y.new <- mean(y.new)
+    pv.mn <- step(mn.y.new - mn.y)
+    
+    #sd
+    sd.y <- sd(y)
+    sd.y.new <- sd(y.new)
+    pv.sd <- step(sd.y.new - sd.y)
+    
+    
     #transforms
     for (i in 1:N)
     {
-      for (t in 1:L)
-      {
-        logit(phi[i,t]) <- mu_phi + beta_phi*x[t] + eps_phi[t]       #phi = survival prob
-        logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]               #p = detection prob
-      }
+    for (t in 1:L)
+    {
+    logit(phi[i,t]) <- mu_phi + beta_phi*x[t] + eps_phi[t]       #phi = survival prob
+    logit(p[i,t]) <- mu_p + beta_p*x[t] + eps_p[i]            #p = detection prob
     }
-
-
+    }
+    
+    
     #priors
     for (t in 1:L)
     {
-      eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10)
+    eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10)
     }
     
-    mean_phi ~ dunif(0,1)
-    mu_phi <- log(mean_phi / (1 - mean_phi))    
+    mean_phi ~ dbeta(1.5,1.5)                 #Mean survival
+    mu_phi <- log(mean_phi / (1 - mean_phi))
     tau_phi <- pow(sigma_phi, -2)
-    sigma_phi ~ dunif(0, 10)
-    sigma_phi2 <- pow(sigma_phi, 2)
+    sigma_phi ~ dunif(0.25, 3)
+    
     
     for (i in 1:N)
     {
-      eps_p[i] ~ dnorm(0, tau_p) T(-10,10)
+    eps_p[i] ~ dnorm(0, tau_p) T(-10,10)
     }
-
-    mean_p ~ dunif(0,1)                        #Mean survival - could use alternative below
+    
+    
+    mean_p ~ dbeta(1.5,1.5)                    #Mean detection - could use alternative below
     mu_p <- log(mean_p / (1 - mean_p))         #Logit transform - could use alternative below
-    #mean_p <- 1 / (1+exp(-mu_p))              #Mean survival - Inv-logit transform    
+    #mean_p <- 1 / (1+exp(-mu_p))              #Mean detection - Inv-logit transform
     #mu_p ~ dnorm(0, 0.001)                    #Prior for logit of mean survival
     tau_p <- pow(sigma_p, -2)
-    sigma_p ~ dunif(0, 10)
-    sigma_p2 <- pow(sigma_p, 2)
+    sigma_p ~ dunif(0.25, 3)
     
-    beta_phi ~ dnorm(0, 1) T(-1,1)
-    beta_p ~ dnorm(0, 1) T(-1,1)
-
-
+    beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+    beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+    
+    
     }",fill = TRUE)
 
 sink()
