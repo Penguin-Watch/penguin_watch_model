@@ -87,7 +87,7 @@ for(i in 1:length(un_sites))
   site_year <- rbind(site_year, tout)
 }
 
-
+str(PW_data)
 #sites with PW data that Fiona sent over:
 #BOOT is now PCHA in MAPPPD database
 pos <- which(un_sites == 'BOOT')
@@ -107,6 +107,11 @@ cam_sites <- c(cam_sites_p, 'PCHA')
 # intersection of krill data with PW data sites ---------------------------
 
 #load krill data - determine which entires lie within sites we have data for
+
+
+
+#just use colony lat/lon to create circle and then see which krill fishery trawls fall within these - don't use circles created using the landmask, as it is too coarse and doesn't capture archipelago structure
+
 
 setwd('../../Krill_data')
 
