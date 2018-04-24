@@ -45,6 +45,7 @@ rm(list = ls())
 
 require(jagsRun)
 require(abind)
+require(dplyr)
 
 
 
@@ -278,6 +279,7 @@ DATA <- list(
 
 
 
+setwd('~/Google_Drive/R/penguin_watch_model/Results/')
 
 # Model -------------------------------------------------------------------
 
@@ -363,7 +365,7 @@ for (k in 1:NK)
         #eta_p = effect of site
         #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
         #eps_p = residuals
-        logit(p[t,i,j,k]) <- mu_p + eta_p[k] + beta_p*x[t] + eps_p[i,k]
+        logit(p[t,i,j,k]) <- mu_p + eta_p[k] + beta_p*x[t] + eps_p[i,j,k]
       } #t
     } #i
   } #j
@@ -383,13 +385,16 @@ for (k in 1:NK)
 
   for (j in 1:NJ)
   {
-    gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
-
     for (t in 1:NT)
     {
       eps_phi[t,j,k] ~ dnorm(0, tau_eps_phi) #T(-10,10)
     }
   }
+}
+
+for (j in 1:NJ)
+{
+  gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
 }
 
 tau_eta_phi <- pow(sigma_eta_phi, -2)
@@ -413,9 +418,12 @@ for (k in 1:NK)
 {
   eta_p[k] ~ dnorm(0, tau_eta_p)
   
-  for (i in 1:NI[j,k])
+  for (j in 1:NJ)
   {
-    eps_p[i,k] ~ dnorm(0, tau_eps_p) #T(-10,10)
+    for (i in 1:NI[j,k])
+    {
+      eps_p[i,j,k] ~ dnorm(0, tau_eps_p) #T(-10,10)
+    }
   }
 }
 
@@ -489,6 +497,7 @@ Pars <- c('mean_phi',
 
 
 # Run model ---------------------------------------------------------------
+
 
 jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
