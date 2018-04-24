@@ -53,6 +53,10 @@ require(abind)
 
 #ensures that row dimension (time steps within season) will have the same dimension
 
+setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/')
+PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
+
+
 #remove HALF bc it's not a full season
 un_sites_p <- unique(PW_data$site)
 un_sites <- un_sites_p[which(un_sites_p != 'HALF')]
@@ -106,7 +110,8 @@ tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 
 #number of time steps (rows) in response data (-1 to account for greater than FIRST and less than LAST) - t
-n_ts <- as.numeric(LAST - FIRST - 1) * 24
+n_ts <- as.numeric(as.Date(paste0('2018', '-', last_date, format = '%Y-%m-%d')) - 
+                     as.Date(paste0('2017', '-', first_date, format = '%Y-%m-%d')) - 1) * 24
 
 #number of nests (columns) in response data - i
 n_nests <- length(tog2)
@@ -256,9 +261,6 @@ z_array[ones] <- NA
 #dim3 [j] = years
 #dim4 [k] = sites
 
-#need array that has z vals
-
-
 
 DATA <- list(
   y = nests_array, #reponse
@@ -267,22 +269,23 @@ DATA <- list(
   NI = real_nests, #matrix with number of nests for each site/year NI[j,k]
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
-  w = w_array) #binary day (1)/night (0)
+  w = w_array, #binary day (1)/night (0)
+  x = 1:dim(nests_array)[1]) #time steps for increase in surv/detection over time 
+
+
+
+#ADD 'CAMERA' number in here somewhere (detection should not be the same for each camera at a site)
+
 
 
 
 # Model -------------------------------------------------------------------
-
-
-#L = length of time series (400)
-#N = number of nests (5)
 
 {
 sink("pwatch_surv.jags")
 
 cat("
     model {
-  
 
 #sites
 for (k in 1:NK)
@@ -306,34 +309,34 @@ for (k in 1:NK)
         p_alive[t,i,j,k] <- ifelse(z[t-1,i,j,k] < 2, 
                                 phi[t,i,j,k] * z[t-1,i,j,k],
                                 phi[t,i,j,k])
-    
+
         #observation model
         y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
         p_sight[t,i,j,k] <- ifelse(z[t,i,j,k] < 2,
                                 p[t,i,j,k] * z[t,i,j,k],
                                 p[t,i,j,k])
-    
+
         #PPC
         #y.new[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
       }
     }
   }
 }
-    
-    
+
 
 #PPC
 #mean
 #mn.y <- mean(y)
 #mn.y.new <- mean(y.new)
 #pv.mn <- step(mn.y.new - mn.y)
-    
+
 #sd
 #sd.y <- sd(y)
 #sd.y.new <- sd(y.new)
 #pv.sd <- step(sd.y.new - sd.y)
-    
-    
+
+
+
 #transforms
 #sites
 for (k in 1:NK)
@@ -344,46 +347,84 @@ for (k in 1:NK)
     #nests
     for (i in 1:NI[j,k])
     {
-      logit(phi[t,i,j,k]) <- mu_phi + beta_phi*x[t] + eps_phi[t]       #phi = survival prob
-      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + eps_p[i]            #p = detection prob
+      #time
+      for (t in 1:NT)
+      {
+        #phi = survival prob
+        #mu_phi = grand mean for all sites/years
+        #eta_phi = effect of site
+        #gamma_phi = effect of year
+        #beta_phi = slope for increasing surv over time (older chicks have higher surv)
+        #eps_phi = residuals
+        logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t] + eps_phi[t,j,k]
+      
+        #p = detection prob
+        #mu_p = grand mean for all sites/years
+        #eta_p = effect of site
+        #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
+        #eps_p = residuals
+        logit(p[t,i,j,k]) <- mu_p + eta_p[k] + beta_p*x[t] + eps_p[i,k]
+      } #t
+    } #i
+  } #j
+} #k
+
+
+
+#priors - phi
+mu_phi <- log(mean_phi / (1 - mean_phi))
+mean_phi ~ dbeta(1.5, 1.5)
+
+beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+
+for (k in 1:NK)
+{
+  eta_phi[k] ~ dnorm(0, tau_eta_phi)
+
+  for (j in 1:NJ)
+  {
+    gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
+
+    for (t in 1:NT)
+    {
+      eps_phi[t,j,k] ~ dnorm(0, tau_eps_phi) #T(-10,10)
     }
   }
-    
+}
+
+tau_eta_phi <- pow(sigma_eta_phi, -2)
+sigma_eta_phi ~ dunif(0.25, 3)
+
+tau_gamma_phi <- pow(sigma_gamma_phi, -2)
+sigma_gamma_phi ~ dunif(0.25, 3)
+
+tau_eps_phi <- pow(sigma_eps_phi, -2)
+sigma_eps_phi ~ dunif(0.25, 3)
 
 
 
+#priors - p
+mu_p <- log(mean_p / (1 - mean_p))
+mean_p ~ dbeta(1.5, 1.5)
 
+beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
 
+for (k in 1:NK)
+{
+  eta_p[k] ~ dnorm(0, tau_eta_p)
+  
+  for (i in 1:NI[j,k])
+  {
+    eps_p[i,k] ~ dnorm(0, tau_eps_p) #T(-10,10)
+  }
+}
 
-    #priors
-    for (t in 1:L)
-    {
-    eps_phi[t] ~ dnorm(0, tau_phi) T(-10,10)
-    }
-    
-    mean_phi ~ dbeta(1.5,1.5)                 #Mean survival
-    mu_phi <- log(mean_phi / (1 - mean_phi))
-    tau_phi <- pow(sigma_phi, -2)
-    sigma_phi ~ dunif(0.25, 3)
-    
-    
-    for (i in 1:N)
-    {
-    eps_p[i] ~ dnorm(0, tau_p) T(-10,10)
-    }
-    
-    
-    mean_p ~ dbeta(1.5,1.5)                    #Mean detection - could use alternative below
-    mu_p <- log(mean_p / (1 - mean_p))         #Logit transform - could use alternative below
-    #mean_p <- 1 / (1+exp(-mu_p))              #Mean detection - Inv-logit transform
-    #mu_p ~ dnorm(0, 0.001)                    #Prior for logit of mean survival
-    tau_p <- pow(sigma_p, -2)
-    sigma_p ~ dunif(0.25, 3)
-    
-    beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
-    beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
-    
-    
+tau_eta_p <- pow(sigma_eta_p, -2)
+sigma_eta_p ~ dunif(0.25, 3)  
+
+tau_eps_p <- pow(sigma_eps_p, -2)
+sigma_eps_p ~ dunif(0.25, 3)
+
     }",fill = TRUE)
 
 sink()
@@ -395,29 +436,38 @@ sink()
 
 
 Inits_1 <- list(mean_phi = 0.5,
-                mean_p = 0.5,
-                sigma_phi = 0.26,
-                sigma_p = 0.26,
                 beta_phi = 0.1,
+                sigma_eta_phi = 0.26,
+                sigma_gamma_phi = 0.26,
+                sigma_eps_phi = 0.26,
+                mean_p = 0.5,
                 beta_p = 0,
+                sigma_eta_p = 0.26,
+                sigma_eps_p = 0.26,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mean_phi = 0.6,
-                mean_p = 0.3,
-                sigma_phi = 1,
-                sigma_p = 1,
+Inits_2 <- list(mean_phi = 0.5,
                 beta_phi = 0.1,
+                sigma_eta_phi = 0.27,
+                sigma_gamma_phi = 0.27,
+                sigma_eps_phi = 0.27,
+                mean_p = 0.5,
                 beta_p = 0,
+                sigma_eta_p = 0.27,
+                sigma_eps_p = 0.27,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mean_phi = 0.7,
-                mean_p = 0.4,
-                sigma_phi = 1.5,
-                sigma_p = 1.5,
+Inits_3 <- list(mean_phi = 0.5,
                 beta_phi = 0.1,
+                sigma_eta_phi = 0.28,
+                sigma_gamma_phi = 0.28,
+                sigma_eps_phi = 0.28,
+                mean_p = 0.5,
                 beta_p = 0,
+                sigma_eta_p = 0.28,
+                sigma_eps_p = 0.28,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -428,19 +478,14 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mean_phi',
-          'mean_p',
-          'sigma_p',
-          'sigma_phi',
-          'beta_p',
           'beta_phi',
-          'mu_phi',
-          'mu_p',
-          'eps_phi',
-          'eps_p',
-          'p',
-          'phi',
-          'pv.mn',
-          'pv.sd')
+          'sigma_eta_phi',
+          'sigma_gamma_phi',
+          'sigma_eps_phi',
+          'mean_p',
+          'beta_p',
+          'sigma_eta_p',
+          'sigma_eps_p')
 
 
 # Run model ---------------------------------------------------------------
@@ -449,7 +494,7 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'April_17_2018',
+        jagsID = 'April_24_2018',
         jagsDsc = 'First go with real data',
         n_chain = 3,
         n_adapt = 8000,
