@@ -7,17 +7,17 @@
 ######################
 
 
-#QUESTIONS about model
-#want to know how survival is changing. Add env covariates onto this
-#no replication over period of closure (how to treat night - all images over one day as a single observation? should each hour be a time step with NAs over night?) - are the parameters identifiable? p219 Kerry and Schaub 2012
-#should the random effect (time) for phi be in there? Is it necessary?
+#QUESTIONS about model:
+#*want to know how survival is changing. Add env covariates onto this
+#*no replication over period of closure (how to treat night - all images over one day as a single observation? should each hour be a time step with NAs over night?) - are the parameters identifiable? p219 Kerry and Schaub 2012
+#*should the random effect (time) for phi be in there? Is it necessary?
+#*how to incorporate camera number
 
+#nonidentifiability checks:
+#*plot p[1,1] against phi[1,1]
+#*check correlation p and phi
+#*PPO
 
-#nonidentifiability checks
-#plot p[1,1] against phi[1,1]
-#check correlation p and phi
-#PPO
-system('touch ch-1.txt')
 
 # Clear environment -------------------------------------------------------
 
@@ -34,7 +34,6 @@ library(dplyr)
 library(jagsRun)
 
 
-system('touch ch-2.txt')
 # determine PW dates to use -----------------------------------------------
 
 #ensures that row dimension (time steps within season) will have the same dimension
@@ -485,12 +484,17 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mean_phi',
+          'eta_phi',
+          'gamma_phi',
           'beta_phi',
+          'eps_phi',
           'sigma_eta_phi',
           'sigma_gamma_phi',
           'sigma_eps_phi',
           'mean_p',
+          'eta_p',
           'beta_p',
+          'eps_p',
           'sigma_eta_p',
           'sigma_eps_p')
 
@@ -506,9 +510,9 @@ out <- jagsRun(jagsData = DATA,
                jagsDsc = 'First go with real data - no covariates',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 3,
-               n_adapt = 80,
-               n_burn = 5,
-               n_draw = 5,
+               n_adapt = 8000,
+               n_burn = 10000,
+               n_draw = 10000,
                n_thin = 1,
                DEBUG = FALSE)
 
