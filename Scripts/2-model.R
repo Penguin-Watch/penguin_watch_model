@@ -27,18 +27,14 @@ rm(list = ls())
 
 # Load packages -----------------------------------------------------------
 
-# if('pacman' %in% rownames(installed.packages()) == FALSE)
-# {
-#   install.packages('pacman')
-# }
-# 
-# pacman::p_load(rjags, MCMCvis, parallel)
-#devtools::install_github('caseyyoungflesh/jagsRun')
+devtools::install_github('caseyyoungflesh/jagsRun')
 
-require(jagsRun)
-require(abind)
-require(dplyr)
+if('pacman' %in% rownames(installed.packages()) == FALSE)
+{
+  install.packages('pacman')
+}
 
+pacman::p_load(jagsRun, abind, dplyr)
 
 
 
@@ -46,7 +42,9 @@ require(dplyr)
 
 #ensures that row dimension (time steps within season) will have the same dimension
 
-setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/')
+#setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/')
+setwd('../Data/PW_data/RAW_Fiona_Apr_15_2018/')
+
 PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
 
@@ -282,7 +280,8 @@ DATA <- list(
 
 
 
-setwd('~/Google_Drive/R/penguin_watch_model/Results/')
+#setwd('~/Google_Drive/R/penguin_watch_model/Results/')
+setwd('../../../Results')
 
 # Model -------------------------------------------------------------------
 
@@ -508,7 +507,7 @@ out <- jagsRun(jagsData = DATA,
                params = Pars,
                jagsID = 'April_25_2018',
                jagsDsc = 'First go with real data - no covariates',
-               db_hash = 'Fiona April 15, 2018',
+               db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 3,
                n_adapt = 8000,
                n_burn = 5000,
