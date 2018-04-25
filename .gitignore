@@ -3,5 +3,6 @@
 .RData
 .Ruserdata
 *.jags
-/Data
+/Data/*
+!/Data/Newest_data
 /Results
