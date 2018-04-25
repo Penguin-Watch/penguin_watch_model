@@ -17,7 +17,7 @@
 #plot p[1,1] against phi[1,1]
 #check correlation p and phi
 #PPO
-
+source('touch ch-1.txt')
 
 # Clear environment -------------------------------------------------------
 
@@ -29,15 +29,12 @@ rm(list = ls())
 
 #devtools::install_github('caseyyoungflesh/jagsRun')
 
-if('pacman' %in% rownames(installed.packages()) == FALSE)
-{
-  install.packages('pacman')
-}
-
-pacman::p_load(jagsRun, abind, dplyr)
+library(abind)
+library(dplyr)
+library(jagsRun)
 
 
-
+source('touch ch-2.txt')
 # determine PW dates to use -----------------------------------------------
 
 #ensures that row dimension (time steps within season) will have the same dimension
@@ -509,9 +506,9 @@ out <- jagsRun(jagsData = DATA,
                jagsDsc = 'First go with real data - no covariates',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 3,
-               n_adapt = 8000,
-               n_burn = 5000,
-               n_draw = 5000,
+               n_adapt = 80,
+               n_burn = 5,
+               n_draw = 5,
                n_thin = 1,
-               DEBUG = TRUE)
+               DEBUG = FALSE)
 
