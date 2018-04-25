@@ -27,7 +27,7 @@ rm(list = ls())
 
 # Load packages -----------------------------------------------------------
 
-devtools::install_github('caseyyoungflesh/jagsRun')
+#devtools::install_github('caseyyoungflesh/jagsRun')
 
 if('pacman' %in% rownames(installed.packages()) == FALSE)
 {
