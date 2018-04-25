@@ -17,7 +17,7 @@
 #plot p[1,1] against phi[1,1]
 #check correlation p and phi
 #PPO
-source('touch ch-1.txt')
+system('touch ch-1.txt')
 
 # Clear environment -------------------------------------------------------
 
@@ -34,7 +34,7 @@ library(dplyr)
 library(jagsRun)
 
 
-source('touch ch-2.txt')
+system('touch ch-2.txt')
 # determine PW dates to use -----------------------------------------------
 
 #ensures that row dimension (time steps within season) will have the same dimension
