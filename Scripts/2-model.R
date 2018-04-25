@@ -43,7 +43,7 @@ pacman::p_load(jagsRun, abind, dplyr)
 #ensures that row dimension (time steps within season) will have the same dimension
 
 #setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/')
-setwd('../Data/PW_data/RAW_Fiona_Apr_15_2018/')
+setwd('../Data')
 
 PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
@@ -281,7 +281,7 @@ DATA <- list(
 
 
 #setwd('~/Google_Drive/R/penguin_watch_model/Results/')
-setwd('../../../Results')
+setwd('../Results')
 
 # Model -------------------------------------------------------------------
 
