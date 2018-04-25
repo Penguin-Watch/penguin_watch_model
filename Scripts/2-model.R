@@ -13,18 +13,10 @@
 #should the random effect (time) for phi be in there? Is it necessary?
 
 
-#how to model more than one site? maybe code each nest/site as a different nest (one site)
-
-
 #nonidentifiability checks
-#plot p[1,1] against phi[1,1] - CHECK
-#check correlation p and phi - CHECK
-#compare estimates p and phi against true p and phi - 
-#plot posteriors for:
-#1) betas - dnorm(0, 1) T(-1,1) - CHECK
-#2) mean_phi and mean_p - dunif(0,0.1) - CHECK
-#3) eps_phi and eps_p - dnorm(0, tau_p) T(-20,20) - p okay, phi maybe weakly identifiable
-#and compare to priors
+#plot p[1,1] against phi[1,1]
+#check correlation p and phi
+#PPO
 
 
 # Clear environment -------------------------------------------------------
@@ -76,7 +68,7 @@ for (k in 1:length(un_sites))
   {
     #j <- 1
     temp2 <- filter(temp, season_year == un_yrs[j])
-
+    
     temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
     t_min_date <- min(temp_dates)
     min_date <- c(min_date, t_min_date)
@@ -141,12 +133,12 @@ for (k in 1:n_sites)
     if (NROW(temp2) > 0)
     {
       temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
-    
+      
       #first and last days in season
       FIRST <- as.Date(paste0((d_yrs[j]-1), '-', first_date), format = "%Y-%m-%d")
       LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
       valid_dates <- which(temp_dates > FIRST & temp_dates < LAST)
-    
+      
       #appropriate date range and appropriate columns for nests
       nests_array[,,j,k] <- as.matrix(temp2[valid_dates, tog2])
     }
@@ -230,10 +222,10 @@ for (k in 1:dim(nests_array)[4])
     for (i in 1:real_nests[j,k])
     {
       n1 <- 1
-      if (sum(z_array[,i,j,k] == 2, na.rm = TRUE) > 0)
+      if (sum(z_array[,i,j,k] > 1, na.rm = TRUE) > 0)
       {
         #last sight with two chicks
-        n2 <- max(which(z_array[,i,j,k] == 2))
+        n2 <- max(which(z_array[,i,j,k] > 1))
         #fill 2 for all between first val and last sight of 2
         z_array[n1:n2,i,j,k] <- 2
       }
@@ -259,8 +251,19 @@ z_array[ones] <- NA
 #nests_array:
 #dim1 (rows) [t] = time steps
 #dim2 (cols) [i] = nests
-#dim3 [j] = years
-#dim4 [k] = sites
+#dim3 [j] = years (d_yrs)
+#dim4 [k] = sites (un_sites)
+
+
+# 1% of nest observations have more than 2 chicks in them
+# which(DATA$y > 2, arr.ind = TRUE)
+# num_o2 <- length(DATA$y[which(DATA$y > 2, arr.ind = TRUE)])
+# total <- length(DATA$y[which(!is.na(DATA$y), arr.ind = TRUE)])
+# num_o2/total
+
+#determine which observation have more than two chicks observed and change them to 2
+ind.g2 <- which(nests_array > 2, arr.ind = TRUE)
+nests_array[ind.g2] <- 2
 
 
 DATA <- list(
@@ -284,158 +287,158 @@ setwd('~/Google_Drive/R/penguin_watch_model/Results/')
 # Model -------------------------------------------------------------------
 
 {
-sink("pwatch_surv.jags")
-
-cat("
-    model {
-
-#sites
-for (k in 1:NK)
-{
-  #years
-  for (j in 1:NJ)
-  {
-    #nests
-    for (i in 1:NI[j,k])
-    {
+  sink("pwatch_surv.jags")
+  
+  cat("
+      model {
+      
+      #sites
+      for (k in 1:NK)
+      {
+      #years
+      for (j in 1:NJ)
+      {
+      #nests
+      for (i in 1:NI[j,k])
+      {
       #both chicks alive at time step 1
       z[1,i,j,k] <- 2
       #y.new[1,i,j,k] ~ dbinom(p[1,i,j,k], 2)
-
-
+      
+      
       #time step
       for (t in 2:NT)
       {
-        #state model
-        z[t,i,j,k] ~ dbinom(p_alive[t,i,j,k], z[t-1,i,j,k])
-        p_alive[t,i,j,k] <- ifelse(z[t-1,i,j,k] < 2, 
-                                phi[t,i,j,k] * z[t-1,i,j,k],
-                                phi[t,i,j,k])
-
-        #observation model
-        y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
-        p_sight[t,i,j,k] <- ifelse(z[t,i,j,k] < 2,
-                                p[t,i,j,k] * z[t,i,j,k],
-                                p[t,i,j,k])
-
-        #PPC
-        #y.new[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
+      #state model
+      z[t,i,j,k] ~ dbinom(p_alive[t,i,j,k], z[t-1,i,j,k])
+      p_alive[t,i,j,k] <- ifelse(z[t-1,i,j,k] < 2, 
+      phi[t,i,j,k] * z[t-1,i,j,k],
+      phi[t,i,j,k])
+      
+      #observation model
+      y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
+      p_sight[t,i,j,k] <- ifelse(z[t,i,j,k] < 2,
+      p[t,i,j,k] * z[t,i,j,k],
+      p[t,i,j,k])
+      
+      #PPC
+      #y.new[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
       }
-    }
-  }
-}
-
-
-#PPC
-#mean
-#mn.y <- mean(y)
-#mn.y.new <- mean(y.new)
-#pv.mn <- step(mn.y.new - mn.y)
-
-#sd
-#sd.y <- sd(y)
-#sd.y.new <- sd(y.new)
-#pv.sd <- step(sd.y.new - sd.y)
-
-
-
-#transforms
-#sites
-for (k in 1:NK)
-{
-  #years
-  for (j in 1:NJ)
-  {
-    #nests
-    for (i in 1:NI[j,k])
-    {
+      }
+      }
+      }
+      
+      
+      #PPC
+      #mean
+      #mn.y <- mean(y)
+      #mn.y.new <- mean(y.new)
+      #pv.mn <- step(mn.y.new - mn.y)
+      
+      #sd
+      #sd.y <- sd(y)
+      #sd.y.new <- sd(y.new)
+      #pv.sd <- step(sd.y.new - sd.y)
+      
+      
+      
+      #transforms
+      #sites
+      for (k in 1:NK)
+      {
+      #years
+      for (j in 1:NJ)
+      {
+      #nests
+      for (i in 1:NI[j,k])
+      {
       #time
       for (t in 1:NT)
       {
-        #phi = survival prob
-        #mu_phi = grand mean for all sites/years
-        #eta_phi = effect of site
-        #gamma_phi = effect of year
-        #beta_phi = slope for increasing surv over time (older chicks have higher surv)
-        #eps_phi = residuals
-        logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t] + eps_phi[t,j,k]
+      #phi = survival prob
+      #mu_phi = grand mean for all sites/years
+      #eta_phi = effect of site
+      #gamma_phi = effect of year
+      #beta_phi = slope for increasing surv over time (older chicks have higher surv)
+      #eps_phi = residuals
+      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t] + eps_phi[t,j,k]
       
-        #p = detection prob
-        #mu_p = grand mean for all sites/years
-        #eta_p = effect of site
-        #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
-        #eps_p = residuals
-        logit(p[t,i,j,k]) <- mu_p + eta_p[k] + beta_p*x[t] + eps_p[i,j,k]
+      #p = detection prob
+      #mu_p = grand mean for all sites/years
+      #eta_p = effect of site
+      #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
+      #eps_p = residuals
+      logit(p[t,i,j,k]) <- mu_p + eta_p[k] + beta_p*x[t] + eps_p[i,j,k]
       } #t
-    } #i
-  } #j
-} #k
-
-
-
-#priors - phi
-mu_phi <- log(mean_phi / (1 - mean_phi))
-mean_phi ~ dbeta(1.5, 1.5)
-
-beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
-
-for (k in 1:NK)
-{
-  eta_phi[k] ~ dnorm(0, tau_eta_phi)
-
-  for (j in 1:NJ)
-  {
-    for (t in 1:NT)
-    {
+      } #i
+      } #j
+      } #k
+      
+      
+      
+      #priors - phi
+      mu_phi <- log(mean_phi / (1 - mean_phi))
+      mean_phi ~ dbeta(1.5, 1.5)
+      
+      beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      
+      for (k in 1:NK)
+      {
+      eta_phi[k] ~ dnorm(0, tau_eta_phi)
+      
+      for (j in 1:NJ)
+      {
+      for (t in 1:NT)
+      {
       eps_phi[t,j,k] ~ dnorm(0, tau_eps_phi) #T(-10,10)
-    }
-  }
-}
-
-for (j in 1:NJ)
-{
-  gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
-}
-
-tau_eta_phi <- pow(sigma_eta_phi, -2)
-sigma_eta_phi ~ dunif(0.25, 3)
-
-tau_gamma_phi <- pow(sigma_gamma_phi, -2)
-sigma_gamma_phi ~ dunif(0.25, 3)
-
-tau_eps_phi <- pow(sigma_eps_phi, -2)
-sigma_eps_phi ~ dunif(0.25, 3)
-
-
-
-#priors - p
-mu_p <- log(mean_p / (1 - mean_p))
-mean_p ~ dbeta(1.5, 1.5)
-
-beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
-
-for (k in 1:NK)
-{
-  eta_p[k] ~ dnorm(0, tau_eta_p)
-  
-  for (j in 1:NJ)
-  {
-    for (i in 1:NI[j,k])
-    {
+      }
+      }
+      }
+      
+      for (j in 1:NJ)
+      {
+      gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
+      }
+      
+      tau_eta_phi <- pow(sigma_eta_phi, -2)
+      sigma_eta_phi ~ dunif(0.25, 3)
+      
+      tau_gamma_phi <- pow(sigma_gamma_phi, -2)
+      sigma_gamma_phi ~ dunif(0.25, 3)
+      
+      tau_eps_phi <- pow(sigma_eps_phi, -2)
+      sigma_eps_phi ~ dunif(0.25, 3)
+      
+      
+      
+      #priors - p
+      mu_p <- log(mean_p / (1 - mean_p))
+      mean_p ~ dbeta(1.5, 1.5)
+      
+      beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      
+      for (k in 1:NK)
+      {
+      eta_p[k] ~ dnorm(0, tau_eta_p)
+      
+      for (j in 1:NJ)
+      {
+      for (i in 1:NI[j,k])
+      {
       eps_p[i,j,k] ~ dnorm(0, tau_eps_p) #T(-10,10)
-    }
-  }
-}
+      }
+      }
+      }
+      
+      tau_eta_p <- pow(sigma_eta_p, -2)
+      sigma_eta_p ~ dunif(0.25, 3)  
+      
+      tau_eps_p <- pow(sigma_eps_p, -2)
+      sigma_eps_p ~ dunif(0.25, 3)
+      
+      }",fill = TRUE)
 
-tau_eta_p <- pow(sigma_eta_p, -2)
-sigma_eta_p ~ dunif(0.25, 3)  
-
-tau_eps_p <- pow(sigma_eps_p, -2)
-sigma_eps_p ~ dunif(0.25, 3)
-
-    }",fill = TRUE)
-
-sink()
+  sink()
 }
 
 
@@ -499,17 +502,17 @@ Pars <- c('mean_phi',
 # Run model ---------------------------------------------------------------
 
 
-jagsRun(jagsData = DATA,
-        jagsModel = 'pwatch_surv.jags',
-        jagsInits = F_Inits,
-        params = Pars,
-        jagsID = 'April_24_2018',
-        jagsDsc = 'First go with real data',
-        n_chain = 3,
-        n_adapt = 8000,
-        n_burn = 50000,
-        n_draw = 50000,
-        n_thin = 10,
-        DEBUG = TRUE)
-
+out <- jagsRun(jagsData = DATA, 
+               jagsModel = 'pwatch_surv.jags',
+               jagsInits = F_Inits,
+               params = Pars,
+               jagsID = 'April_25_2018',
+               jagsDsc = 'First go with real data - no covariates',
+               db_hash = 'Fiona April 15, 2018',
+               n_chain = 3,
+               n_adapt = 8000,
+               n_burn = 5000,
+               n_draw = 5000,
+               n_thin = 1,
+               DEBUG = TRUE)
 
