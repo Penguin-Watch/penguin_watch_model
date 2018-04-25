@@ -1,22 +1,11 @@
 ######################
 #Mark-recapture for penguin watch 
 #
-#script to run model - model object saved as .rds
+#script to run model - model output saved to Results dir
 #
 #Authors: Casey Youngflesh
 ######################
 
-
-#QUESTIONS about model:
-#*want to know how survival is changing. Add env covariates onto this
-#*no replication over period of closure (how to treat night - all images over one day as a single observation? should each hour be a time step with NAs over night?) - are the parameters identifiable? p219 Kerry and Schaub 2012
-#*should the random effect (time) for phi be in there? Is it necessary?
-#*how to incorporate camera number
-
-#nonidentifiability checks:
-#*plot p[1,1] against phi[1,1]
-#*check correlation p and phi
-#*PPO
 
 
 # Clear environment -------------------------------------------------------
@@ -32,6 +21,7 @@ rm(list = ls())
 library(abind)
 library(dplyr)
 library(jagsRun)
+
 
 
 # determine PW dates to use -----------------------------------------------
@@ -82,7 +72,9 @@ last_date <- format(as.Date('02-01', format = '%m-%d'), '%m-%d')
 
 # Create nests_array -------------------------------------------
 
-#just nest time series columns 
+#array with number of chicks seen at each nest in each time step
+
+#find just nest time series columns
 #all colnames
 cols <- colnames(PW_data)
 #just columns with 'nest'
@@ -145,6 +137,7 @@ for (k in 1:n_sites)
 # create real_nests matrix ------------------------------------------------
 
 #create matrix that has number of nests at each site/year
+
 #rows are years, columns are sites
 real_nests <- matrix(NA, nrow = n_yrs, ncol = n_sites)
 for (k in 1:dim(nests_array)[4])
@@ -174,6 +167,7 @@ for (k in 1:dim(nests_array)[4])
 # create w_array ----------------------------------------------------------
 
 #create w_array (day and night)
+
 w_array <- nests_array
 #assign 1 to values with observations (either 0/1/2 for nests_array)
 w_array[which(!is.na(w_array), arr.ind = TRUE)] <- 1
@@ -242,6 +236,8 @@ z_array[ones] <- NA
 
 # Create Data for JAGS ---------------------------------------------------------
 
+#data object for JAGS model
+
 #nests_array:
 #dim1 (rows) [t] = time steps
 #dim2 (cols) [i] = nests
@@ -270,8 +266,9 @@ DATA <- list(
   w = w_array, #binary day (1)/night (0)
   x = 1:dim(nests_array)[1]) #time steps for increase in surv/detection over time 
 
-
-
+#ADD TO DATA
+#sea ice for that year (matrix) - site/year
+#krill catch in buffer for that year (matrix) - site/year
 #ADD 'CAMERA' number in here somewhere (detection should not be the same for each camera at a site)
 
 
@@ -356,8 +353,11 @@ setwd('../Results')
       #gamma_phi = effect of year
       #beta_phi = slope for increasing surv over time (older chicks have higher surv)
       #eps_phi = residuals
-      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t] + eps_phi[t,j,k]
-      
+      #pi_phi = effect of SIC on survival
+      #rho_phi = effect of KRILL on survival
+      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t] + eps_phi[t,j,k] #+ pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+
+
       #p = detection prob
       #mu_p = grand mean for all sites/years
       #eta_p = effect of site
@@ -376,6 +376,10 @@ setwd('../Results')
       mean_phi ~ dbeta(1.5, 1.5)
       
       beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+
+      #covariates
+      #pi_phi ~ dnorm(0, 0.01)
+      #rho_phi ~ dnorm(0, 0.01)
       
       for (k in 1:NK)
       {
@@ -502,7 +506,7 @@ Pars <- c('mean_phi',
 # Run model ---------------------------------------------------------------
 
 
-out <- jagsRun(jagsData = DATA, 
+jagsRun(jagsData = DATA, 
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
@@ -514,5 +518,9 @@ out <- jagsRun(jagsData = DATA,
                n_burn = 10000,
                n_draw = 10000,
                n_thin = 1,
-               DEBUG = FALSE)
+               DEBUG = FALSE,
+               EXTRA = FALSE,
+               Rhat_max = 1.1,
+               n_max = 100000)
+
 
