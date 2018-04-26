@@ -112,7 +112,7 @@ nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 for (k in 1:n_sites)
 {
   #k <- 1
-  temp <- filter(PW_data, site == un_sites[k])
+  temp <- filter(PW_data, site_p_cam == un_sites[k])
   
   for (j in 1:n_yrs)
   {
@@ -269,13 +269,12 @@ DATA <- list(
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
   w = w_array, #binary day (1)/night (0)
-  x = 1:dim(nests_array)[1]) #time steps for increase in surv/detection over time 
+  x = as.numeric(1:dim(nests_array)[1])) #time steps for increase in surv/detection over time 
 
 #ADD TO DATA
 #sea ice for that year (matrix) - site/year
 #krill catch in buffer for that year (matrix) - site/year
 #ADD 'CAMERA' number in here somewhere (detection should not be the same for each camera at a site)
-
 
 
 #setwd('~/Google_Drive/R/penguin_watch_model/Results/')
@@ -287,6 +286,7 @@ setwd('../Results')
   sink("pwatch_surv.jags")
   
   cat("
+
       model {
       
       #sites
@@ -351,6 +351,7 @@ setwd('../Results')
       #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
       #nu_p = effect of nest
       logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[i,j,k]
+
       } #t
       } #i
       } #j
@@ -359,11 +360,8 @@ setwd('../Results')
       
       
       #priors - phi
-      mu_phi <- log(mean_phi / (1 - mean_phi))
-      mean_phi ~ dbeta(1.5, 1.5)
-      
-      #Lunn prior
-      #mu_phi ~ dnorm(0, 0.386)      
+      #Lunn prior - flat in probability space
+      mu_phi ~ dnorm(0, 0.386)   
 
       beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
 
@@ -375,13 +373,13 @@ setwd('../Results')
       {
       eta_phi[k] ~ dnorm(0, tau_eta_phi)
       
-      for (j in 1:NJ)
-      {
-      for (t in 1:NT)
-      {
+      #for (j in 1:NJ)
+      #{
+      #for (t in 1:NT)
+      #{
       #eps_phi[t,j,k] ~ dnorm(0, tau_eps_phi) #T(-10,10)
-      }
-      }
+      #}
+      #}
       }
       
       for (j in 1:NJ)
@@ -401,8 +399,8 @@ setwd('../Results')
       
       
       #priors - p
-      mu_p <- log(mean_p / (1 - mean_p))
-      mean_p ~ dbeta(1.5, 1.5)
+      #Lunn prior - flat in probability space
+      mu_p ~ dnorm(0, 0.386)
       
       beta_p ~ dnorm(0, 10) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
       
@@ -430,34 +428,34 @@ setwd('../Results')
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mean_phi = 0.5,
+Inits_1 <- list(mu_phi = 0,
                 beta_phi = 0.1,
                 sigma_eta_phi = 0.26,
                 sigma_gamma_phi = 0.26,
                 #sigma_eps_phi = 0.26,
-                mean_p = 0.5,
+                mu_p = 0,
                 beta_p = 0,
                 sigma_nu_p = 0.26,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mean_phi = 0.5,
+Inits_2 <- list(mu_phi = 0,
                 beta_phi = 0.1,
                 sigma_eta_phi = 0.27,
                 sigma_gamma_phi = 0.27,
                 #sigma_eps_phi = 0.27,
-                mean_p = 0.5,
+                mu_p = 0,
                 beta_p = 0,
                 sigma_nu_p = 0.27,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mean_phi = 0.5,
+Inits_3 <- list(mu_phi = 0,
                 beta_phi = 0.1,
                 sigma_eta_phi = 0.28,
                 sigma_gamma_phi = 0.28,
                 #sigma_eps_phi = 0.28,
-                mean_p = 0.5,
+                mu_p = 0,
                 beta_p = 0,
                 sigma_nu_p = 0.28,
                 .RNG.name = "base::Marsaglia-Multicarry",
@@ -473,7 +471,7 @@ Pars <- c('mu_phi',
           'eta_phi',
           'gamma_phi',
           'beta_phi',
-          'eps_phi',
+          #'eps_phi',
           'sigma_eta_phi',
           'sigma_gamma_phi',
           #'sigma_eps_phi',
@@ -493,10 +491,10 @@ jagsRun(jagsData = DATA,
                jagsID = 'April_26_2018',
                jagsDsc = 'Remove eps_phi and eta_p',
                db_hash = 'Markrecap_data_15.05.18.csv',
-               n_chain = 3,
+               n_chain = 5,
                n_adapt = 8000,
                n_burn = 20000,
-               n_draw = 50000,
+               n_draw = 20000,
                n_thin = 10,
                DEBUG = FALSE,
                EXTRA = FALSE,
