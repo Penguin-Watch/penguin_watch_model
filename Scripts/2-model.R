@@ -34,12 +34,14 @@ library(jagsRun)
 #setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/')
 setwd('../Data')
 
-PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
+PW_data_p <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
+#merge site and cam for independent cameras (treating each cam as a different site)
+PW_data <- mutate(PW_data_p, site_p_cam = paste0(site, camera_letter))
 
 #remove HALF bc it's not a full season
-un_sites_p <- unique(PW_data$site)
-un_sites <- un_sites_p[which(un_sites_p != 'HALF')]
+un_sites_p <- unique(PW_data$site_p_cam)
+un_sites <- un_sites_p[which(un_sites_p != 'HALFb')]
 
 #first date of each season
 yrs <- c()
@@ -47,7 +49,7 @@ min_date <- as.Date(NA)
 for (k in 1:length(un_sites))
 {
   #k <- 1
-  temp <- filter(PW_data, site == un_sites[k])
+  temp <- filter(PW_data, site_p_cam == un_sites[k])
   un_yrs <- unique(temp$season_year)
   
   yrs <- c(yrs, un_yrs)
@@ -360,7 +362,7 @@ setwd('../Results')
       #eps_phi = residuals
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
-      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t] + eps_phi[t,j,k] #+ pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t]# + eps_phi[t,j,k] #+ pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
 
       #p = detection prob
@@ -393,7 +395,7 @@ setwd('../Results')
       {
       for (t in 1:NT)
       {
-      eps_phi[t,j,k] ~ dnorm(0, tau_eps_phi) #T(-10,10)
+      #eps_phi[t,j,k] ~ dnorm(0, tau_eps_phi) #T(-10,10)
       }
       }
       }
@@ -409,8 +411,8 @@ setwd('../Results')
       tau_gamma_phi <- pow(sigma_gamma_phi, -2)
       sigma_gamma_phi ~ dunif(0.25, 3)
       
-      tau_eps_phi <- pow(sigma_eps_phi, -2)
-      sigma_eps_phi ~ dunif(0.25, 3)
+      #tau_eps_phi <- pow(sigma_eps_phi, -2)
+      #sigma_eps_phi ~ dunif(0.25, 3)
       
       
       
@@ -418,7 +420,7 @@ setwd('../Results')
       mu_p <- log(mean_p / (1 - mean_p))
       mean_p ~ dbeta(1.5, 1.5)
       
-      beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_p ~ dnorm(0, 10) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
       
       for (k in 1:NK)
       {
@@ -448,7 +450,7 @@ Inits_1 <- list(mean_phi = 0.5,
                 beta_phi = 0.1,
                 sigma_eta_phi = 0.26,
                 sigma_gamma_phi = 0.26,
-                sigma_eps_phi = 0.26,
+                #sigma_eps_phi = 0.26,
                 mean_p = 0.5,
                 beta_p = 0,
                 sigma_nu_p = 0.26,
@@ -459,7 +461,7 @@ Inits_2 <- list(mean_phi = 0.5,
                 beta_phi = 0.1,
                 sigma_eta_phi = 0.27,
                 sigma_gamma_phi = 0.27,
-                sigma_eps_phi = 0.27,
+                #sigma_eps_phi = 0.27,
                 mean_p = 0.5,
                 beta_p = 0,
                 sigma_nu_p = 0.27,
@@ -470,7 +472,7 @@ Inits_3 <- list(mean_phi = 0.5,
                 beta_phi = 0.1,
                 sigma_eta_phi = 0.28,
                 sigma_gamma_phi = 0.28,
-                sigma_eps_phi = 0.28,
+                #sigma_eps_phi = 0.28,
                 mean_p = 0.5,
                 beta_p = 0,
                 sigma_nu_p = 0.28,
@@ -483,15 +485,15 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)
 
 # Parameters to track -----------------------------------------------------
 
-Pars <- c('mean_phi',
+Pars <- c('mu_phi',
           'eta_phi',
           'gamma_phi',
           'beta_phi',
           'eps_phi',
           'sigma_eta_phi',
           'sigma_gamma_phi',
-          'sigma_eps_phi',
-          'mean_p',
+          #'sigma_eps_phi',
+          'mu_p',
           'beta_p',
           'nu_p',
           'sigma_nu_p')
@@ -504,15 +506,15 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'April_25_2018',
-               jagsDsc = 'First go with real data - no covariates',
+               jagsID = 'April_26_2018',
+               jagsDsc = 'Remove eps_phi and eta_p',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 3,
                n_adapt = 8000,
-               n_burn = 10000,
-               n_draw = 10000,
-               n_thin = 1,
-               DEBUG = FALSE,
+               n_burn = 20000,
+               n_draw = 50000,
+               n_thin = 10,
+               DEBUG = TRUE,
                EXTRA = FALSE,
                Rhat_max = 1.1,
                n_max = 100000)
