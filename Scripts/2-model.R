@@ -8,9 +8,6 @@
 
 
 
-#MAKE EACH CAMERA VIEW ITS OWN SITE
-
-
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
@@ -303,8 +300,6 @@ setwd('../Results')
       {
       #both chicks alive at time step 1
       z[1,i,j,k] <- 2
-      #y.new[1,i,j,k] ~ dbinom(p[1,i,j,k], 2)
-      
       
       #time step
       for (t in 2:NT)
@@ -321,24 +316,10 @@ setwd('../Results')
       p[t,i,j,k] * z[t,i,j,k],
       p[t,i,j,k])
       
-      #PPC
-      #y.new[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
       }
       }
       }
       }
-      
-      
-      #PPC
-      #mean
-      #mn.y <- mean(y)
-      #mn.y.new <- mean(y.new)
-      #pv.mn <- step(mn.y.new - mn.y)
-      
-      #sd
-      #sd.y <- sd(y)
-      #sd.y.new <- sd(y.new)
-      #pv.sd <- step(sd.y.new - sd.y)
       
       
       #transforms
@@ -381,6 +362,9 @@ setwd('../Results')
       mu_phi <- log(mean_phi / (1 - mean_phi))
       mean_phi ~ dbeta(1.5, 1.5)
       
+      #Lunn prior
+      #mu_phi ~ dnorm(0, 0.386)      
+
       beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
 
       #covariates
