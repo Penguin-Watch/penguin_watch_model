@@ -8,6 +8,9 @@
 
 
 
+#MAKE EACH CAMERA VIEW ITS OWN SITE
+
+
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
@@ -194,6 +197,20 @@ for (k in 1:dim(nests_array)[4])
 
 
 
+# observations with > 2 chicks --------------------------------------------
+
+# 1% of nest observations have more than 2 chicks in them
+# which(DATA$y > 2, arr.ind = TRUE)
+# num_o2 <- length(DATA$y[which(DATA$y > 2, arr.ind = TRUE)])
+# total <- length(DATA$y[which(!is.na(DATA$y), arr.ind = TRUE)])
+# num_o2/total
+
+#determine which observation have more than two chicks observed and change them to 2
+ind.g2 <- which(nests_array > 2, arr.ind = TRUE)
+nests_array[ind.g2] <- 2
+
+
+
 
 # create z_array ----------------------------------------------------------
 
@@ -210,10 +227,10 @@ for (k in 1:dim(nests_array)[4])
     for (i in 1:real_nests[j,k])
     {
       n1 <- 1
-      if (sum(z_array[,i,j,k] > 1, na.rm = TRUE) > 0)
+      if (sum(z_array[,i,j,k] == 2, na.rm = TRUE) > 0)
       {
         #last sight with two chicks
-        n2 <- max(which(z_array[,i,j,k] > 1))
+        n2 <- max(which(z_array[,i,j,k] == 2))
         #fill 2 for all between first val and last sight of 2
         z_array[n1:n2,i,j,k] <- 2
       }
@@ -243,17 +260,6 @@ z_array[ones] <- NA
 #dim2 (cols) [i] = nests
 #dim3 [j] = years (d_yrs)
 #dim4 [k] = sites (un_sites)
-
-
-# 1% of nest observations have more than 2 chicks in them
-# which(DATA$y > 2, arr.ind = TRUE)
-# num_o2 <- length(DATA$y[which(DATA$y > 2, arr.ind = TRUE)])
-# total <- length(DATA$y[which(!is.na(DATA$y), arr.ind = TRUE)])
-# num_o2/total
-
-#determine which observation have more than two chicks observed and change them to 2
-ind.g2 <- which(nests_array > 2, arr.ind = TRUE)
-nests_array[ind.g2] <- 2
 
 
 DATA <- list(
@@ -333,7 +339,6 @@ setwd('../Results')
       #pv.sd <- step(sd.y.new - sd.y)
       
       
-      
       #transforms
       #sites
       for (k in 1:NK)
@@ -360,10 +365,9 @@ setwd('../Results')
 
       #p = detection prob
       #mu_p = grand mean for all sites/years
-      #eta_p = effect of site
       #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
-      #eps_p = residuals
-      logit(p[t,i,j,k]) <- mu_p + eta_p[k] + beta_p*x[t] + eps_p[i,j,k]
+      #nu_p = effect of nest
+      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[i,j,k]
       } #t
       } #i
       } #j
@@ -418,22 +422,17 @@ setwd('../Results')
       
       for (k in 1:NK)
       {
-      eta_p[k] ~ dnorm(0, tau_eta_p)
-      
       for (j in 1:NJ)
       {
       for (i in 1:NI[j,k])
       {
-      eps_p[i,j,k] ~ dnorm(0, tau_eps_p) #T(-10,10)
+      nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
       }
       }
       }
       
-      tau_eta_p <- pow(sigma_eta_p, -2)
-      sigma_eta_p ~ dunif(0.25, 3)  
-      
-      tau_eps_p <- pow(sigma_eps_p, -2)
-      sigma_eps_p ~ dunif(0.25, 3)
+      tau_nu_p <- pow(sigma_nu_p, -2)
+      sigma_nu_p ~ dunif(0.25, 3)
       
       }",fill = TRUE)
 
@@ -452,8 +451,7 @@ Inits_1 <- list(mean_phi = 0.5,
                 sigma_eps_phi = 0.26,
                 mean_p = 0.5,
                 beta_p = 0,
-                sigma_eta_p = 0.26,
-                sigma_eps_p = 0.26,
+                sigma_nu_p = 0.26,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -464,8 +462,7 @@ Inits_2 <- list(mean_phi = 0.5,
                 sigma_eps_phi = 0.27,
                 mean_p = 0.5,
                 beta_p = 0,
-                sigma_eta_p = 0.27,
-                sigma_eps_p = 0.27,
+                sigma_nu_p = 0.27,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -476,8 +473,7 @@ Inits_3 <- list(mean_phi = 0.5,
                 sigma_eps_phi = 0.28,
                 mean_p = 0.5,
                 beta_p = 0,
-                sigma_eta_p = 0.28,
-                sigma_eps_p = 0.28,
+                sigma_nu_p = 0.28,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -496,11 +492,9 @@ Pars <- c('mean_phi',
           'sigma_gamma_phi',
           'sigma_eps_phi',
           'mean_p',
-          'eta_p',
           'beta_p',
-          'eps_p',
-          'sigma_eta_p',
-          'sigma_eps_p')
+          'nu_p',
+          'sigma_nu_p')
 
 
 # Run model ---------------------------------------------------------------
