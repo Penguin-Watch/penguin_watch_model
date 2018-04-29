@@ -461,7 +461,29 @@ Inits_3 <- list(mu_phi = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
-F_Inits <- list(Inits_1, Inits_2, Inits_3)
+Inits_4 <- list(mu_phi = 0,
+                beta_phi = 0.1,
+                sigma_eta_phi = 0.29,
+                sigma_gamma_phi = 0.29,
+                #sigma_eps_phi = 0.28,
+                mu_p = 0,
+                beta_p = 0,
+                sigma_nu_p = 0.29,
+                .RNG.name = "base::Mersenne-Twister",
+                .RNG.seed = 4)
+
+Inits_5 <- list(mu_phi = 0,
+                beta_phi = 0.1,
+                sigma_eta_phi = 0.30,
+                sigma_gamma_phi = 0.30,
+                #sigma_eps_phi = 0.28,
+                mu_p = 0,
+                beta_p = 0,
+                sigma_nu_p = 0.30,
+                .RNG.name = "base::Wichmann-Hill",
+                .RNG.seed = 5)
+
+F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5)
 
 
 
@@ -488,7 +510,7 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'April_26_2018',
+               jagsID = 'April_29_2018',
                jagsDsc = 'Remove eps_phi and eta_p',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 5,
