@@ -13,6 +13,8 @@
 rm(list = ls())
 
 
+
+
 # Load packages -----------------------------------------------------------
 
 if('pacman' %in% rownames(installed.packages()) == FALSE)
@@ -23,51 +25,15 @@ pacman::p_load(dplyr, rgdal, rgeos)
 
 
 
-# setwd -------------------------------------------------------------------
-
-setwd('~/Google_Drive/R/penguin_watch_model/Data/Site_data/')
 
 
 # create site buffers ----------------------------------------------------------
 
 
-#----------------------------#
-#check to make sure everything works properly
-
-#load in sites (from MAPPPD/SiteCovariates/Locations)
-#sites <- rgdal::readOGR('SitesEPSG3031.shp')
-#data.frame(sites$site_id, sites$site_name)
-
-#units for 3031 projection are in m
-#proj4string(sites)
-
-#create 150km buffer (150,000m) around all sites
-#site_buffer <- rgeos::gBuffer(sites, width = 150000)
-#plot(site_buffer)
-
-#transform buffer to 4326 (uses lat/lon)
-#nsb <- spTransform(site_buffer, CRS("+init=epsg:4326"))
-#plot(nsb)
-
-#test points - Admiralty Bay, Cape Bird
-#points <- data.frame(Longitude = c(-58.42, 166.43), 
-#                     Latitude = c(-62.21, -77.22))
-
-#points are in 4326 (uses lat/lon)
-#np <- SpatialPoints(points, proj4string = CRS("+init=epsg:4326"))
-#transform to 3031 (to match site buffer)
-#tnp <- spTransform(np, CRS(proj4string(site_buffer)))
-
-#check
-#plot(site_buffer)
-#points(tnp, col = 'red', pch = 19)
-#----------------------------#
-
-
 #created buffers around actual lat/lons - don't want low-res land mask to interfere with krill trawls
 
 #determine which sites we have PW data for
-setwd('../PW_data/RAW_Fiona_Apr_15_2018/')
+setwd('Data/PW_data/RAW_Fiona_Apr_15_2018/')
 PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
 un_sites <- unique(PW_data$site)
@@ -119,7 +85,12 @@ Ant <- rgdal::readOGR('Coastline_medium_res_polygon.shp')
 t_col_points <- spTransform(np, CRS(proj4string(Ant)))
 
 #create buffers around sites - 150km
-site_buffer <- rgeos::gBuffer(t_col_points, width = 150000)
+all_site_buffers_150 <- rgeos::gBuffer(t_col_points, width = 150000)
+all_site_buffers_100 <- rgeos::gBuffer(t_col_points, width = 100000)
+all_site_buffers_50 <- rgeos::gBuffer(t_col_points, width = 50000)
+all_site_buffers_25 <- rgeos::gBuffer(t_col_points, width = 25000)
+
+
 
 
 
@@ -146,47 +117,79 @@ t_krill_points <- spTransform(krill_points, CRS(proj4string(Ant)))
 #plot check
 
 #continent
-plot(Ant)
-#site buffers
-plot(site_buffer, col = 'lightblue', add = TRUE)
-#krill
-points(t_krill_points, col = 'purple', pch = '.')
-#PW sites
-points(t_col_points, col = 'red', pch = '*')
+# plot(Ant)
+# #site buffers
+# plot(all_site_buffers, col = 'lightblue', add = TRUE)
+# #krill
+# points(t_krill_points, col = 'purple', pch = '.')
+# #PW sites
+# points(t_col_points, col = 'red', pch = '*')
 #--------------#
-
-
 
 
 
 #deterine which krill trawls fall within site we have PW data for
 #to select individual sites
-master_krill <- data.frame()
+master_krill_150 <- data.frame()
+master_krill_100 <- data.frame()
+master_krill_50 <- data.frame()
+master_krill_25 <- data.frame()
 for (i in 1:length(cam_sites))
 {
-  #i <- 3
-  temp_site <- subset(sites, site_id == cam_sites[i])
-  #transform to degrees
-  #spTransform(temp_site, CRS("+init=epsg:4326"))
+  #i <- 1
+  temp_site <- filter(site_ll, SITE == cam_sites[i])
+  
+  #convert to spatial points
+  temp_site_sp <- SpatialPoints(temp_site[-1], proj4string = CRS('+init=epsg:4326'))
+  
+  #transform to 3031
+  temp_site <- spTransform(temp_site_sp, CRS(proj4string(Ant)))
   
   #150km (150,000m) buffer
-  temp_buffer <- rgeos::gBuffer(temp_site, width = 150000)
+  temp_buffer_150 <- rgeos::gBuffer(temp_site, width = 150000)
+  #100km
+  temp_buffer_100 <- rgeos::gBuffer(temp_site, width = 100000)
+  #50km
+  temp_buffer_50 <- rgeos::gBuffer(temp_site, width = 50000)
+  #25km
+  temp_buffer_25 <- rgeos::gBuffer(temp_site, width = 25000)
   
   #which trawls started within colony i buffer
-  temp_in_buff <- which(as.numeric(over(tnp, temp_buffer)) == 1)
-  temp_trawls <- mutate(krill_data[temp_in_buff,], col_id = cam_sites[i])
-  master_krill <- rbind(master_krill, temp_trawls)
+  temp_in_buff_150 <- which(as.numeric(over(t_krill_points, temp_buffer_150)) == 1)
+  temp_trawls_150 <- mutate(krill_data[temp_in_buff_150,], col_id = cam_sites[i])
+  master_krill_150 <- rbind(master_krill_150, temp_trawls_150)
   
-  #---------------#  
-  #plot everything
-  #plot(site_buffer)
-  #points(temp_site, pch = 19, col = 'red')
-  #plot(temp_buffer, add = TRUE)
-  #points(tnp, pch = '+', col = 'green')
+  temp_in_buff_100 <- which(as.numeric(over(t_krill_points, temp_buffer_100)) == 1)
+  temp_trawls_100 <- mutate(krill_data[temp_in_buff_100,], col_id = cam_sites[i])
+  master_krill_100 <- rbind(master_krill_100, temp_trawls_100)
+  
+  temp_in_buff_50 <- which(as.numeric(over(t_krill_points, temp_buffer_50)) == 1)
+  temp_trawls_50 <- mutate(krill_data[temp_in_buff_50,], col_id = cam_sites[i])
+  master_krill_50 <- rbind(master_krill_50, temp_trawls_50)
+  
+  temp_in_buff_25 <- which(as.numeric(over(t_krill_points, temp_buffer_25)) == 1)
+  temp_trawls_25 <- mutate(krill_data[temp_in_buff_25,], col_id = cam_sites[i])
+  master_krill_25 <- rbind(master_krill_25, temp_trawls_25)
+  
+  #---------------#
+  #plot everything for the single site
+  
+  # t_krill <- data.frame(LON = temp_trawls$lon_st, 
+  #                       LAT = temp_trawls$lat_st)
+  # temp_kp <- SpatialPoints(t_krill, proj4string = CRS("+init=epsg:4326"))
+  # t_kp <- spTransform(temp_kp, CRS(proj4string(Ant)))
+  # 
+  # plot(all_site_buffers_150, col = 'lightblue')
+  # plot(temp_buffer_150, add = TRUE, col = 'pink')
+  # points(temp_points, pch = 19, col = 'red')
+  # points(t_kp, pch = '+', col = 'green')
   #---------------#
 }
 
+
 #master_krill is all trawls that occured within the site buffers for the sites we have PW data for - all years (not filtered for years we have PW data for)
+
+
 
 
 
@@ -230,84 +233,6 @@ pos_dates <- as.POSIXct(master_krill$date_st, format = "%d-%B-%y")
 #as.numeric(format(pos_dates, format = "%m"))
 #as.numeric(format(pos_dates, format = "%d"))
 #as.numeric(format(pos_dates, format = "%j"))
-
-
-
-
-
-
-
-
-
-
-
-
-# plot all krill trawl data -----------------------------------------------------
-
-#need to find better way to visualize krill catch
-
-require(ggplot2)
-#credit to C. Che-Castaldo for mapping code
-world <- map_data('world')
-worldmap <- ggplot(world, aes(x = long, y = lat, group = group)) + 
-  geom_polygon(color = "black", fill = "white") + 
-  geom_path() + 
-  scale_y_continuous(breaks = (-2:2) * 30) + 
-  scale_x_continuous(breaks = (-4:4) * 45) + 
-  theme(axis.title.x = element_blank(), 
-        axis.text.x = element_blank(), 
-        axis.ticks = element_blank(), 
-        axis.title.y = element_blank(), 
-        axis.text.y = element_blank())
-
-#90,0,0 for south pole
-(antarctica <- worldmap + coord_map("ortho", orientation = c(-90, 0, 0), ylim = c(-60, -50)))
-
-
-antarctica + 
-  geom_point(data = points,
-             aes(x = longitude,
-                 y = latitude,
-                 group = id,
-                 size = krill),
-             color = 'red',
-             alpha = 0.3)
-
-antarctica + 
-  stat_density2d(data = points,
-             aes(x = longitude,
-                 y = latitude,
-                 group = id),
-                 geom = 'polygon')
-
-
-require(ggmap)
-
-#AP
-map <- get_map(location = c(lon = -59, lat = -63), zoom = 6)
-#AP and SG
-map <- get_map(location = c(lon = -52, lat = -60), zoom = 4)
-ggmap(map) + 
-  geom_density2d(data = points, 
-                 aes(x = longitude,
-                     y = latitude)
-                 ) +
-  stat_density2d(data = points,
-                 aes(x = longitude,
-                     y = latitude,
-                     fill = ..level.., alpha = ..level..),
-                  bins = 20, geom = 'polygon') +
-  scale_fill_gradient(low = 'green', high = 'red') +
-  scale_alpha(range(0, 0.3), guide = FALSE)
-
-
-
-
-#plot colony locations on map
-
-
-
-setwd('../Krill_data/A')
 
 
 
