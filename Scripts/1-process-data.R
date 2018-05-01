@@ -2,12 +2,8 @@
 # Penguin Watch Model - 1 - Process data
 #
 # 1 - process data (krill data)
-# 1 - simulate data
 # 2 - run model
 # 3 - analyze output
-
-#
-#Created: Apr 5, 2018
 #################
 
 
@@ -34,13 +30,13 @@ setwd('~/Google_Drive/R/penguin_watch_model/Data/Site_data/')
 
 # create site buffers ----------------------------------------------------------
 
-#load in sites (from MAPPPD/SiteCovariates/Locations)
-sites <- rgdal::readOGR('SitesEPSG3031.shp')
-data.frame(sites$site_id, sites$site_name)
-
 
 #----------------------------#
 #check to make sure everything works properly
+
+#load in sites (from MAPPPD/SiteCovariates/Locations)
+#sites <- rgdal::readOGR('SitesEPSG3031.shp')
+#data.frame(sites$site_id, sites$site_name)
 
 #units for 3031 projection are in m
 #proj4string(sites)
@@ -67,9 +63,8 @@ data.frame(sites$site_id, sites$site_name)
 #points(tnp, col = 'red', pch = 19)
 #----------------------------#
 
-#create buffers around sites
-site_buffer <- rgeos::gBuffer(sites, width = 150000)
 
+#created buffers around actual lat/lons - don't want low-res land mask to interfere with krill trawls
 
 #determine which sites we have PW data for
 setwd('../PW_data/RAW_Fiona_Apr_15_2018/')
@@ -87,48 +82,79 @@ for(i in 1:length(un_sites))
   site_year <- rbind(site_year, tout)
 }
 
-str(PW_data)
-#sites with PW data that Fiona sent over:
+#site/years we have data for:
+#site_year
+
+
 #BOOT is now PCHA in MAPPPD database
 pos <- which(un_sites == 'BOOT')
 cam_sites_p <- un_sites[-pos]
 cam_sites <- c(cam_sites_p, 'PCHA')
 
-#sites Fiona initally said we have PW data for:
-#cam_sites <- c('AITC', 'BAIL', 'BOOT', 'CUVE', 'DAMO', 'DANC', 'GEOR', 
-#'HALF', 'MAIV', 'NEKO', 'PETE', 'SPIG', 'SSIS')
-
-#site/years we have data for (only 1 or two years of data for each site as of Apri 16, 2018)
-#site_year
+PW_data$site[which(PW_data$site == 'BOOT')] <- 'PCHA'
 
 
+#determine lat/lons for all site we have data for
+site_ll <- data.frame(SITE = cam_sites, LON = rep(NA, length(cam_sites)), LAT = rep(NA, length(cam_sites)))
+for (i in 1:length(cam_sites))
+{
+  #i <- 1
+  temp <- filter(PW_data, site == cam_sites[i])[1,]
+  site_ll$LON[i] <- temp$col_lon
+  site_ll$LAT[i] <- temp$col_lat
+}
 
 
-# intersection of krill data with PW data sites ---------------------------
+#remove name column
+p_site_ll <- site_ll[,-1]
+
+#points are in 4326 (uses lat/lon)
+col_points <- SpatialPoints(p_site_ll, proj4string = CRS('+init=epsg:4326'))
+
+#load Antarctic polygon
+setwd('../Coastline_medium_res_polygon/')
+Ant <- rgdal::readOGR('Coastline_medium_res_polygon.shp')
+
+#convert colony points to 3031 (rgeos expects projected spatial object)
+t_col_points <- spTransform(np, CRS(proj4string(Ant)))
+
+#create buffers around sites - 150km
+site_buffer <- rgeos::gBuffer(t_col_points, width = 150000)
+
+
+
+# intersection of krill data with site buffers ---------------------------
 
 #load krill data - determine which entires lie within sites we have data for
 
-
-
-#just use colony lat/lon to create circle and then see which krill fishery trawls fall within these - don't use circles created using the landmask, as it is too coarse and doesn't capture archipelago structure
-
-
-setwd('../../Krill_data')
+setwd('../Krill_data')
 
 krill_data <- read.csv('krill_data_CLEAN.csv', stringsAsFactors = FALSE)
-points <- data.frame(longitude = krill_data$lon_st, 
-                     latitude = krill_data$lat_st,
-                     krill = krill_data$krill_green_weight,
-                     id = 1:NROW(krill_data))
+krill_df <- data.frame(LON = krill_data$lon_st, 
+                     LAT = krill_data$lat_st,
+                     KRILL = krill_data$krill_green_weight,
+                     ID = 1:NROW(krill_data))
 
-#plot points on map
+#transform krill data to spatial points
 #points are in 4326 (uses lat/lon)
-np <- SpatialPoints(points, proj4string = CRS("+init=epsg:4326"))
+krill_points <- SpatialPoints(krill_df, proj4string = CRS("+init=epsg:4326"))
 #transform to 3031 (to match everything else)
-tnp <- spTransform(np, CRS(proj4string(site_buffer)))
+t_krill_points <- spTransform(krill_points, CRS(proj4string(Ant)))
 
-#plot(site_buffer)
-#points(tnp, col = 'red', pch = '.')
+
+#--------------#
+#plot check
+
+#continent
+plot(Ant)
+#site buffers
+plot(site_buffer, col = 'lightblue', add = TRUE)
+#krill
+points(t_krill_points, col = 'purple', pch = '.')
+#PW sites
+points(t_col_points, col = 'red', pch = '*')
+#--------------#
+
 
 
 
@@ -235,7 +261,7 @@ worldmap <- ggplot(world, aes(x = long, y = lat, group = group)) +
         axis.text.y = element_blank())
 
 #90,0,0 for south pole
-(antarctica <- worldmap + coord_map("ortho", orientation = c(-58, -50, 0), ylim = c(-60, -50)))
+(antarctica <- worldmap + coord_map("ortho", orientation = c(-90, 0, 0), ylim = c(-60, -50)))
 
 
 antarctica + 
