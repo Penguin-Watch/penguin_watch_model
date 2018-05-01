@@ -363,7 +363,7 @@ setwd('../Results')
       #Lunn prior - flat in probability space
       mu_phi ~ dnorm(0, 0.386)   
 
-      beta_phi ~ dnorm(0, 1000) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_phi ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
 
       #covariates
       #pi_phi ~ dnorm(0, 0.01)
@@ -388,13 +388,13 @@ setwd('../Results')
       }
       
       tau_eta_phi <- pow(sigma_eta_phi, -2)
-      sigma_eta_phi ~ dunif(0.25, 3)
+      sigma_eta_phi ~ dunif(0.25, 8)
       
       tau_gamma_phi <- pow(sigma_gamma_phi, -2)
-      sigma_gamma_phi ~ dunif(0.25, 3)
+      sigma_gamma_phi ~ dunif(0.25, 8)
       
       #tau_eps_phi <- pow(sigma_eps_phi, -2)
-      #sigma_eps_phi ~ dunif(0.25, 3)
+      #sigma_eps_phi ~ dunif(0.25, 8)
       
       
       
@@ -402,7 +402,7 @@ setwd('../Results')
       #Lunn prior - flat in probability space
       mu_p ~ dnorm(0, 0.386)
       
-      beta_p ~ dnorm(0, 10) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
       
       for (k in 1:NK)
       {
