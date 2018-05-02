@@ -1,10 +1,14 @@
-######################
-#Mark-recapture for penguin watch 
+#################
+# Penguin Watch Model - 3 - Penguin model (run with PBS script; results saved to Results)
 #
-#script to run model - model output saved to Results dir
+# 1-process-krill-data.R | process krill data
+# 2-process-SIC-data.R | process SIC data
+# 3-model.R | penguin model
+# 3-run-model.pbs | pbs script to run penguin model on HPC resources
+# 4-analyze-output.R | analyze model output
 #
-#Authors: Casey Youngflesh
-######################
+# Author: Casey Youngflesh
+#################
 
 
 

@@ -1,17 +1,20 @@
-######################
-#Mark-recapture for penguin watch 
+#################
+# Penguin Watch Model - 4 - Analyze model output
 #
-#script to analyze model output
+# 1-process-krill-data.R | process krill data
+# 2-process-SIC-data.R | process SIC data
+# 3-model.R | penguin model
+# 3-run-model.pbs | pbs script to run penguin model on HPC resources
+# 4-analyze-output.R | analyze model output
 #
-#Authors: Casey Youngflesh
-######################
+# Author: Casey Youngflesh
+#################
 
 
 
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
-
 
 
 

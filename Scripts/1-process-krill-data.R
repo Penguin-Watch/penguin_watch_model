@@ -1,9 +1,13 @@
 #################
-# Penguin Watch Model - 1 - Process data
+# Penguin Watch Model - 1 - Process krill data
 #
-# 1 - process data (krill data)
-# 2 - run model
-# 3 - analyze output
+# 1-process-krill-data.R | process krill data
+# 2-process-SIC-data.R | process SIC data
+# 3-model.R | penguin model
+# 3-run-model.pbs | pbs script to run penguin model on HPC resources
+# 4-analyze-output.R | analyze model output
+#
+# Author: Casey Youngflesh
 #################
 
 
@@ -11,7 +15,6 @@
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
-
 
 
 
@@ -198,6 +201,15 @@ for (i in 1:length(cam_sites))
 #master_krill is all trawls that occured within the site buffers for the sites we have PW data for - all years (not filtered for years we have PW data for)
 
 
+
+
+# Krill covariates -------------------------------------------------------------------
+
+#Several ways in which krill fishing may impact BS:
+
+# * Effect of krill fishing during breeding season
+# * Effect of krill fishing during entire season
+# * Effect of krill fishing across years
 
 
 
@@ -416,7 +428,4 @@ rect(xleft = 120, ybottom = 0, xright = 150, ytop = 12000, col = rgb(0.8,0,0,0.2
 rect(xleft = 180, ybottom = 0, xright = 210, ytop = 12000, col = rgb(0.8,0,0,0.2))
 rect(xleft = 240, ybottom = 0, xright = 270, ytop = 12000, col = rgb(0.8,0,0,0.2))
 rect(xleft = 300, ybottom = 0, xright = 330, ytop = 12000, col = rgb(0.8,0,0,0.2))
-
-
-
 
