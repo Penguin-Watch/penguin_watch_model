@@ -12,6 +12,16 @@
 
 
 
+# Krill covariates -------------------------------------------------------------------
+
+#Several ways in which krill fishing may impact BS:
+
+# * Effect of krill fishing during breeding season
+# * Effect of krill fishing during entire season
+# * Effect of krill fishing across years
+
+
+
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
@@ -107,7 +117,7 @@ all_site_buffers_25 <- rgeos::gBuffer(t_col_points, width = 25000)
 
 #load krill data - determine which entires lie within sites we have data for
 
-setwd('../Krill_data')
+setwd('../Krill_data/Processed/')
 
 krill_data <- read.csv('krill_data_CLEAN.csv', stringsAsFactors = FALSE)
 krill_df <- data.frame(LON = krill_data$lon_st, 
@@ -202,22 +212,20 @@ for (i in 1:length(cam_sites))
 
 
 
+# Time frame for krill processing -----------------------------------------
 
-# Krill covariates -------------------------------------------------------------------
+#years included in krill data output
 
-#Several ways in which krill fishing may impact BS:
-
-# * Effect of krill fishing during breeding season
-# * Effect of krill fishing during entire season
-# * Effect of krill fishing across years
+yrs <- 2012:2017
 
 
 
 # Effect of krill fishing during each breeding season ---------------------
 
 #25km radius for Dec - Feb in each year
+#YEAR is PW year
 
-#NO FISHING EFFORT WITHIN 25KM AT SITE WHERE WE CURRENTLY HAVE DATA
+#NOT MUCH FISHING EFFORT AT SITES/TIMES WE HAVE DATA FOR
 
 kbs <- data.frame()
 for (i in 1:length(cam_sites))
@@ -227,7 +235,6 @@ for (i in 1:length(cam_sites))
   temp_PW <- filter(PW_data, site == cam_sites[i])
   
   #PW year (1999/2000 season is PW year 2000)
-  yrs <- unique(temp_PW$season_year)
   pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
   
   for (j in 1:length(yrs))
@@ -266,22 +273,25 @@ for (i in 1:length(cam_sites))
 }
 
 
+# write.csv(kbs, 'krill_breeding_season.csv', row.names = FALSE)
+
+
 
 
 # Effect of krill fishing during whole season ----------------------------
 
 
-#150km radius for March - Feb (March 1999 - Feb 2000 for 1999/2000 breeding season)
+#150km radius for March - Feb (e.g., March 1999 - Feb 2000 for 1999/2000 breeding season)
+#YEAR is PW year
 
 kws <- data.frame()
 for (i in 1:length(cam_sites))
 {
-  #i <- 2
+  #i <- 1
   temp_krill <- filter(master_krill_150, col_id == cam_sites[i])
   temp_PW <- filter(PW_data, site == cam_sites[i])
   
   #PW year (1999/2000 season is PW year 2000)
-  yrs <- unique(temp_PW$season_year)
   pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
   
   for (j in 1:length(yrs))
@@ -314,20 +324,21 @@ for (i in 1:length(cam_sites))
                           T_KRILL = 0, 
                           N_TRAWLS = 0, 
                           CPUE = NA)
-      kws <- rbind(kbs, t_out)
+      kws <- rbind(kws, t_out)
     }
   }
 }
 
+
+# write.csv(kws, 'krill_entire_season.csv', row.names = FALSE)
 
 
 
 
 # Effect of krill fishing across years ------------------------------------
 
-#150km radius average (or total) across years (PW seasons 2011-2017) at each site
-
-yrs <- 2011:2017
+#150km radius average (or total) across all years at each site
+#YEAR is PW year
 
 kay <- data.frame()
 for (i in 1:length(cam_sites))
@@ -387,6 +398,9 @@ for (i in 1:length(cam_sites))
 }
 
 
+# write.csv(kay, 'krill_average.csv', row.names = FALSE)
+
+
 
 
 
@@ -410,6 +424,7 @@ ggplot(kay, aes(SITE, MN_CPUE)) +
   ylab('Mean Catch Per Unit Effort') +
   theme_bw() +
   ggtitle('CPUE across sites (2010-2017)')
+
 
 
 
