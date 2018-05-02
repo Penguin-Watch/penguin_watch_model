@@ -268,7 +268,7 @@ z_array[ones] <- NA
 un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
 
 
-setwd('../../Krill_data/Processed/')
+#setwd('../../Krill_data/Processed/')
 
 krill <- read.csv('krill_entire_season.csv')
 
@@ -301,7 +301,7 @@ KRILL <- matrix(t2, nrow = NROW(i_KRILL))
 
 
 
-setwd('../../SIC_data/Processed/')
+#setwd('../../SIC_data/Processed/')
 
 sea_ice <- read.csv('SIC_500_W.csv')
 
@@ -595,14 +595,14 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_2_2018_test',
-               jagsDsc = 'Covariates: 1) entire year krill, 2) SIC previous winter',
+               jagsID = 'May_2_2018_covariates',
+               jagsDsc = 'Fewer iterations. Include covariates: 1) entire year krill, 2) SIC previous winter',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 5,
                n_adapt = 8000,
                n_burn = 30000,
-               n_draw = 100000,
-               n_thin = 20,
+               n_draw = 40000,
+               n_thin = 15,
                DEBUG = FALSE,
                EXTRA = FALSE,
                Rhat_max = 1.1,
