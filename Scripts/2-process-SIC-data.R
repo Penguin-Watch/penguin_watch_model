@@ -12,6 +12,16 @@
 
 
 
+# Sea ice covariates -----------------------------------------------------------------
+
+#Several ways in which SIC may impact BS:
+
+# * Effect of SIC during breeding season (access to food resources)
+# * Effect of SIC during winter previous to breeding season (body condtion from previous winter)
+# * Effect of SIC during previous 5 years (conditions that may or may not be favorable to krill)
+
+
+
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
@@ -28,15 +38,6 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
 pacman::p_load(dplyr)
 
 
-
-
-# Sea ice covariates -----------------------------------------------------------------
-
-#Several ways in which SIC may impact BS:
-
-# * Effect of SIC during breeding season (access to food resources)
-# * Effect of SIC during winter previous to breeding season (body condtion from previous winter)
-# * Effect of SIC during previous 5 years (conditions that may or may not be favorable to krill)
 
 
 
