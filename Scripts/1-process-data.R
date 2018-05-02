@@ -33,7 +33,7 @@ pacman::p_load(dplyr, rgdal, rgeos)
 #created buffers around actual lat/lons - don't want low-res land mask to interfere with krill trawls
 
 #determine which sites we have PW data for
-setwd('Data/PW_data/RAW_Fiona_Apr_15_2018/')
+setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/')
 PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
 un_sites <- unique(PW_data$site)
@@ -78,17 +78,19 @@ p_site_ll <- site_ll[,-1]
 col_points <- SpatialPoints(p_site_ll, proj4string = CRS('+init=epsg:4326'))
 
 #load Antarctic polygon
-setwd('../Coastline_medium_res_polygon/')
+setwd('../../Coastline_medium_res_polygon/')
 Ant <- rgdal::readOGR('Coastline_medium_res_polygon.shp')
 
+
 #convert colony points to 3031 (rgeos expects projected spatial object)
-t_col_points <- spTransform(np, CRS(proj4string(Ant)))
+t_col_points <- spTransform(col_points, CRS(proj4string(Ant)))
 
 #create buffers around sites - 150km
 all_site_buffers_150 <- rgeos::gBuffer(t_col_points, width = 150000)
 all_site_buffers_100 <- rgeos::gBuffer(t_col_points, width = 100000)
 all_site_buffers_50 <- rgeos::gBuffer(t_col_points, width = 50000)
 all_site_buffers_25 <- rgeos::gBuffer(t_col_points, width = 25000)
+
 
 
 
@@ -119,7 +121,7 @@ t_krill_points <- spTransform(krill_points, CRS(proj4string(Ant)))
 #continent
 # plot(Ant)
 # #site buffers
-# plot(all_site_buffers, col = 'lightblue', add = TRUE)
+# plot(all_site_buffers_150, col = 'lightblue', add = TRUE)
 # #krill
 # points(t_krill_points, col = 'purple', pch = '.')
 # #PW sites
@@ -136,7 +138,7 @@ master_krill_50 <- data.frame()
 master_krill_25 <- data.frame()
 for (i in 1:length(cam_sites))
 {
-  #i <- 1
+  #i <- 2
   temp_site <- filter(site_ll, SITE == cam_sites[i])
   
   #convert to spatial points
@@ -172,17 +174,17 @@ for (i in 1:length(cam_sites))
   master_krill_25 <- rbind(master_krill_25, temp_trawls_25)
   
   #---------------#
-  #plot everything for the single site
+  #plot everything for site i
   
-  # t_krill <- data.frame(LON = temp_trawls$lon_st, 
-  #                       LAT = temp_trawls$lat_st)
+  # t_krill <- data.frame(LON = temp_trawls_150$lon_st,
+  #                       LAT = temp_trawls_150$lat_st)
   # temp_kp <- SpatialPoints(t_krill, proj4string = CRS("+init=epsg:4326"))
   # t_kp <- spTransform(temp_kp, CRS(proj4string(Ant)))
   # 
   # plot(all_site_buffers_150, col = 'lightblue')
   # plot(temp_buffer_150, add = TRUE, col = 'pink')
-  # points(temp_points, pch = 19, col = 'red')
-  # points(t_kp, pch = '+', col = 'green')
+  # points(temp_site, pch = "*", col = 'red')
+  # points(t_kp, pch = '.', col = 'purple')
   #---------------#
 }
 
@@ -193,46 +195,222 @@ for (i in 1:length(cam_sites))
 
 
 
-# thoughts ----------------------------------------------------------------
+# Effect of krill fishing during each breeding season ---------------------
 
-#2 ways to look at impact of krill
-#-for each season (june - mid Feb [or wherever creche point is set])
-#-do years with more krill fishing lead to lower breeding success at that site
-#-total krill caught (average of year totals) within that site buffer
-#-does this impact the colony intercept for breeding success
+#25km radius for Dec - Feb in each year
 
+#NO FISHING EFFORT WITHIN 25KM AT SITE WHERE WE CURRENTLY HAVE DATA
 
-
-
-# Total krill catch for each site -----------------------------------------
-
-
-total_krill <- c()
+kbs <- data.frame()
 for (i in 1:length(cam_sites))
 {
   #i <- 1
-  #krill data
-  temp <- filter(master_krill, col_id == cam_sites[i])
-  kr_total <- sum(temp$krill_green_weight)
-  tt <- data.frame(site = cam_sites[i], kr_total = kr_total)
-  total_krill <- rbind(total_krill, tt)
+  temp_krill <- filter(master_krill_25, col_id == cam_sites[i])
+  temp_PW <- filter(PW_data, site == cam_sites[i])
+  
+  #PW year (1999/2000 season is PW year 2000)
+  yrs <- unique(temp_PW$season_year)
+  pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
+  
+  for (j in 1:length(yrs))
+  {
+    #j <- 1
+    #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+    FIRST <- as.Date(paste0(yrs[j] - 1, '-12-01'))
+    LAST <- as.Date(paste0(yrs[j], '-02-01'))
+    dates <- which(pos_dates > FIRST & pos_dates < LAST)
+    
+    if (length(dates) > 0)
+    {
+      #total krill caught over this period
+      t_krill <- sum(temp_krill[dates,]$krill_green_weight)
+      #number of trawls (effort)
+      n_trawls <- length(dates)
+      #krill/trawl (CPUE)
+      cpue_krill <- t_krill/n_trawls
+      #output
+      t_out <- data.frame(SITE = cam_sites[i], 
+                          YEAR = yrs[j], 
+                          T_KRILL = t_krill, 
+                          N_TRAWLS = n_trawls, 
+                          CPUE = cpue_krill)
+      #merge with final output
+      kbs <- rbind(kbs, t_out)
+    } else {
+      t_out <- data.frame(SITE = cam_sites[i], 
+                          YEAR = yrs[j], 
+                          T_KRILL = 0, 
+                          N_TRAWLS = 0, 
+                          CPUE = NA)
+      kbs <- rbind(kbs, t_out)
+    }
+  }
+}
+
+
+
+
+# Effect of krill fishing during whole season ----------------------------
+
+
+#150km radius for March - Feb (March 1999 - Feb 2000 for 1999/2000 breeding season)
+
+kws <- data.frame()
+for (i in 1:length(cam_sites))
+{
+  #i <- 2
+  temp_krill <- filter(master_krill_150, col_id == cam_sites[i])
+  temp_PW <- filter(PW_data, site == cam_sites[i])
+  
+  #PW year (1999/2000 season is PW year 2000)
+  yrs <- unique(temp_PW$season_year)
+  pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
+  
+  for (j in 1:length(yrs))
+  {
+    #j <- 1
+    #used March 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+    FIRST <- as.Date(paste0(yrs[j] - 1, '-3-01'))
+    LAST <- as.Date(paste0(yrs[j], '-02-01'))
+    dates <- which(pos_dates > FIRST & pos_dates < LAST)
+    
+    if (length(dates) > 0)
+    {
+      #total krill caught over this period
+      t_krill <- sum(temp_krill[dates,]$krill_green_weight)
+      #number of trawls (effort)
+      n_trawls <- length(dates)
+      #krill/trawl (CPUE)
+      cpue_krill <- t_krill/n_trawls
+      #output
+      t_out <- data.frame(SITE = cam_sites[i], 
+                          YEAR = yrs[j], 
+                          T_KRILL = t_krill, 
+                          N_TRAWLS = n_trawls, 
+                          CPUE = cpue_krill)
+      #merge with final output
+      kws <- rbind(kws, t_out)
+    } else {
+      t_out <- data.frame(SITE = cam_sites[i], 
+                          YEAR = yrs[j], 
+                          T_KRILL = 0, 
+                          N_TRAWLS = 0, 
+                          CPUE = NA)
+      kws <- rbind(kbs, t_out)
+    }
+  }
 }
 
 
 
 
 
-# Krill catch in each season ----------------------------------------------
+# Effect of krill fishing across years ------------------------------------
 
-#determine which years match for both krill and PW data (remember that Fiona used 2007 for 2006/2007 season)
+#150km radius average (or total) across years (PW seasons 2011-2017) at each site
+
+yrs <- 2011:2017
+
+kay <- data.frame()
+for (i in 1:length(cam_sites))
+{
+  #i <- 8
+  temp_krill <- filter(master_krill_150, col_id == cam_sites[i])
+  temp_PW <- filter(PW_data, site == cam_sites[i])
 
 
-#Convert dates to POSIX - extract year, month, day, julian 
-pos_dates <- as.POSIXct(master_krill$date_st, format = "%d-%B-%y")
-#as.numeric(format(pos_dates, format = "%Y"))
-#as.numeric(format(pos_dates, format = "%m"))
-#as.numeric(format(pos_dates, format = "%d"))
-#as.numeric(format(pos_dates, format = "%j"))
+  #PW year (1999/2000 season is PW year 2000)
+  pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
+  
+  yr_krill <- data.frame()
+  for (j in 1:length(yrs))
+  {
+    #j <- 3
+    #used March 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+    FIRST <- as.Date(paste0(yrs[j] - 1, '-3-01'))
+    LAST <- as.Date(paste0(yrs[j], '-02-01'))
+    dates <- which(pos_dates > FIRST & pos_dates < LAST)
+    
+    if (length(dates) > 0)
+    {
+      #total krill caught over this period
+      t_krill <- sum(temp_krill[dates,]$krill_green_weight)
+      #number of trawls (effort)
+      n_trawls <- length(dates)
+      #krill/trawl (CPUE)
+      cpue_krill <- t_krill/n_trawls
+      
+      tyk <- data.frame(SITE = cam_sites[i], 
+                          T_KRILL = t_krill,
+                          N_TRAWLS = n_trawls,
+                          CPUE = cpue_krill)
+      
+      #merge with final output
+      yr_krill <- rbind(yr_krill, tyk)
+    } else {
+      tyk <- data.frame(SITE = cam_sites[i], 
+                        T_KRILL = 0,
+                        N_TRAWLS = 0,
+                        CPUE = NA)
+      yr_krill <- rbind(yr_krill, tyk)
+    }
+  }
+  
+  OT_KRILL <- sum(yr_krill$T_KRILL)
+  MN_KRILL <- mean(yr_krill$T_KRILL)
+  MN_CPUE <- mean(yr_krill$CPUE, na.rm = TRUE)
+
+  tk <- data.frame(SITE = cam_sites[i],
+                   TOTAL_KRILL = OT_KRILL,
+                   MN_KRILL = MN_KRILL,
+                   MN_CPUE = MN_CPUE)
+
+  kay <- rbind(kay, tk)
+}
+
+
+
+
+
+# which sites have the most fishing at them? -------------------------------
+
+
+ggplot(kay, aes(SITE, TOTAL_KRILL)) +
+  geom_col() +
+  ylab('Total krill catch') +
+  theme_bw() +
+  ggtitle('Total krill catch across sites (2010-2017)')
+
+ggplot(kay, aes(SITE, MN_KRILL)) +
+  geom_col() +
+  ylab('Mean krill catch') +
+  theme_bw() +
+  ggtitle('Mean krill catch across sites (2010-2017)')
+
+ggplot(kay, aes(SITE, MN_CPUE)) +
+  geom_col() +
+  ylab('Mean Catch Per Unit Effort') +
+  theme_bw() +
+  ggtitle('CPUE across sites (2010-2017)')
+
+
+
+
+# When is krill fishing most intense in this region? ----------------------
+
+#AT THE SITES WE HAVE DATA FOR: March-May of each year
+
+kdates <- as.Date(master_krill_150$date_st, format = "%d-%B-%y")
+j_kdates <- as.numeric(format(kdates, '%j'))
+
+hist(j_kdates, col = 'grey50')
+rect(xleft = 0, ybottom = 0, xright = 30, ytop = 12000, col = rgb(0.8,0,0,0.2))
+rect(xleft = 60, ybottom = 0, xright = 90, ytop = 12000, col = rgb(0.8,0,0,0.2))
+rect(xleft = 120, ybottom = 0, xright = 150, ytop = 12000, col = rgb(0.8,0,0,0.2))
+rect(xleft = 180, ybottom = 0, xright = 210, ytop = 12000, col = rgb(0.8,0,0,0.2))
+rect(xleft = 240, ybottom = 0, xright = 270, ytop = 12000, col = rgb(0.8,0,0,0.2))
+rect(xleft = 300, ybottom = 0, xright = 330, ytop = 12000, col = rgb(0.8,0,0,0.2))
+
 
 
 
