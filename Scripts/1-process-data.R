@@ -21,7 +21,8 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
 {
   install.packages('pacman', repos = "http://cran.case.edu")
 }
-pacman::p_load(dplyr, rgdal, rgeos)
+
+pacman::p_load(dplyr, rgdal, rgeos, ggplot2)
 
 
 
@@ -81,6 +82,9 @@ col_points <- SpatialPoints(p_site_ll, proj4string = CRS('+init=epsg:4326'))
 setwd('../../Coastline_medium_res_polygon/')
 Ant <- rgdal::readOGR('Coastline_medium_res_polygon.shp')
 
+setwd('../peninsula/')
+AP_p <- rgdal::readOGR('GADM_peninsula.shp')
+AP <- spTransform(AP_p, CRS(proj4string(Ant)))
 
 #convert colony points to 3031 (rgeos expects projected spatial object)
 t_col_points <- spTransform(col_points, CRS(proj4string(Ant)))
@@ -119,9 +123,10 @@ t_krill_points <- spTransform(krill_points, CRS(proj4string(Ant)))
 #plot check
 
 #continent
-# plot(Ant)
+# #plot(Ant)
+# plot(AP)
 # #site buffers
-# plot(all_site_buffers_150, col = 'lightblue', add = TRUE)
+# plot(all_site_buffers_150, col = rgb(0,0,1,0.1), add = TRUE)
 # #krill
 # points(t_krill_points, col = 'purple', pch = '.')
 # #PW sites
@@ -181,8 +186,9 @@ for (i in 1:length(cam_sites))
   # temp_kp <- SpatialPoints(t_krill, proj4string = CRS("+init=epsg:4326"))
   # t_kp <- spTransform(temp_kp, CRS(proj4string(Ant)))
   # 
-  # plot(all_site_buffers_150, col = 'lightblue')
-  # plot(temp_buffer_150, add = TRUE, col = 'pink')
+  # plot(AP)
+  # plot(all_site_buffers_150, col = rgb(0,0,1,0.1), add = TRUE)
+  # plot(temp_buffer_150, col = rgb(1,0,0,0.1), add = TRUE)
   # points(temp_site, pch = "*", col = 'red')
   # points(t_kp, pch = '.', col = 'purple')
   #---------------#
