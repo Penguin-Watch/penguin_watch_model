@@ -37,6 +37,9 @@ setwd('../Data')
 
 PW_data_p <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
+boots <- which(PW_data_p$site == 'BOOT')
+PW_data_p$site[boots] <- 'PCHA'
+
 #merge site and cam for independent cameras (treating each cam as a different site)
 PW_data <- mutate(PW_data_p, site_p_cam = paste0(site, camera_letter))
 
@@ -254,6 +257,76 @@ z_array[ones] <- NA
 
 
 
+# Krill covariate ---------------------------------------------------------------
+
+#total krill caught over the previous winter and current breeding season
+#150km radius for March - Feb
+
+#dim1 [j] = years (d_yrs)
+#dim2 [k] = sites (un_sites)
+
+un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
+
+
+setwd('../../Krill_data/Processed/')
+
+krill <- read.csv('krill_entire_season.csv')
+
+i_KRILL <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
+for (k in 1:length(un_sites_ncc))
+{
+  #k <- 3
+  temp <- filter(krill, SITE == un_sites_ncc[k])
+  
+  for (j in 1:length(d_yrs))
+  {
+    #j <- 1
+    temp2 <- filter(temp, YEAR == d_yrs[j])
+    i_KRILL[j,k] <- temp2$T_KRILL
+  }
+}
+
+#standardize krill catch
+t1 <- as.vector(i_KRILL)
+t2 <- scale(t1)[,1]
+KRILL <- matrix(t2, nrow = NROW(i_KRILL))
+
+
+
+# SIC covariate -----------------------------------------------------------
+
+#SIC for the previous winter
+#500km radius for June - Sep
+#COULD ALSO ADD MAX OVER LAST 5 YEARS
+
+
+
+setwd('../../SIC_data/Processed/')
+
+sea_ice <- read.csv('SIC_500_W.csv')
+
+i_SIC <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
+for (k in 1:length(un_sites_ncc))
+{
+  #k <- 1
+  temp <- filter(sea_ice, SITE == un_sites_ncc[k])
+  
+  for (j in 1:length(d_yrs))
+  {
+    #j <- 1
+    temp2 <- filter(temp, YEAR == d_yrs[j])
+    i_SIC[j,k] <- temp2$WMN
+  }
+}
+
+
+#standardize krill catch
+t1 <- as.vector(i_SIC)
+t2 <- scale(t1)[,1]
+SIC <- matrix(t2, nrow = NROW(i_SIC))
+
+
+
 # Create Data for JAGS ---------------------------------------------------------
 
 #data object for JAGS model
@@ -273,11 +346,13 @@ DATA <- list(
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
   w = w_array, #binary day (1)/night (0)
-  x = as.numeric(1:dim(nests_array)[1])) #time steps for increase in surv/detection over time 
+  x = as.numeric(1:dim(nests_array)[1]), #time steps for increase in surv/detection over time 
+  KRILL = KRILL, #standardized krill catch data (total krill caught over the previous winter and current breeding season)
+  SIC = SIC) #standardized SIC for previous winter
 
-#ADD TO DATA
-#sea ice for that year (matrix) - site/year
-#krill catch in buffer for that year (matrix) - site/year
+
+
+
 #ADD 'CAMERA' number in here somewhere (detection should not be the same for each camera at a site)
 
 
@@ -347,7 +422,7 @@ setwd('../Results')
       #eps_phi = residuals
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
-      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t]# + eps_phi[t,j,k] #+ pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
 
       #p = detection prob
@@ -367,11 +442,12 @@ setwd('../Results')
       #Lunn prior - flat in probability space
       mu_phi ~ dnorm(0, 0.386)   
 
-      beta_phi ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.01 (precision 100) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_phi ~ dnorm(0, 100) T(0,1)
+
 
       #covariates
-      #pi_phi ~ dnorm(0, 0.01)
-      #rho_phi ~ dnorm(0, 0.01)
+      pi_phi ~ dnorm(0, 0.386)
+      rho_phi ~ dnorm(0, 0.386)
       
       for (k in 1:NK)
       {
@@ -406,7 +482,7 @@ setwd('../Results')
       #Lunn prior - flat in probability space
       mu_p ~ dnorm(0, 0.386)
       
-      beta_p ~ dnorm(0, 100) T(0,1) #[slope only pos] maybe variance 0.1 (precision 10) - plot histogram to get a look (will depend on time step length [i.e., one hour or one day])
+      beta_p ~ dnorm(0, 100) T(0,1)
       
       for (k in 1:NK)
       {
@@ -439,6 +515,8 @@ Inits_1 <- list(mu_phi = 0.59,
                 mu_p = -4.15,
                 beta_p = 0,
                 sigma_nu_p = 1.06,
+                pi_phi = 0,
+                rho_phi = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -449,6 +527,8 @@ Inits_2 <- list(mu_phi = 2,
                 mu_p = -4,
                 beta_p = 0,
                 sigma_nu_p = 1.1,
+                pi_phi = 0,
+                rho_phi = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -459,6 +539,8 @@ Inits_3 <- list(mu_phi = 3.31,
                 mu_p = -3.96,
                 beta_p = 0,
                 sigma_nu_p = 1.2,
+                pi_phi = 0,
+                rho_phi = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -469,6 +551,8 @@ Inits_4 <- list(mu_phi = 5,
                 mu_p = -3.7,
                 beta_p = 0,
                 sigma_nu_p = 1.3,
+                pi_phi = 0,
+                rho_phi = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
@@ -479,6 +563,8 @@ Inits_5 <- list(mu_phi = 6.04,
                 mu_p = -3.77,
                 beta_p = 0,
                 sigma_nu_p = 1.4,
+                pi_phi = 0,
+                rho_phi = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
@@ -492,14 +578,14 @@ Pars <- c('mu_phi',
           'eta_phi',
           'gamma_phi',
           'beta_phi',
-          #'eps_phi',
           'sigma_eta_phi',
           'sigma_gamma_phi',
-          #'sigma_eps_phi',
           'mu_p',
           'beta_p',
           'nu_p',
-          'sigma_nu_p')
+          'sigma_nu_p',
+          'pi_phi',
+          'rho_phi')
 
 
 # Run model ---------------------------------------------------------------
@@ -509,8 +595,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_2_2018',
-               jagsDsc = 'Full data - extended - fewer iter',
+               jagsID = 'May_2_2018_test',
+               jagsDsc = 'Covariates: 1) entire year krill, 2) SIC previous winter',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 5,
                n_adapt = 8000,
