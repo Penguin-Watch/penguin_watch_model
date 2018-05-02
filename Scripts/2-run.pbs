@@ -5,7 +5,7 @@
 #PBS -N PW_model
 
 module load shared
-module load R/3.4.3
+module load R/3.4.4
 module load gcc-stack
 module load openblas/dynamic/0.2.18
 module load lapack/gcc/64/3.6.0
