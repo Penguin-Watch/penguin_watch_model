@@ -95,9 +95,35 @@ col_points <- SpatialPoints(p_site_ll, proj4string = CRS('+init=epsg:4326'))
 setwd('../../Coastline_medium_res_polygon/')
 Ant <- rgdal::readOGR('Coastline_medium_res_polygon.shp')
 
+#AP
 setwd('../peninsula/')
 AP_p <- rgdal::readOGR('GADM_peninsula.shp')
 AP <- spTransform(AP_p, CRS(proj4string(Ant)))
+
+#CCAMLR zones
+setwd('../asd-shapefile-WGS84/')
+mz <- rgdal::readOGR('asd-shapefile-WGS84.shp')
+CCAMLR_zones <- spTransform(mz, CRS(proj4string(Ant)))
+sub_481 <- CCAMLR_zones[which(CCAMLR_zones@data$Name == 'Subarea 48.1'),]
+#small scale management units (SSMU)
+setwd('../ssmu-shapefile-WGS84/')
+sm <- rgdal::readOGR('ssmu-shapefile-WGS84.shp')
+SSMU <- spTransform(sm, CRS(proj4string(Ant)))
+SSMU_names_p <- unique(SSMU@data$Name)
+SSMU_names <- make.names(SSMU_names_p)
+#use names in Table A2.1 from 'CCAMLR_krill_report.pdf' - no data for 48.4 is that table
+SSMU_names <- c('APPA_481', 'APW_481', 'APDPW_481',
+                'APDPE_481', 'APBSW_481', 'APBSE_481',
+                'APEI_481', 'APPA_482', 'SOW_482',
+                'SONE_482', 'SOSE_482', 'SGPA_483',
+                'SGW_483', 'SGE_483', 'SSPA_484',
+                'SS_484', 'APE_481')
+for (i in 1:length(SSMU_names))
+{
+  assign(SSMU_names[i], SSMU[which(SSMU@data$Name == SSMU_names_p[i]),])
+}
+
+
 
 #convert colony points to 3031 (rgeos expects projected spatial object)
 t_col_points <- spTransform(col_points, CRS(proj4string(Ant)))
@@ -132,19 +158,140 @@ krill_points <- SpatialPoints(krill_df, proj4string = CRS("+init=epsg:4326"))
 t_krill_points <- spTransform(krill_points, CRS(proj4string(Ant)))
 
 
+#function takes spatial object (3031) as input and determine which krill trawl points are located within that shp file
+#if TYPE = 'points' -> spatial points that fall within spatial object are returned
+#if TYPE = 'data' -> rows of krill data that fall within spatial object are returned
+k_sp_fun <- function(INPUT, LABEL, TYPE)
+{
+  #INPUT <- get(SSMU_names[15])
+  #LABEL <- SSMU_names[15]
+  tind <- which(as.numeric(over(t_krill_points, geometry(INPUT))) == 1)
+  k_temp <- mutate(krill_data[tind,], CCAMLR_Region = paste0(LABEL))
+  k_ll <- data.frame(LON = k_temp$lon_st,
+                     LAT = k_temp$lat_st)
+  if (NROW(k_ll) > 0)
+  {
+    k_pre <- SpatialPoints(k_ll, proj4string = CRS("+init=epsg:4326"))
+    k_pts <- spTransform(k_pre, CRS(proj4string(Ant)))
+  } else {
+    k_pre <- NA
+    k_pts <- NA
+  }
+  
+  if (TYPE == 'points')
+  {
+    return(k_pts)
+  }
+  if (TYPE == 'data')
+  {
+    return(k_temp)
+  }
+}
+
+
+
+#determine which krill trawls fall within:
+#CCAMLR region 48.1
+k481_pts <- k_sp_fun(sub_481, '48.1', TYPE = 'points')
+#CCAMLE SSMUs
+for (i in 1:length(SSMU_names))
+{
+  #i <- 15
+  assign(paste0(SSMU_names[i], '_pts'), k_sp_fun(get(SSMU_names[i]), LABEL = SSMU_names[i], TYPE = 'points'))
+  assign(paste0(SSMU_names[i], '_krill'), k_sp_fun(get(SSMU_names[i]), LABEL = SSMU_names[i], TYPE = 'data'))
+}
+
+
+
+
+
 #--------------#
 #plot check
 
-#continent
 # #plot(Ant)
 # plot(AP)
+# #plot CCAMLR SSMUs
+# gg_color_hue <- function(n, ALPHA = 1) 
+# {
+#   hues = seq(15, 375, length=n+1)
+#   hcl(h=hues, l=65, c=100, alpha = ALPHA)[1:n]
+# }
+# cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.2)
+# 
+# for (i in 1:length(SSMU_names))
+# {
+#   #i <- 1
+#   plot(get(SSMU_names[i]), add = TRUE, col = cols[i])
+# }
 # #site buffers
-# plot(all_site_buffers_150, col = rgb(0,0,1,0.1), add = TRUE)
-# #krill
-# points(t_krill_points, col = 'purple', pch = '.')
+# #plot(all_site_buffers_150, col = rgb(0,0,1,0.5), add = TRUE)
 # #PW sites
-# points(t_col_points, col = 'red', pch = '*')
+# points(t_col_points, col = rgb(0,0,1,0.5), pch = 19)
+# #krill
+# #points(t_krill_points, col = rgb(1,0,0,0.05), pch = '.')
+# #CCAMLR zone 48.1
+# #plot(sub_481, add = TRUE)
+# 
+# #overlay krill trawls:
+# #just within 48.1
+# #points(k481_pts, col = rgb(0,1,0,0.05), pch = '.')
+# #SSMUs
+# cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.3)
+# for (i in 1:length(SSMU_names))
+# {
+#   #i <- 3
+#   points(get(paste0(SSMU_names[i], '_pts')), col = cols[i], pch = '.')
+# }
 #--------------#
+
+
+
+
+yrs <- 2012:2017
+for (j in 1:length(yrs))
+{
+  #j <- 1
+  
+  k481
+  
+  #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+  FIRST <- as.Date(paste0(yrs[j] - 1, '-12-01'))
+  LAST <- as.Date(paste0(yrs[j], '-02-01'))
+  dates <- which(pos_dates > FIRST & pos_dates < LAST)
+  
+  
+}
+  
+  
+  if (length(dates) > 0)
+  {
+    #total krill caught over this period
+    t_krill <- sum(temp_krill[dates,]$krill_green_weight)
+    #number of trawls (effort)
+    n_trawls <- length(dates)
+    #krill/trawl (CPUE)
+    cpue_krill <- t_krill/n_trawls
+    #output
+    t_out <- data.frame(SITE = cam_sites[i], 
+                        YEAR = yrs[j], 
+                        T_KRILL = t_krill, 
+                        N_TRAWLS = n_trawls, 
+                        CPUE = cpue_krill)
+    #merge with final output
+    kbs <- rbind(kbs, t_out)
+  } else {
+    t_out <- data.frame(SITE = cam_sites[i], 
+                        YEAR = yrs[j], 
+                        T_KRILL = 0, 
+                        N_TRAWLS = 0, 
+                        CPUE = NA)
+    kbs <- rbind(kbs, t_out)
+  }
+
+
+
+
+
 
 
 
@@ -154,6 +301,7 @@ master_krill_150 <- data.frame()
 master_krill_100 <- data.frame()
 master_krill_50 <- data.frame()
 master_krill_25 <- data.frame()
+
 for (i in 1:length(cam_sites))
 {
   #i <- 2
@@ -193,7 +341,7 @@ for (i in 1:length(cam_sites))
   
   #---------------#
   #plot everything for site i
-  
+  # 
   # t_krill <- data.frame(LON = temp_trawls_150$lon_st,
   #                       LAT = temp_trawls_150$lat_st)
   # temp_kp <- SpatialPoints(t_krill, proj4string = CRS("+init=epsg:4326"))
@@ -201,9 +349,9 @@ for (i in 1:length(cam_sites))
   # 
   # plot(AP)
   # plot(all_site_buffers_150, col = rgb(0,0,1,0.1), add = TRUE)
+  # points(temp_site, col = rgb(0,0,1,0.5), pch = 19)
   # plot(temp_buffer_150, col = rgb(1,0,0,0.1), add = TRUE)
-  # points(temp_site, pch = "*", col = 'red')
-  # points(t_kp, pch = '.', col = 'purple')
+  # points(t_kp, col = rgb(1,0,0,0.05), pch = '.')
   #---------------#
 }
 
