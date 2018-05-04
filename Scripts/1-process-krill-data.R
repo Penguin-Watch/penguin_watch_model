@@ -114,7 +114,7 @@ SSMU_names <- make.names(SSMU_names_p)
 #use names in Table A2.1 from 'CCAMLR_krill_report.pdf' - no data for 48.4 is that table
 SSMU_names <- c('APPA_481', 'APW_481', 'APDPW_481',
                 'APDPE_481', 'APBSW_481', 'APBSE_481',
-                'APEI_481', 'APPA_482', 'SOW_482',
+                'APEI_481', 'SOPA_482', 'SOW_482',
                 'SONE_482', 'SOSE_482', 'SGPA_483',
                 'SGW_483', 'SGE_483', 'SSPA_484',
                 'SS_484', 'APE_481')
@@ -193,6 +193,7 @@ k_sp_fun <- function(INPUT, LABEL, TYPE)
 #determine which krill trawls fall within:
 #CCAMLR region 48.1
 k481_pts <- k_sp_fun(sub_481, '48.1', TYPE = 'points')
+
 #CCAMLE SSMUs
 for (i in 1:length(SSMU_names))
 {
@@ -202,16 +203,13 @@ for (i in 1:length(SSMU_names))
 }
 
 
-
-
-
 #--------------#
 #plot check
 
-# #plot(Ant)
+#plot(Ant)
 # plot(AP)
 # #plot CCAMLR SSMUs
-# gg_color_hue <- function(n, ALPHA = 1) 
+# gg_color_hue <- function(n, ALPHA = 1)
 # {
 #   hues = seq(15, 375, length=n+1)
 #   hcl(h=hues, l=65, c=100, alpha = ALPHA)[1:n]
@@ -245,50 +243,73 @@ for (i in 1:length(SSMU_names))
 #--------------#
 
 
+#PW year is year t-1/t season (year 2000 is 1999/2000 season)
+#CCCAMLR year is t/t+1 Dec 1 - Nov 30 (year 1999 is Dec 1, 1999 - Nov 30, 2000)
 
 
-yrs <- 2012:2017
-for (j in 1:length(yrs))
+CCAMLR_krill <- read.csv('krill_table_A2_1.csv')
+cn_CCAMLR <- colnames(CCAMLR_krill)
+yrs <- 2011:2016
+SSMU_out <- data.frame()
+for (i in 1:length(SSMU_names))
 {
-  #j <- 1
+  #i <- 1
+  temp_data <- get(paste0(SSMU_names[i], '_krill'))
+  pos_dates <- as.Date(temp_data$date_st, format = "%d-%B-%y")
   
-  k481
+  cn <- which(cn_CCAMLR == SSMU_names[i])
+  zone_CCAMLR <- CCAMLR_krill[,c(1,cn)]
   
-  #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
-  FIRST <- as.Date(paste0(yrs[j] - 1, '-12-01'))
-  LAST <- as.Date(paste0(yrs[j], '-02-01'))
-  dates <- which(pos_dates > FIRST & pos_dates < LAST)
-  
-  
-}
-  
-  
-  if (length(dates) > 0)
+  for (j in 1:length(yrs))
   {
-    #total krill caught over this period
-    t_krill <- sum(temp_krill[dates,]$krill_green_weight)
-    #number of trawls (effort)
-    n_trawls <- length(dates)
-    #krill/trawl (CPUE)
-    cpue_krill <- t_krill/n_trawls
-    #output
-    t_out <- data.frame(SITE = cam_sites[i], 
-                        YEAR = yrs[j], 
-                        T_KRILL = t_krill, 
-                        N_TRAWLS = n_trawls, 
-                        CPUE = cpue_krill)
-    #merge with final output
-    kbs <- rbind(kbs, t_out)
-  } else {
-    t_out <- data.frame(SITE = cam_sites[i], 
-                        YEAR = yrs[j], 
-                        T_KRILL = 0, 
-                        N_TRAWLS = 0, 
-                        CPUE = NA)
-    kbs <- rbind(kbs, t_out)
+    #j <- 2
+    if (length(cn) > 0)
+    {
+      zcy <- filter(zone_CCAMLR, Season == yrs[j])[,2]
+    } else {
+      zcy <- NA
+    }
+
+    FIRST <- as.Date(paste0(yrs[j], '-12-01'))
+    LAST <- as.Date(paste0(yrs[j]+1, '-11-30'))
+    dates <- which(pos_dates > FIRST & pos_dates < LAST)
+    
+    if (length(dates) > 0)
+    {
+      #total krill caught over this period - IN TONNES (AKER IN KG)
+      dd <- temp_data[dates,]
+      k_ll <- data.frame(LON = dd$lon_st,
+                         LAT = dd$lat_st)
+      k_pre <- SpatialPoints(k_ll, proj4string = CRS("+init=epsg:4326"))
+      k_pts <- spTransform(k_pre, CRS(proj4string(Ant)))
+      
+      #---------------------#
+      #plot(Ant)
+      plot(AP)
+      #plot CCAMLR SSMUs
+      plot(get(SSMU_names[i]), add = TRUE, col = rgb(1,0,0,0.1))
+      #krill trawls
+      points(k_pts, col = rgb(1,0,0,0.6), pch = '.')
+      #---------------------#
+      
+      sum(unique(dd$krill_green_weight)/1000)
+      t_krill <- sum(dd$krill_green_weight)/1000
+      #output
+      t_out <- data.frame(ZONE = SSMU_names[i], 
+                          YEAR = yrs[j], 
+                          T_KRILL_TONNES = t_krill,
+                          FRAC_AKER = round(t_krill/zcy, digits = 3))
+      #merge with final output
+      SSMU_out <- rbind(SSMU_out, t_out)
+    } else {
+      t_out <- data.frame(ZONE = SSMU_names[i], 
+                          YEAR = yrs[j],
+                          T_KRILL_TONNES = 0,
+                          FRAC_AKER = NA)
+      SSMU_out <- rbind(SSMU_out, t_out)
+    }
   }
-
-
+}
 
 
 
