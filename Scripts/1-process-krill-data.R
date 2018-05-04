@@ -393,7 +393,7 @@ yrs <- 2012:2017
 
 
 
-# Spatial intersection of SSMU and site buffers ---------------------------
+# Spatial intersection of SSMU and site buffers - Weight krill catch ---------------------------
 
 #create buffers for each site
 #buffer size in KM
@@ -414,8 +414,8 @@ for (i in 1:length(cam_sites))
 
 
 #create data.frame that shows which SSMU each buffer intersects (more than 10% buffer area)
-#remove APPA (AP pelagic area) - MIGHT NEED TO REMOVE AEP AS WELL
-SSMU_n <- SSMU[which(SSMU@data$ShortLabel != 'APPA'),]
+#remove APPA (AP pelagic area) and APE (AP East)
+SSMU_n <- SSMU[which(!SSMU@data$ShortLabel %in% c('APPA', 'APE')),]
 #empty data.frame with SSMU as colnames
 zone_ovl <- data.frame(matrix(vector(), 
                               length(cam_sites), 
@@ -439,15 +439,88 @@ for (i in 1:length(cam_sites))
   
   int_area <- raster::area(int)
   buff_area <- raster::area(t_data)
-  per_area <- int_area/buff_area
-  n_vals <- vals[which(per_area > 0.1)]
-  zones <- SSMU_n@data$ShortLabel[n_vals]
+  per_area <- round(int_area/buff_area, digits = 3)
+  #n_vals <- vals[which(per_area > 0.1)]
+  zones <- SSMU_n@data$ShortLabel[vals]
   
-  tzones <- colnames(temp) %in% zones
-  zone_ovl[i,] <- c(cam_sites[i], tzones[-1])
+  zone_ovl[i,c(1,(vals+1))] <- c(cam_sites[i], per_area)
 }
 
 
+#weight krill catch based on percent overlap between buffer zone and SSMU
+#WEIGHT IS IN TONNES
+yrs <- range(CCAMLR_krill$Calendar_Year)[1]:range(CCAMLR_krill$Calendar_Year)[2]
+cn <- colnames(zone_ovl)[-1]
+krill_weighted <- data.frame()
+for (i in 1:NROW(zone_ovl))
+{
+  #i <- 1
+  #which cols are not NA
+  tsite <- zone_ovl[i, 1]
+  tzone <- zone_ovl[i, ]
+  tind <- which(!is.na(tzone[-1]))
+  tper <- tzone[which(!is.na(zone_ovl[i, -1]))+1]
+  
+  #what does the area add up to
+  total_area <- sum(as.numeric(tper))
+  #fraction of that area that is made up by each of the SSMU
+  final_per <- as.numeric(tper)/total_area
+  
+  #years
+  for (k in 1:length(yrs))
+  {
+    #k <- 6
+    temp_yr <- filter(CCAMLR_krill, Calendar_Year == yrs[k])
+    
+    for (m in 1:12)
+    {
+      #m <- 1
+      temp_mn <- filter(temp_yr, Month == m)
+      
+      #if data exists for that month
+      if (NROW(temp_mn) > 0)
+      {
+        t2_k <- c()
+        for (j in 1:length(tind))
+        {
+          #j <- 1
+          temp_z <- filter(temp_mn, SSMU_Code == cn[tind[j]])
+          
+          #krill catch weighted by spatial overlap - final_per
+          t_k <- temp_z$Krill_Green_Weight * as.numeric(final_per[j])
+        
+          if (length(t_k) > 0)
+          {
+            t2_k <- c(t2_k, t_k)
+          } else {
+            t2_k <- c(t2_k, 0)
+          }
+        }
+        
+        #sum the weighted krill across all SSMU
+        temp_mn_weight_kr <- round(sum(t2_k), digits = 2)
+        
+        t_mn_df <- data.frame(SITE = tsite, YEAR = yrs[k], MONTH = m, WEIGHTED_KRILL = temp_mn_weight_kr)
+        krill_weighted <- rbind(krill_weighted, t_mn_df)
+      } else {
+        temp_mn_weight_kr <- NA
+        t_mn_df <- data.frame(SITE = tsite, YEAR = yrs[k], MONTH = m, WEIGHTED_KRILL = temp_mn_weight_kr)
+        krill_weighted <- rbind(krill_weighted, t_mn_df)
+      }
+    }
+  }
+}
+
+
+#krill weighted is total krill catch within site buffer, weighted by percent overlap with SSMU
+
+
+
+###################
+###################
+##START HERE TO CREATE NEW KRILL MODEL INPUT COVARIATES
+###################
+###################
 
 
 
