@@ -109,18 +109,19 @@ sub_481 <- CCAMLR_zones[which(CCAMLR_zones@data$Name == 'Subarea 48.1'),]
 setwd('../ssmu-shapefile-WGS84/')
 sm <- rgdal::readOGR('ssmu-shapefile-WGS84.shp')
 SSMU <- spTransform(sm, CRS(proj4string(Ant)))
-SSMU_names_p <- unique(SSMU@data$Name)
-SSMU_names <- make.names(SSMU_names_p)
+SSMU_names <- as.character(unique(SSMU@data$ShortLabel))
 #use names from 'CCAMLR/CCAMLR_2017_Statistical_Bulletin_Volume_29_Data_Files/ReferenceDataGeographicArea.csv
-SSMU_names <- c('APPA', 'APW', 'APDPW',
-                'APDPE', 'APBSW', 'APBSE',
-                'APEI', 'SOPA', 'SOW',
-                'SONE', 'SOSE', 'SGPA',
-                'SGW', 'SGE', 'SSPA',
-                'SS', 'APE')
+
+# SSMU_names <- c('APPA', 'APW', 'APDPW',
+#                 'APDPE', 'APBSW', 'APBSE',
+#                 'APEI', 'SOPA', 'SOW',
+#                 'SONE', 'SOSE', 'SGPA',
+#                 'SGW', 'SGE', 'SSPA',
+#                 'SS', 'APE')
 for (i in 1:length(SSMU_names))
 {
-  assign(SSMU_names[i], SSMU[which(SSMU@data$Name == SSMU_names_p[i]),])
+  #i <- 1
+  assign(SSMU_names[i], SSMU[which(SSMU@data$ShortLabel == SSMU_names[i]),])
 }
 
 
@@ -206,41 +207,42 @@ for (i in 1:length(SSMU_names))
 #--------------#
 #plot check
 
-#plot(Ant)
-plot(AP)
-#plot CCAMLR SSMUs
 gg_color_hue <- function(n, ALPHA = 1)
 {
   hues = seq(15, 375, length=n+1)
   hcl(h=hues, l=65, c=100, alpha = ALPHA)[1:n]
 }
-cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.2)
 
-for (i in 1:length(SSMU_names))
-{
-  #i <- 2
-  SSMU_names[i]
-  plot(get(SSMU_names[i]), add = TRUE, col = cols[i])
-}
-#site buffers
-#plot(all_site_buffers_150, col = rgb(0,0,1,0.5), add = TRUE)
-#PW sites
-points(t_col_points, col = rgb(0,0,1,0.5), pch = 19)
-#krill
-#points(t_krill_points, col = rgb(1,0,0,0.05), pch = '.')
-#CCAMLR zone 48.1
-#plot(sub_481, add = TRUE)
 
-#overlay krill trawls:
-#just within 48.1
-#points(aker_k481_pts, col = rgb(0,1,0,0.05), pch = '.')
-#SSMUs
-cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.3)
-for (i in 1:length(SSMU_names))
-{
-  #i <- 7
-  points(get(paste0('aker_', SSMU_names[i], '_pts')), col = cols[i], pch = '.')
-}
+# #plot(Ant)
+# plot(AP)
+# #plot CCAMLR SSMUs
+# cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.2)
+# for (i in 1:length(SSMU_names))
+# {
+#   #i <- 2
+#   SSMU_names[i]
+#   plot(get(SSMU_names[i]), add = TRUE, col = cols[i])
+# }
+# #site buffers
+# #plot(all_site_buffers_150, col = rgb(0,0,1,0.5), add = TRUE)
+# #PW sites
+# points(t_col_points, col = rgb(0,0,1,0.5), pch = 19)
+# #krill
+# #points(t_krill_points, col = rgb(1,0,0,0.05), pch = '.')
+# #CCAMLR zone 48.1
+# #plot(sub_481, add = TRUE)
+# 
+# #overlay krill trawls:
+# #just within 48.1
+# #points(aker_k481_pts, col = rgb(0,1,0,0.05), pch = '.')
+# #SSMUs
+# cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.3)
+# for (i in 1:length(SSMU_names))
+# {
+#   #i <- 7
+#   points(get(paste0('aker_', SSMU_names[i], '_pts')), col = cols[i], pch = '.')
+# }
 #--------------#
 
 #PW year is year t-1/t season (year 2000 is 1999/2000 season)
@@ -248,6 +250,7 @@ for (i in 1:length(SSMU_names))
 #weight is in TONNES
 setwd('../CCAMLR/CCAMLR_2017_Statistical_Bulletin_Volume_29_Data_Files/')
 
+#1985-2016 calendar years
 CCAMLR_krill <- read.csv('AggregatedKrillCatch.csv')
 
 yrs <- 2011:2016
@@ -384,9 +387,68 @@ for (i in 1:length(cam_sites))
 
 # Time frame for krill processing -----------------------------------------
 
-#years included in krill data output
+#PW years included in krill data output
 
 yrs <- 2012:2017
+
+
+
+# Spatial intersection of SSMU and site buffers ---------------------------
+
+#create buffers for each site
+#buffer size in KM
+BUFFER_SIZE = 150
+for (i in 1:length(cam_sites))
+{
+  #i <- 1
+  temp_site <- filter(site_ll, SITE == cam_sites[i])
+  
+  #convert to spatial points
+  temp_site_sp <- SpatialPoints(temp_site[-1], proj4string = CRS('+init=epsg:4326'))
+  
+  #transform to 3031
+  temp_site <- spTransform(temp_site_sp, CRS(proj4string(Ant)))
+  #width is in m so multiple by 1k
+  assign(cam_sites[i], rgeos::gBuffer(temp_site, width = BUFFER_SIZE*1000))
+}
+
+
+#create data.frame that shows which SSMU each buffer intersects (more than 10% buffer area)
+#remove APPA (AP pelagic area) - MIGHT NEED TO REMOVE AEP AS WELL
+SSMU_n <- SSMU[which(SSMU@data$ShortLabel != 'APPA'),]
+#empty data.frame with SSMU as colnames
+zone_ovl <- data.frame(matrix(vector(), 
+                              length(cam_sites), 
+                              length(SSMU_n@data$ShortLabel)+1))
+colnames(zone_ovl) <- c('SITE', as.character(SSMU_n@data$ShortLabel))
+for (i in 1:length(cam_sites))
+{
+  #i <- 1
+  t_data <- get(cam_sites[i])
+  vals <- which(gIntersects(t_data, SSMU_n, byid = TRUE) == TRUE)
+  
+  int <- gIntersection(t_data, SSMU_n, byid = TRUE)
+  
+  #-----------#
+  #plot check
+  # plot(AP)
+  # plot(SSMU_n, add = TRUE)
+  # plot(t_data, add = TRUE, col = rgb(1,0,0,0.2))
+  # plot(int, add = T, col = rgb(0,1,0,0.5))
+  #-----------#
+  
+  int_area <- raster::area(int)
+  buff_area <- raster::area(t_data)
+  per_area <- int_area/buff_area
+  n_vals <- vals[which(per_area > 0.1)]
+  zones <- SSMU_n@data$ShortLabel[n_vals]
+  
+  tzones <- colnames(temp) %in% zones
+  zone_ovl[i,] <- c(cam_sites[i], tzones[-1])
+}
+
+
+
 
 
 # Effect of krill fishing during each breeding season ---------------------
