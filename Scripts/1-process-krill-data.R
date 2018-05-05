@@ -385,142 +385,163 @@ for (i in 1:length(cam_sites))
 #master_krill is all trawls that occured within the site buffers for the sites we have PW data for - all years (not filtered for years we have PW data for)
 
 
-# Time frame for krill processing -----------------------------------------
 
-#PW years included in krill data output
-
-yrs <- 2012:2017
 
 
 
 # Spatial intersection of SSMU and site buffers - Weight krill catch ---------------------------
 
-#create buffers for each site
-#buffer size in KM
-BUFFER_SIZE = 150
-for (i in 1:length(cam_sites))
-{
-  #i <- 1
-  temp_site <- filter(site_ll, SITE == cam_sites[i])
-  
-  #convert to spatial points
-  temp_site_sp <- SpatialPoints(temp_site[-1], proj4string = CRS('+init=epsg:4326'))
-  
-  #transform to 3031
-  temp_site <- spTransform(temp_site_sp, CRS(proj4string(Ant)))
-  #width is in m so multiple by 1k
-  assign(cam_sites[i], rgeos::gBuffer(temp_site, width = BUFFER_SIZE*1000))
-}
 
 
-#create data.frame that shows which SSMU each buffer intersects (more than 10% buffer area)
-#remove APPA (AP pelagic area) and APE (AP East)
-SSMU_n <- SSMU[which(!SSMU@data$ShortLabel %in% c('APPA', 'APE')),]
-#empty data.frame with SSMU as colnames
-zone_ovl <- data.frame(matrix(vector(), 
-                              length(cam_sites), 
-                              length(SSMU_n@data$ShortLabel)+1))
-colnames(zone_ovl) <- c('SITE', as.character(SSMU_n@data$ShortLabel))
-for (i in 1:length(cam_sites))
-{
-  #i <- 1
-  t_data <- get(cam_sites[i])
-  vals <- which(gIntersects(t_data, SSMU_n, byid = TRUE) == TRUE)
-  
-  int <- gIntersection(t_data, SSMU_n, byid = TRUE)
-  
-  #-----------#
-  #plot check
-  # plot(AP)
-  # plot(SSMU_n, add = TRUE)
-  # plot(t_data, add = TRUE, col = rgb(1,0,0,0.2))
-  # plot(int, add = T, col = rgb(0,1,0,0.5))
-  #-----------#
-  
-  int_area <- raster::area(int)
-  buff_area <- raster::area(t_data)
-  per_area <- round(int_area/buff_area, digits = 3)
-  #n_vals <- vals[which(per_area > 0.1)]
-  zones <- SSMU_n@data$ShortLabel[vals]
-  
-  zone_ovl[i,c(1,(vals+1))] <- c(cam_sites[i], per_area)
-}
+
+##############
+##############
+#WHAT DO NA VALS MEAN?
+##############
+##############
 
 
-#weight krill catch based on percent overlap between buffer zone and SSMU
+
+
+#function to calculate weight krill catch based on percent overlap between buffer zone and SSMU
 #WEIGHT IS IN TONNES
-yrs <- range(CCAMLR_krill$Calendar_Year)[1]:range(CCAMLR_krill$Calendar_Year)[2]
-cn <- colnames(zone_ovl)[-1]
-krill_weighted <- data.frame()
-for (i in 1:NROW(zone_ovl))
+#Buffer size in km
+
+weight_krill_fun <- function(BUFFER_SIZE = 150)
 {
-  #i <- 1
-  #which cols are not NA
-  tsite <- zone_ovl[i, 1]
-  tzone <- zone_ovl[i, ]
-  tind <- which(!is.na(tzone[-1]))
-  tper <- tzone[which(!is.na(zone_ovl[i, -1]))+1]
   
-  #what does the area add up to
-  total_area <- sum(as.numeric(tper))
-  #fraction of that area that is made up by each of the SSMU
-  final_per <- as.numeric(tper)/total_area
-  
-  #years
-  for (k in 1:length(yrs))
+  #create buffers for each site
+  #buffer size in KM
+  for (i in 1:length(cam_sites))
   {
-    #k <- 6
-    temp_yr <- filter(CCAMLR_krill, Calendar_Year == yrs[k])
-    
-    for (m in 1:12)
+    #i <- 1
+    temp_site <- filter(site_ll, SITE == cam_sites[i])
+  
+    #convert to spatial points
+    temp_site_sp <- SpatialPoints(temp_site[-1], proj4string = CRS('+init=epsg:4326'))
+  
+    #transform to 3031
+    temp_site <- spTransform(temp_site_sp, CRS(proj4string(Ant)))
+    #width is in m so multiple by 1k
+    assign(cam_sites[i], rgeos::gBuffer(temp_site, width = BUFFER_SIZE*1000))
+  }
+
+
+  #create data.frame that shows which SSMU each buffer intersects (more than 10% buffer area)
+  #remove APPA (AP pelagic area) and APE (AP East)
+  SSMU_n <- SSMU[which(!SSMU@data$ShortLabel %in% c('APPA', 'APE')),]
+  #empty data.frame with SSMU as colnames
+  zone_ovl <- data.frame(matrix(vector(), 
+                                length(cam_sites), 
+                                length(SSMU_n@data$ShortLabel)+1))
+  colnames(zone_ovl) <- c('SITE', as.character(SSMU_n@data$ShortLabel))
+  for (i in 1:length(cam_sites))
+  {
+    #i <- 1
+    t_data <- get(cam_sites[i])
+    vals <- which(gIntersects(t_data, SSMU_n, byid = TRUE) == TRUE)
+  
+    int <- gIntersection(t_data, SSMU_n, byid = TRUE)
+  
+    #-----------#
+    #plot check
+    # plot(AP)
+    # plot(SSMU_n, add = TRUE)
+    # plot(t_data, add = TRUE, col = rgb(1,0,0,0.2))
+    # plot(int, add = T, col = rgb(0,1,0,0.5))
+    #-----------#
+  
+    int_area <- raster::area(int)
+    buff_area <- raster::area(t_data)
+    per_area <- round(int_area/buff_area, digits = 3)
+    #n_vals <- vals[which(per_area > 0.1)]
+    zones <- SSMU_n@data$ShortLabel[vals]
+  
+    zone_ovl[i,c(1,(vals+1))] <- c(cam_sites[i], per_area)
+  }
+  
+  #weight krill catch based on percent overlap between buffer zone and SSMU
+  #WEIGHT IS IN TONNES
+  yrs <- range(CCAMLR_krill$Calendar_Year)[1]:range(CCAMLR_krill$Calendar_Year)[2]
+  cn <- colnames(zone_ovl)[-1]
+  krill_weighted <- data.frame()
+  for (i in 1:NROW(zone_ovl))
+  {
+    #i <- 1
+    #which cols are not NA
+    tsite <- zone_ovl[i, 1]
+    tzone <- zone_ovl[i, ]
+    tind <- which(!is.na(tzone[-1]))
+    tper <- tzone[which(!is.na(zone_ovl[i, -1]))+1]
+  
+    #what does the area add up to
+    total_area <- sum(as.numeric(tper))
+    #fraction of that area that is made up by each of the SSMU
+    final_per <- as.numeric(tper)/total_area
+  
+    #years
+    for (k in 1:length(yrs))
     {
-      #m <- 1
-      temp_mn <- filter(temp_yr, Month == m)
-      
-      #if data exists for that month
-      if (NROW(temp_mn) > 0)
+      #k <- 1
+      temp_yr <- filter(CCAMLR_krill, Calendar_Year == yrs[k])
+    
+      for (m in 1:12)
       {
-        t2_k <- c()
-        for (j in 1:length(tind))
+        #m <- 1
+        temp_mn <- filter(temp_yr, Month == m)
+      
+        #if data exists for that month
+        if (NROW(temp_mn) > 0)
         {
-          #j <- 1
-          temp_z <- filter(temp_mn, SSMU_Code == cn[tind[j]])
-          
-          #krill catch weighted by spatial overlap - final_per
-          t_k <- temp_z$Krill_Green_Weight * as.numeric(final_per[j])
-        
-          if (length(t_k) > 0)
+          t2_k <- c()
+          for (j in 1:length(tind))
           {
-            t2_k <- c(t2_k, t_k)
-          } else {
-            t2_k <- c(t2_k, 0)
+            #j <- 1
+            temp_z <- filter(temp_mn, SSMU_Code == cn[tind[j]])
+          
+            #krill catch weighted by spatial overlap - final_per
+            t_k <- temp_z$Krill_Green_Weight * as.numeric(final_per[j])
+        
+            if (length(t_k) > 0)
+            {
+              t2_k <- c(t2_k, t_k)
+            } else {
+              t2_k <- c(t2_k, 0)
+            }
           }
+        
+          #sum the weighted krill across all SSMU
+          temp_mn_weight_kr <- round(sum(t2_k), digits = 2)
+        
+          t_mn_df <- data.frame(SITE = tsite, YEAR = yrs[k], MONTH = m, WEIGHTED_KRILL = temp_mn_weight_kr)
+          krill_weighted <- rbind(krill_weighted, t_mn_df)
+        } else {
+          temp_mn_weight_kr <- NA
+          t_mn_df <- data.frame(SITE = tsite, YEAR = yrs[k], MONTH = m, WEIGHTED_KRILL = temp_mn_weight_kr)
+          krill_weighted <- rbind(krill_weighted, t_mn_df)
         }
-        
-        #sum the weighted krill across all SSMU
-        temp_mn_weight_kr <- round(sum(t2_k), digits = 2)
-        
-        t_mn_df <- data.frame(SITE = tsite, YEAR = yrs[k], MONTH = m, WEIGHTED_KRILL = temp_mn_weight_kr)
-        krill_weighted <- rbind(krill_weighted, t_mn_df)
-      } else {
-        temp_mn_weight_kr <- NA
-        t_mn_df <- data.frame(SITE = tsite, YEAR = yrs[k], MONTH = m, WEIGHTED_KRILL = temp_mn_weight_kr)
-        krill_weighted <- rbind(krill_weighted, t_mn_df)
       }
     }
   }
+  return(krill_weighted)
 }
 
-
 #krill weighted is total krill catch within site buffer, weighted by percent overlap with SSMU
+krill_weighted_25 <- weight_krill_fun(BUFFER_SIZE = 25)
+krill_weighted_150 <- weight_krill_fun(BUFFER_SIZE = 150)
+
+
+#CHECK NA vals
+#krill_weighted_150[which(is.na(krill_weighted_150$WEIGHTED_KRILL)),]
 
 
 
-###################
-###################
-##START HERE TO CREATE NEW KRILL MODEL INPUT COVARIATES
-###################
-###################
+# Time frame for krill covariate processing -----------------------------------------
+
+#PW years included in krill data output
+
+#NO KRILL DATA FOR END OF 2016
+yrs <- 2012:2016
 
 
 
@@ -529,56 +550,96 @@ for (i in 1:NROW(zone_ovl))
 #25km radius for Dec - Feb in each year
 #YEAR is PW year
 
-#NOT MUCH FISHING EFFORT AT SITES/TIMES WE HAVE DATA FOR
-
-aker_kr_bs <- data.frame()
+#CCAMLR data
+CCAMLR_kr_BS <- data.frame()
 for (i in 1:length(cam_sites))
 {
   #i <- 1
-  temp_krill <- filter(aker_master_krill_25, col_id == cam_sites[i])
-  temp_PW <- filter(PW_data, site == cam_sites[i])
-  
+  temp_krill <- filter(krill_weighted_25, SITE == cam_sites[i])
+
   #PW year (1999/2000 season is PW year 2000)
-  pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
-  
   for (j in 1:length(yrs))
   {
     #j <- 1
     #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
-    FIRST <- as.Date(paste0(yrs[j] - 1, '-12-01'))
-    LAST <- as.Date(paste0(yrs[j], '-02-01'))
-    dates <- which(pos_dates > FIRST & pos_dates < LAST)
     
-    if (length(dates) > 0)
+    yr_one <- filter(temp_krill, YEAR == yrs[j]-1)
+    DEC <- filter(yr_one, MONTH == 12)
+    yr_two <- filter(temp_krill, YEAR == yrs[j])
+    JAN <- filter(yr_two, MONTH == 1)
+    
+    #total krill caught over this period
+    t_krill <- sum(c(DEC$WEIGHTED_KRILL, JAN$WEIGHTED_KRILL), na.rm = TRUE)
+    
+    if (!is.na(t_krill))
     {
-      #total krill caught over this period
-      t_krill <- sum(temp_krill[dates,]$krill_green_weight)
-      #number of trawls (effort)
-      n_trawls <- length(dates)
-      #krill/trawl (CPUE)
-      cpue_krill <- t_krill/n_trawls
       #output
-      t_out <- data.frame(SITE = cam_sites[i], 
-                          YEAR = yrs[j], 
-                          T_KRILL = t_krill, 
-                          N_TRAWLS = n_trawls, 
-                          CPUE = cpue_krill)
+      t_out <- data.frame(SITE = cam_sites[i],
+                          YEAR = yrs[j],
+                          T_KRILL = t_krill)
       #merge with final output
-      aker_kr_bs <- rbind(aker_kr_bs, t_out)
+      CCAMLR_kr_BS <- rbind(CCAMLR_kr_BS, t_out)
     } else {
-      t_out <- data.frame(SITE = cam_sites[i], 
-                          YEAR = yrs[j], 
-                          T_KRILL = 0, 
-                          N_TRAWLS = 0, 
-                          CPUE = NA)
-      aker_kr_bs <- rbind(aker_kr_bs, t_out)
+      t_out <- data.frame(SITE = cam_sites[i],
+                          YEAR = yrs[j],
+                          T_KRILL = 0)
+      CCAMLR_kr_BS <- rbind(CCAMLR_kr_BS, t_out)
     }
   }
 }
 
+# setwd('../Processed_CCAMLR/')
+# write.csv(CCAMLR_kr_BS, 'CCAMLR_krill_breeding_season.csv', row.names = FALSE)
 
-setwd('../../Processed_Aker/')
 
+
+# #AKER DATA
+# aker_kr_bs <- data.frame()
+# for (i in 1:length(cam_sites))
+# {
+#   #i <- 1
+#   temp_krill <- filter(aker_master_krill_25, col_id == cam_sites[i])
+#   temp_PW <- filter(PW_data, site == cam_sites[i])
+#   
+#   #PW year (1999/2000 season is PW year 2000)
+#   pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
+#   
+#   for (j in 1:length(yrs))
+#   {
+#     #j <- 1
+#     #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+#     FIRST <- as.Date(paste0(yrs[j] - 1, '-12-01'))
+#     LAST <- as.Date(paste0(yrs[j], '-02-01'))
+#     dates <- which(pos_dates > FIRST & pos_dates < LAST)
+#     
+#     if (length(dates) > 0)
+#     {
+#       #total krill caught over this period
+#       t_krill <- sum(temp_krill[dates,]$krill_green_weight)
+#       #number of trawls (effort)
+#       n_trawls <- length(dates)
+#       #krill/trawl (CPUE)
+#       cpue_krill <- t_krill/n_trawls
+#       #output
+#       t_out <- data.frame(SITE = cam_sites[i], 
+#                           YEAR = yrs[j], 
+#                           T_KRILL = t_krill, 
+#                           N_TRAWLS = n_trawls, 
+#                           CPUE = cpue_krill)
+#       #merge with final output
+#       aker_kr_bs <- rbind(aker_kr_bs, t_out)
+#     } else {
+#       t_out <- data.frame(SITE = cam_sites[i], 
+#                           YEAR = yrs[j], 
+#                           T_KRILL = 0, 
+#                           N_TRAWLS = 0, 
+#                           CPUE = NA)
+#       aker_kr_bs <- rbind(aker_kr_bs, t_out)
+#     }
+#   }
+# }
+
+# setwd('../../Processed_Aker/')
 # write.csv(aker_kr_bs, 'aker_krill_breeding_season.csv', row.names = FALSE)
 
 
@@ -590,51 +651,90 @@ setwd('../../Processed_Aker/')
 #150km radius for March - Feb (e.g., March 1999 - Feb 2000 for 1999/2000 breeding season)
 #YEAR is PW year
 
-aker_kr_ws <- data.frame()
+CCAMLR_kr_WS <- data.frame()
 for (i in 1:length(cam_sites))
 {
   #i <- 1
-  temp_krill <- filter(aker_master_krill_150, col_id == cam_sites[i])
-  temp_PW <- filter(PW_data, site == cam_sites[i])
+  temp_krill <- filter(krill_weighted_150, SITE == cam_sites[i])
   
   #PW year (1999/2000 season is PW year 2000)
-  pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
-  
   for (j in 1:length(yrs))
   {
     #j <- 1
     #used March 1 - Feb 1 (Feb 1 was perscribed end of PW data)
-    FIRST <- as.Date(paste0(yrs[j] - 1, '-3-01'))
-    LAST <- as.Date(paste0(yrs[j], '-02-01'))
-    dates <- which(pos_dates > FIRST & pos_dates < LAST)
+    yr_one <- filter(temp_krill, YEAR == yrs[j]-1)
+    MAR_DEC <- filter(yr_one, MONTH > 2)
+    yr_two <- filter(temp_krill, YEAR == yrs[j])
+    JAN <- filter(yr_two, MONTH == 1)
     
-    if (length(dates) > 0)
+    #total krill caught over this period
+    t_krill <- sum(c(MAR_DEC$WEIGHTED_KRILL, JAN$WEIGHTED_KRILL), na.rm = TRUE)
+    
+    if (!is.na(t_krill))
     {
-      #total krill caught over this period
-      t_krill <- sum(temp_krill[dates,]$krill_green_weight)
-      #number of trawls (effort)
-      n_trawls <- length(dates)
-      #krill/trawl (CPUE)
-      cpue_krill <- t_krill/n_trawls
       #output
-      t_out <- data.frame(SITE = cam_sites[i], 
-                          YEAR = yrs[j], 
-                          T_KRILL = t_krill, 
-                          N_TRAWLS = n_trawls, 
-                          CPUE = cpue_krill)
+      t_out <- data.frame(SITE = cam_sites[i],
+                          YEAR = yrs[j],
+                          T_KRILL = t_krill)
       #merge with final output
-      aker_kr_ws <- rbind(aker_kr_ws, t_out)
+      CCAMLR_kr_WS <- rbind(CCAMLR_kr_WS, t_out)
     } else {
-      t_out <- data.frame(SITE = cam_sites[i], 
-                          YEAR = yrs[j], 
-                          T_KRILL = 0, 
-                          N_TRAWLS = 0, 
-                          CPUE = NA)
-      aker_kr_ws <- rbind(aker_kr_ws, t_out)
+      t_out <- data.frame(SITE = cam_sites[i],
+                          YEAR = yrs[j],
+                          T_KRILL = 0)
+      CCAMLR_kr_WS <- rbind(CCAMLR_kr_WS, t_out)
     }
   }
 }
 
+# write.csv(CCAMLR_kr_WS, 'CCAMLR_krill_entire_season.csv', row.names = FALSE)
+
+
+# #AKER data
+# aker_kr_ws <- data.frame()
+# for (i in 1:length(cam_sites))
+# {
+#   #i <- 1
+#   temp_krill <- filter(aker_master_krill_150, col_id == cam_sites[i])
+#   temp_PW <- filter(PW_data, site == cam_sites[i])
+#   
+#   #PW year (1999/2000 season is PW year 2000)
+#   pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
+#   
+#   for (j in 1:length(yrs))
+#   {
+#     #j <- 1
+#     #used March 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+#     FIRST <- as.Date(paste0(yrs[j] - 1, '-3-01'))
+#     LAST <- as.Date(paste0(yrs[j], '-02-01'))
+#     dates <- which(pos_dates > FIRST & pos_dates < LAST)
+#     
+#     if (length(dates) > 0)
+#     {
+#       #total krill caught over this period
+#       t_krill <- sum(temp_krill[dates,]$krill_green_weight)
+#       #number of trawls (effort)
+#       n_trawls <- length(dates)
+#       #krill/trawl (CPUE)
+#       cpue_krill <- t_krill/n_trawls
+#       #output
+#       t_out <- data.frame(SITE = cam_sites[i], 
+#                           YEAR = yrs[j], 
+#                           T_KRILL = t_krill, 
+#                           N_TRAWLS = n_trawls, 
+#                           CPUE = cpue_krill)
+#       #merge with final output
+#       aker_kr_ws <- rbind(aker_kr_ws, t_out)
+#     } else {
+#       t_out <- data.frame(SITE = cam_sites[i], 
+#                           YEAR = yrs[j], 
+#                           T_KRILL = 0, 
+#                           N_TRAWLS = 0, 
+#                           CPUE = NA)
+#       aker_kr_ws <- rbind(aker_kr_ws, t_out)
+#     }
+#   }
+# }
 
 # write.csv(aker_kr_ws, 'aker_krill_entire_season.csv', row.names = FALSE)
 
@@ -646,63 +746,106 @@ for (i in 1:length(cam_sites))
 #150km radius average (or total) across all years at each site
 #YEAR is PW year
 
-aker_kr_ay <- data.frame()
+CCAMLR_kr_AY <- data.frame()
 for (i in 1:length(cam_sites))
 {
-  #i <- 8
-  temp_krill <- filter(aker_master_krill_150, col_id == cam_sites[i])
-  temp_PW <- filter(PW_data, site == cam_sites[i])
-
-
-  #PW year (1999/2000 season is PW year 2000)
-  pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
+  #i <- 1
+  temp_krill <- filter(krill_weighted_150, SITE == cam_sites[i])
   
-  yr_krill <- data.frame()
+  #PW year (1999/2000 season is PW year 2000)
+  t_yr_krill <- c()
   for (j in 1:length(yrs))
   {
-    #j <- 3
+    #j <- 1
     #used March 1 - Feb 1 (Feb 1 was perscribed end of PW data)
-    FIRST <- as.Date(paste0(yrs[j] - 1, '-3-01'))
-    LAST <- as.Date(paste0(yrs[j], '-02-01'))
-    dates <- which(pos_dates > FIRST & pos_dates < LAST)
+    yr_one <- filter(temp_krill, YEAR == yrs[j]-1)
+    MAR_DEC <- filter(yr_one, MONTH > 2)
+    yr_two <- filter(temp_krill, YEAR == yrs[j])
+    JAN <- filter(yr_two, MONTH == 1)
     
-    if (length(dates) > 0)
-    {
-      #total krill caught over this period
-      t_krill <- sum(temp_krill[dates,]$krill_green_weight)
-      #number of trawls (effort)
-      n_trawls <- length(dates)
-      #krill/trawl (CPUE)
-      cpue_krill <- t_krill/n_trawls
-      
-      tyk <- data.frame(SITE = cam_sites[i], 
-                          T_KRILL = t_krill,
-                          N_TRAWLS = n_trawls,
-                          CPUE = cpue_krill)
-      
-      #merge with final output
-      yr_krill <- rbind(yr_krill, tyk)
-    } else {
-      tyk <- data.frame(SITE = cam_sites[i], 
-                        T_KRILL = 0,
-                        N_TRAWLS = 0,
-                        CPUE = NA)
-      yr_krill <- rbind(yr_krill, tyk)
-    }
+    #total krill caught over this period
+    t_krill <- sum(c(MAR_DEC$WEIGHTED_KRILL, JAN$WEIGHTED_KRILL), na.rm = TRUE)
+    
+    t_yr_krill <- c(t_yr_krill, t_krill)
   }
   
-  OT_KRILL <- sum(yr_krill$T_KRILL)
-  MN_KRILL <- mean(yr_krill$T_KRILL)
-  MN_CPUE <- mean(yr_krill$CPUE, na.rm = TRUE)
-
-  tk <- data.frame(SITE = cam_sites[i],
-                   TOTAL_KRILL = OT_KRILL,
-                   MN_KRILL = MN_KRILL,
-                   MN_CPUE = MN_CPUE)
-
-  aker_kr_ay <- rbind(aker_kr_ay, tk)
+  mn_yr_krill <- mean(t_yr_krill, na.rm = TRUE)
+  
+  if (!is.na(mn_yr_krill))
+  {
+    #output
+    t_out <- data.frame(SITE = cam_sites[i],
+                        T_KRILL = mn_yr_krill)
+    #merge with final output
+    CCAMLR_kr_AY <- rbind(CCAMLR_kr_AY, t_out)
+  } else {
+    t_out <- data.frame(SITE = cam_sites[i],
+                        T_KRILL = 0)
+    CCAMLR_kr_AY <- rbind(CCAMLR_kr_AY, t_out)
+  }
 }
 
+# write.csv(CCAMLR_kr_AY, 'CCAMLR_krill_average.csv', row.names = FALSE)
+
+
+
+# #Aker data
+# aker_kr_ay <- data.frame()
+# for (i in 1:length(cam_sites))
+# {
+#   #i <- 8
+#   temp_krill <- filter(aker_master_krill_150, col_id == cam_sites[i])
+#   temp_PW <- filter(PW_data, site == cam_sites[i])
+# 
+# 
+#   #PW year (1999/2000 season is PW year 2000)
+#   pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
+#   
+#   yr_krill <- data.frame()
+#   for (j in 1:length(yrs))
+#   {
+#     #j <- 3
+#     #used March 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+#     FIRST <- as.Date(paste0(yrs[j] - 1, '-3-01'))
+#     LAST <- as.Date(paste0(yrs[j], '-02-01'))
+#     dates <- which(pos_dates > FIRST & pos_dates < LAST)
+#     
+#     if (length(dates) > 0)
+#     {
+#       #total krill caught over this period
+#       t_krill <- sum(temp_krill[dates,]$krill_green_weight)
+#       #number of trawls (effort)
+#       n_trawls <- length(dates)
+#       #krill/trawl (CPUE)
+#       cpue_krill <- t_krill/n_trawls
+#       
+#       tyk <- data.frame(SITE = cam_sites[i], 
+#                           T_KRILL = t_krill,
+#                           N_TRAWLS = n_trawls,
+#                           CPUE = cpue_krill)
+#       
+#       #merge with final output
+#       yr_krill <- rbind(yr_krill, tyk)
+#     } else {
+#       tyk <- data.frame(SITE = cam_sites[i], 
+#                         T_KRILL = 0,
+#                         N_TRAWLS = 0,
+#                         CPUE = NA)
+#       yr_krill <- rbind(yr_krill, tyk)
+#     }
+#   }
+#   
+#   OT_KRILL <- sum(yr_krill$T_KRILL)
+#   MN_KRILL <- mean(yr_krill$T_KRILL)
+#   MN_CPUE <- mean(yr_krill$CPUE, na.rm = TRUE)
+# 
+#   tk <- data.frame(SITE = cam_sites[i],
+#                    TOTAL_KRILL = OT_KRILL,
+#                    MN_KRILL = MN_KRILL,
+#                    MN_CPUE = MN_CPUE)
+# 
+#   aker_kr_ay <- rbind(aker_kr_ay, tk)
+# }
 
 # write.csv(aker_kr_ay, 'aker_krill_average.csv', row.names = FALSE)
 
@@ -712,24 +855,32 @@ for (i in 1:length(cam_sites))
 
 # which sites have the most fishing at them? -------------------------------
 
-
-ggplot(aker_kr_ay, aes(SITE, TOTAL_KRILL)) +
+#CCAMLR
+ggplot(CCAMLR_kr_AY, aes(SITE, T_KRILL)) +
   geom_col() +
-  ylab('Total krill catch') +
+  ylab('Mean krill catch (tonnes)') +
   theme_bw() +
-  ggtitle('Total krill catch across sites (2010-2017)')
+  ggtitle('CCAMLR - Mean krill catch (2010-2017)')
 
-ggplot(aker_kr_ay, aes(SITE, MN_KRILL)) +
-  geom_col() +
-  ylab('Mean krill catch') +
-  theme_bw() +
-  ggtitle('Mean krill catch across sites (2010-2017)')
 
-ggplot(aker_kr_ay, aes(SITE, MN_CPUE)) +
-  geom_col() +
-  ylab('Mean Catch Per Unit Effort') +
-  theme_bw() +
-  ggtitle('CPUE across sites (2010-2017)')
+# #AKER
+# ggplot(aker_kr_ay, aes(SITE, TOTAL_KRILL)) +
+#   geom_col() +
+#   ylab('Total krill catch') +
+#   theme_bw() +
+#   ggtitle('Aker - Total krill catch across sites (2010-2017)')
+# 
+# ggplot(aker_kr_ay, aes(SITE, MN_KRILL)) +
+#   geom_col() +
+#   ylab('Mean krill catch') +
+#   theme_bw() +
+#   ggtitle('Aker - Mean krill catch across sites (2010-2017)')
+# 
+# ggplot(aker_kr_ay, aes(SITE, MN_CPUE)) +
+#   geom_col() +
+#   ylab('Mean Catch Per Unit Effort') +
+#   theme_bw() +
+#   ggtitle('Aker - CPUE across sites (2010-2017)')
 
 
 
@@ -737,16 +888,35 @@ ggplot(aker_kr_ay, aes(SITE, MN_CPUE)) +
 
 # When is krill fishing most intense in this region? ----------------------
 
+
+#CCAMLR
+krill_time <- data.frame(MONTH = as.integer(1:12), KRILL = rep(NA, 12))
+for (i in 1:12)
+{
+  #i <- 1
+  temp <- filter(krill_weighted_150, MONTH == i)
+  swk <- sum(temp$WEIGHTED_KRILL, na.rm = TRUE)
+  krill_time[i,2] <- swk
+}
+
+ggplot(krill_time, aes(x = MONTH, y = KRILL)) +
+  geom_col() + 
+  theme_bw() +
+  ggtitle('CCAMLR - Krill catch by month')
+
+
+
+
 #AT THE SITES WE HAVE DATA FOR: March-May of each year
-
-kdates <- as.Date(aker_master_krill_150$date_st, format = "%d-%B-%y")
-j_kdates <- as.numeric(format(kdates, '%j'))
-
-hist(j_kdates, col = 'grey50')
-rect(xleft = 0, ybottom = 0, xright = 30, ytop = 12000, col = rgb(0.8,0,0,0.2))
-rect(xleft = 60, ybottom = 0, xright = 90, ytop = 12000, col = rgb(0.8,0,0,0.2))
-rect(xleft = 120, ybottom = 0, xright = 150, ytop = 12000, col = rgb(0.8,0,0,0.2))
-rect(xleft = 180, ybottom = 0, xright = 210, ytop = 12000, col = rgb(0.8,0,0,0.2))
-rect(xleft = 240, ybottom = 0, xright = 270, ytop = 12000, col = rgb(0.8,0,0,0.2))
-rect(xleft = 300, ybottom = 0, xright = 330, ytop = 12000, col = rgb(0.8,0,0,0.2))
+# #Aker
+# kdates <- as.Date(aker_master_krill_150$date_st, format = "%d-%B-%y")
+# j_kdates <- as.numeric(format(kdates, '%j'))
+# 
+# hist(j_kdates, col = 'grey50')
+# rect(xleft = 0, ybottom = 0, xright = 30, ytop = 12000, col = rgb(0.8,0,0,0.2))
+# rect(xleft = 60, ybottom = 0, xright = 90, ytop = 12000, col = rgb(0.8,0,0,0.2))
+# rect(xleft = 120, ybottom = 0, xright = 150, ytop = 12000, col = rgb(0.8,0,0,0.2))
+# rect(xleft = 180, ybottom = 0, xright = 210, ytop = 12000, col = rgb(0.8,0,0,0.2))
+# rect(xleft = 240, ybottom = 0, xright = 270, ytop = 12000, col = rgb(0.8,0,0,0.2))
+# rect(xleft = 300, ybottom = 0, xright = 330, ytop = 12000, col = rgb(0.8,0,0,0.2))
 
