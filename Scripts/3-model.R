@@ -268,14 +268,14 @@ z_array[ones] <- NA
 un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
 
 
-#setwd('../../Krill_data/Processed/')
+#setwd('../../Krill_data/CCAMLR/Processed_CCAMLR//')
 
-krill <- read.csv('krill_entire_season.csv')
+krill <- read.csv('CCAMLR_krill_entire_season.csv')
 
 i_KRILL <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
 for (k in 1:length(un_sites_ncc))
 {
-  #k <- 3
+  #k <- 1
   temp <- filter(krill, SITE == un_sites_ncc[k])
   
   for (j in 1:length(d_yrs))
@@ -595,8 +595,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_3_2018_covariates',
-               jagsDsc = 'Even fewer iterations. Run long queue bc initial extended queue job is held up on seawulf. Include covariates: 1) entire year krill, 2) SIC previous winter',
+               jagsID = 'May_4_2018_CCAMLR_krill',
+               jagsDsc = 'CCAMLR krill. Extended queue. Include covariates: 1) entire year krill, 2) SIC previous winter',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 5,
                n_adapt = 5000,
