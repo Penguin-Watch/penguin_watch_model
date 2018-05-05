@@ -35,7 +35,7 @@ pacman::p_load(MCMCvis)
 #phi = survival prob
 #p = detection prob
 
-NAME <- 'April_29_2018'
+NAME <- 'May_3_2018_covariates'
 
 setwd(paste0('Results/', NAME))
 
@@ -54,6 +54,8 @@ MCMCsummary(out, params = 'sigma_gamma_phi')
 MCMCsummary(out, params = 'mu_p')
 MCMCsummary(out, params = 'beta_p')
 MCMCsummary(out, params = 'sigma_nu_p')
+MCMCsummary(out, params = 'pi_phi')
+MCMCsummary(out, params = 'rho_phi')
 
 
 
@@ -62,7 +64,7 @@ MCMCsummary(out, params = 'sigma_nu_p')
 # PPO ---------------------------------------------------------------------
 
 #' mu_phi ~ dnorm(0, 0.386)   
-PR <- rnorm(15000, 0, 1/0.386)
+PR <- rnorm(15000, 0, 1/sqrt(0.386))
 MCMCtrace(out, 
           params = 'mu_phi',
           ind = TRUE, 
@@ -70,8 +72,8 @@ MCMCtrace(out,
           pdf = FALSE,
           post_zm = FALSE)
 
-#' beta_phi ~ dnorm(0, 1000) T(0,1)
-tt <- rnorm(15000, 0, 1/1000)
+#' beta_phi ~ dnorm(0, 10) T(0,1)
+tt <- rnorm(15000, 0, 1/sqrt(10))
 PR <- tt[tt >= 0 & tt <= 1]
 MCMCtrace(out, 
           params = 'beta_phi',
@@ -80,8 +82,8 @@ MCMCtrace(out,
           pdf = FALSE,
           post_zm = FALSE)
 
-#' sigma_eta_phi ~ dunif(0.25, 3)
-PR <- runif(15000, 0.25, 3)
+#' sigma_eta_phi ~ dunif(0, 100)
+PR <- runif(15000, 0, 100)
 MCMCtrace(out, 
           params = 'sigma_eta_phi',
           ind = TRUE, 
@@ -89,8 +91,8 @@ MCMCtrace(out,
           pdf = FALSE,
           post_zm = FALSE)
 
-#' sigma_gamma_phi ~ dunif(0.25, 3)
-PR <- runif(15000, 0.25, 3)
+#' sigma_gamma_phi ~ dunif(0, 100)
+PR <- runif(15000, 0, 100)
 MCMCtrace(out, 
           params = 'sigma_gamma_phi',
           ind = TRUE, 
@@ -98,8 +100,9 @@ MCMCtrace(out,
           pdf = FALSE,
           post_zm = FALSE)
 
+
 #' mu_p ~ dnorm(0, 0.386)
-PR <- rnorm(15000, 0, 1/0.386)
+PR <- rnorm(15000, 0, 1/sqrt(0.386))
 MCMCtrace(out, 
           params = 'mu_p',
           ind = TRUE, 
@@ -107,8 +110,8 @@ MCMCtrace(out,
           pdf = FALSE,
           post_zm = FALSE)
 
-#' beta_p ~ dnorm(0, 10) T(0,1)
-tt <- rnorm(15000, 0, 1/10)
+#' beta_p ~ dnorm(0, 1) T(0,1)
+tt <- rnorm(15000, 0, 1/sqrt(1))
 PR <- tt[tt >= 0 & tt <= 1]
 MCMCtrace(out, 
           params = 'beta_p',
@@ -118,7 +121,7 @@ MCMCtrace(out,
           post_zm = FALSE)
 
 #' sigma_nu_p ~ dunif(0.25, 3)
-PR <- runif(15000, 0.25, 3)
+PR <- runif(15000, 0, 10)
 MCMCtrace(out, 
           params = 'sigma_nu_p',
           ind = TRUE, 
@@ -126,7 +129,23 @@ MCMCtrace(out,
           pdf = FALSE,
           post_zm = FALSE)
 
+#' pi_phi ~ dnorm(0, 0.386)
+PR <- rnorm(15000, 0, 1/sqrt(0.386))
+MCMCtrace(out, 
+          params = 'pi_phi',
+          ind = TRUE, 
+          priors = PR,
+          pdf = FALSE,
+          post_zm = FALSE)
 
+#' rho_phi ~ dnorm(0, 0.386)
+PR <- rnorm(15000, 0, 1/sqrt(0.386))
+MCMCtrace(out, 
+          params = 'rho_phi',
+          ind = TRUE, 
+          priors = PR,
+          pdf = FALSE,
+          post_zm = FALSE)
 
 
 

@@ -442,7 +442,7 @@ setwd('../Results')
       #Lunn prior - flat in probability space
       mu_phi ~ dnorm(0, 0.386)   
 
-      beta_phi ~ dnorm(0, 100) T(0,1)
+      beta_phi ~ dnorm(0, 10) T(0,1)
 
 
       #covariates
@@ -468,10 +468,10 @@ setwd('../Results')
       }
       
       tau_eta_phi <- pow(sigma_eta_phi, -2)
-      sigma_eta_phi ~ dunif(0.25, 8)
+      sigma_eta_phi ~ dunif(0, 100)
       
       tau_gamma_phi <- pow(sigma_gamma_phi, -2)
-      sigma_gamma_phi ~ dunif(0.25, 8)
+      sigma_gamma_phi ~ dunif(0, 100)
       
       #tau_eps_phi <- pow(sigma_eps_phi, -2)
       #sigma_eps_phi ~ dunif(0.25, 8)
@@ -482,7 +482,7 @@ setwd('../Results')
       #Lunn prior - flat in probability space
       mu_p ~ dnorm(0, 0.386)
       
-      beta_p ~ dnorm(0, 100) T(0,1)
+      beta_p ~ dnorm(0, 1) T(0,1)
       
       for (k in 1:NK)
       {
@@ -496,7 +496,7 @@ setwd('../Results')
       }
       
       tau_nu_p <- pow(sigma_nu_p, -2)
-      sigma_nu_p ~ dunif(0.25, 3)
+      sigma_nu_p ~ dunif(0, 10)
       
       }",fill = TRUE)
 
@@ -595,14 +595,14 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_4_2018_CCAMLR_krill',
+               jagsID = 'May_5_2018_CCAMLR_krill',
                jagsDsc = 'CCAMLR krill. Extended queue. Include covariates: 1) entire year krill, 2) SIC previous winter',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 5,
                n_adapt = 5000,
-               n_burn = 20000,
-               n_draw = 20000,
-               n_thin = 15,
+               n_burn = 40000,
+               n_draw = 40000,
+               n_thin = 20,
                DEBUG = FALSE,
                EXTRA = FALSE,
                Rhat_max = 1.1,
