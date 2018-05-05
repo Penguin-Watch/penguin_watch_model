@@ -468,10 +468,10 @@ setwd('../Results')
       }
       
       tau_eta_phi <- pow(sigma_eta_phi, -2)
-      sigma_eta_phi ~ dunif(0, 100)
+      sigma_eta_phi ~ dunif(0, 5)
       
       tau_gamma_phi <- pow(sigma_gamma_phi, -2)
-      sigma_gamma_phi ~ dunif(0, 100)
+      sigma_gamma_phi ~ dunif(0, 5)
       
       #tau_eps_phi <- pow(sigma_eps_phi, -2)
       #sigma_eps_phi ~ dunif(0.25, 8)
@@ -496,7 +496,7 @@ setwd('../Results')
       }
       
       tau_nu_p <- pow(sigma_nu_p, -2)
-      sigma_nu_p ~ dunif(0, 10)
+      sigma_nu_p ~ dunif(0, 5)
       
       }",fill = TRUE)
 
@@ -596,7 +596,7 @@ jagsRun(jagsData = DATA,
                jagsInits = F_Inits,
                params = Pars,
                jagsID = 'May_5_2018_CCAMLR_krill',
-               jagsDsc = 'CCAMLR krill. Extended queue. Include covariates: 1) entire year krill, 2) SIC previous winter',
+               jagsDsc = 'CCAMLR krill. Prios on precision runif(0,5) so isnt informative on probability scale. Extended queue. Include covariates: 1) entire year krill, 2) SIC previous winter',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 5,
                n_adapt = 5000,
