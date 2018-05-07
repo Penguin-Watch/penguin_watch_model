@@ -134,7 +134,7 @@ nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 #fill response data array
 for (k in 1:n_sites)
 {
-  #k <- 2
+  #k <- 1
   temp <- filter(PW_data, site == un_sites[k])
   
   for (j in 1:n_yrs)
@@ -219,19 +219,19 @@ for (k in 1:dim(nests_array)[4])
 
 # create w_array ----------------------------------------------------------
 
-#create w_array (day and night)
+#create w_array (day and night) - and before and after actual dates we have data for
 
 w_array <- nests_array
 #assign 1 to values with observations (either 0/1/2 for nests_array)
 w_array[which(!is.na(w_array), arr.ind = TRUE)] <- 1
 
-#only fille in 0 if this was a night (there is data on either side and not just missing nests)
+#only fill in 0 if this was a night (there is data on either side and not just missing nests)
 for (k in 1:dim(nests_array)[4])
 {
-  #k <- 1
+  #k <- 4
   for (j in 1:dim(nests_array)[3])
   {
-    #j <- 2
+    #j <- 1
     #if there are more than 0 nests in that year (there is data for that site/year)
     if (real_nests[j,k] > 0)
     {
@@ -242,9 +242,9 @@ for (k in 1:dim(nests_array)[4])
 }
 
 #checks:
-#nests_array[1:15, 1:10, 2, 1]
-#w_array[1:15, 1:10, 2, 1]
-
+#nests_array[1:15, 2, 1, 4]
+#w_array[1:15, 1:10, 1, 4]
+#z_array[1:30, 1:10, 1, 4]
 
 
 # observations with > 2 chicks --------------------------------------------
@@ -389,7 +389,7 @@ DATA <- list(
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
   w = w_array, #binary day (1)/night (0)
-  x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE), #time steps for increase in surv/detection over time 
+  x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE)[,1], #time steps for increase in surv/detection over time 
   KRILL = KRILL, #standardized krill catch data (total krill caught over the previous winter and current breeding season)
   SIC = SIC) #standardized SIC for previous winter
 
@@ -476,9 +476,9 @@ setwd(dir[4])
       
       
       #priors - phi
-      mu_phi ~ dnorm(1, 0.25)   
+      mu_phi ~ dnorm(0, 0.25)   
 
-      beta_phi ~ dunif(-8, -3)
+      beta_phi ~ dnorm(0, 1000) T(0,0.03)
 
 
       #covariates
@@ -517,9 +517,9 @@ setwd(dir[4])
       
       
       #priors - p
-      mu_p ~ dnorm(1, 0.25)
+      mu_p ~ dnorm(0, 0.1)
       
-      beta_p ~ dunif(-8, -3)
+      beta_p ~ dnorm(0, 1000) T(0,0.03)
       
       for (k in 1:NK)
       {
@@ -565,14 +565,14 @@ for (k in 1:DATA$NK)
 }
 
 
-Inits_1 <- list(mu_phi = 0,
-                beta_phi = -7,
+Inits_1 <- list(mu_phi = 5,
+                beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -4.15,
-                beta_p = -5,
+                mu_p = -2,
+                beta_p = 0.01,
                 nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -580,14 +580,14 @@ Inits_1 <- list(mu_phi = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = 0,
-                beta_phi = -7,
+Inits_2 <- list(mu_phi = 5,
+                beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -4.15,
-                beta_p = -5,
+                mu_p = -2,
+                beta_p = 0.01,
                 nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -595,14 +595,14 @@ Inits_2 <- list(mu_phi = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = 0,
-                beta_phi = -7,
+Inits_3 <- list(mu_phi = 5,
+                beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -4.15,
-                beta_p = -5,
+                mu_p = -2,
+                beta_p = 0.01,
                 nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -610,14 +610,14 @@ Inits_3 <- list(mu_phi = 0,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
-Inits_4 <- list(mu_phi = 0,
-                beta_phi = -7,
+Inits_4 <- list(mu_phi = 5,
+                beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -4.15,
-                beta_p = -5,
+                mu_p = -2,
+                beta_p = 0.01,
                 nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -625,14 +625,14 @@ Inits_4 <- list(mu_phi = 0,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
-Inits_5 <- list(mu_phi = 0,
-                beta_phi = -7,
+Inits_5 <- list(mu_phi = 5,
+                beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -4.15,
-                beta_p = -5,
+                mu_p = -2,
+                beta_p = 0.01,
                 nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -640,14 +640,14 @@ Inits_5 <- list(mu_phi = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
-Inits_6 <- list(mu_phi = 0,
-                beta_phi = -7,
+Inits_6 <- list(mu_phi = 5,
+                beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -4.15,
-                beta_p = -5,
+                mu_p = -2,
+                beta_p = 0.01,
                 nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -678,13 +678,12 @@ Pars <- c('mu_phi',
 
 # Run model ---------------------------------------------------------------
 
-
 jagsRun(jagsData = DATA, 
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_6_2018_CCAMLR',
-               jagsDsc = 'Redo prior specification. Change beta to uninformative on probability scale. Also no partial pooling for eta_phi, gamma_phi, and nu_p (0.386 precision). CCAMLR krill and SIC. Extended queue.',
+               jagsID = 'May_7_2018_CCAMLR',
+               jagsDsc = 'Redo prior specification. Reset beta priors. Also no partial pooling for eta_phi, gamma_phi, and nu_p (0.386 precision). CCAMLR krill and SIC. Extended queue.',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 6,
                n_adapt = 2,#5000,
