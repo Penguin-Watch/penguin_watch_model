@@ -593,17 +593,17 @@ for (i in 1:length(cam_sites))
 
 
 
-# #AKER DATA
+# # #AKER DATA
 # aker_kr_bs <- data.frame()
 # for (i in 1:length(cam_sites))
 # {
 #   #i <- 1
 #   temp_krill <- filter(aker_master_krill_25, col_id == cam_sites[i])
 #   temp_PW <- filter(PW_data, site == cam_sites[i])
-#   
+# 
 #   #PW year (1999/2000 season is PW year 2000)
 #   pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
-#   
+# 
 #   for (j in 1:length(yrs))
 #   {
 #     #j <- 1
@@ -611,7 +611,7 @@ for (i in 1:length(cam_sites))
 #     FIRST <- as.Date(paste0(yrs[j] - 1, '-12-01'))
 #     LAST <- as.Date(paste0(yrs[j], '-02-01'))
 #     dates <- which(pos_dates > FIRST & pos_dates < LAST)
-#     
+# 
 #     if (length(dates) > 0)
 #     {
 #       #total krill caught over this period
@@ -621,18 +621,18 @@ for (i in 1:length(cam_sites))
 #       #krill/trawl (CPUE)
 #       cpue_krill <- t_krill/n_trawls
 #       #output
-#       t_out <- data.frame(SITE = cam_sites[i], 
-#                           YEAR = yrs[j], 
-#                           T_KRILL = t_krill, 
-#                           N_TRAWLS = n_trawls, 
+#       t_out <- data.frame(SITE = cam_sites[i],
+#                           YEAR = yrs[j],
+#                           T_KRILL = t_krill,
+#                           N_TRAWLS = n_trawls,
 #                           CPUE = cpue_krill)
 #       #merge with final output
 #       aker_kr_bs <- rbind(aker_kr_bs, t_out)
 #     } else {
-#       t_out <- data.frame(SITE = cam_sites[i], 
-#                           YEAR = yrs[j], 
-#                           T_KRILL = 0, 
-#                           N_TRAWLS = 0, 
+#       t_out <- data.frame(SITE = cam_sites[i],
+#                           YEAR = yrs[j],
+#                           T_KRILL = 0,
+#                           N_TRAWLS = 0,
 #                           CPUE = NA)
 #       aker_kr_bs <- rbind(aker_kr_bs, t_out)
 #     }
@@ -697,10 +697,10 @@ for (i in 1:length(cam_sites))
 #   #i <- 1
 #   temp_krill <- filter(aker_master_krill_150, col_id == cam_sites[i])
 #   temp_PW <- filter(PW_data, site == cam_sites[i])
-#   
+# 
 #   #PW year (1999/2000 season is PW year 2000)
 #   pos_dates <- as.Date(temp_krill$date_st, format = "%d-%B-%y")
-#   
+# 
 #   for (j in 1:length(yrs))
 #   {
 #     #j <- 1
@@ -708,7 +708,7 @@ for (i in 1:length(cam_sites))
 #     FIRST <- as.Date(paste0(yrs[j] - 1, '-3-01'))
 #     LAST <- as.Date(paste0(yrs[j], '-02-01'))
 #     dates <- which(pos_dates > FIRST & pos_dates < LAST)
-#     
+# 
 #     if (length(dates) > 0)
 #     {
 #       #total krill caught over this period
@@ -718,22 +718,31 @@ for (i in 1:length(cam_sites))
 #       #krill/trawl (CPUE)
 #       cpue_krill <- t_krill/n_trawls
 #       #output
-#       t_out <- data.frame(SITE = cam_sites[i], 
-#                           YEAR = yrs[j], 
-#                           T_KRILL = t_krill, 
-#                           N_TRAWLS = n_trawls, 
+#       t_out <- data.frame(SITE = cam_sites[i],
+#                           YEAR = yrs[j],
+#                           T_KRILL = t_krill,
+#                           N_TRAWLS = n_trawls,
 #                           CPUE = cpue_krill)
 #       #merge with final output
 #       aker_kr_ws <- rbind(aker_kr_ws, t_out)
 #     } else {
-#       t_out <- data.frame(SITE = cam_sites[i], 
-#                           YEAR = yrs[j], 
-#                           T_KRILL = 0, 
-#                           N_TRAWLS = 0, 
+#       t_out <- data.frame(SITE = cam_sites[i],
+#                           YEAR = yrs[j],
+#                           T_KRILL = 0,
+#                           N_TRAWLS = 0,
 #                           CPUE = NA)
 #       aker_kr_ws <- rbind(aker_kr_ws, t_out)
 #     }
 #   }
+# }
+# 
+
+#look at whether CPUE is declining over time - does not appear so
+# for (i in 1:length(cam_sites))
+# {
+#   #i <- 1
+#   temp <- filter(aker_kr_ws, SITE == cam_sites[i])
+#   plot(temp$YEAR, temp$CPUE, pch = 19, main = paste0(cam_sites[i]))
 # }
 
 # write.csv(aker_kr_ws, 'aker_krill_entire_season.csv', row.names = FALSE)
