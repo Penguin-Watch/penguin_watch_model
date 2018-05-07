@@ -53,9 +53,12 @@ PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 boots <- which(PW_data$site == 'BOOT')
 PW_data$site[boots] <- 'PCHA'
 
-#remove HALF bc it's not a full season
+#remove colonies to make dataset smaller (faster model run)
+to_rm <- c('BAIL', 'HALF', 'NEKO', 'ORNE')
+
 un_sites_p <- unique(PW_data$site)
-un_sites <- un_sites_p[which(un_sites_p != 'HALF')]
+un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
+
 
 #first date of each season
 yrs <- c()
@@ -678,6 +681,13 @@ Pars <- c('mu_phi',
 
 # Run model ---------------------------------------------------------------
 
+#make sure model compiles
+# jagsRun(jagsData = DATA,
+#         jagsModel = 'pwatch_surv.jags',
+#         jagsInits = F_Inits,
+#         TYPE = 'COMPILE')
+
+
 jagsRun(jagsData = DATA, 
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
@@ -690,7 +700,7 @@ jagsRun(jagsData = DATA,
                n_burn = 1,#10000,
                n_draw = 2,#10000,
                n_thin = 1,#10,
-               DEBUG = FALSE,
+               TYPE = 'STANDARD',
                EXTRA = FALSE,
                Rhat_max = 1.1,
                n_max = 100000,
