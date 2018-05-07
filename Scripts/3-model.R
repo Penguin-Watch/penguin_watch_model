@@ -21,7 +21,7 @@ rm(list = ls())
 
 
 #laptop
-# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/', 
+# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/',
 #          '../../Krill_data/CCAMLR/Processed_CCAMLR/',
 #          '../../../SIC_data/Processed/',
 #          '~/Google_Drive/R/penguin_watch_model/Results/')
@@ -545,6 +545,20 @@ setwd(dir[4])
 
 # Starting values ---------------------------------------------------------
 
+num <- 0
+for (k in 1:DATA$NK)
+{
+  for (j in 1:DATA$NJ)
+  {
+    for (i in 1:DATA$NI[j,k])
+    {
+      num <- num + 1
+    }
+  }
+}
+
+
+
 
 Inits_1 <- list(mu_phi = 0,
                 beta_phi = -7,
@@ -554,7 +568,7 @@ Inits_1 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = 0,
+                nu_p = rep(0, num),
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -569,7 +583,7 @@ Inits_2 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = 0,
+                nu_p = rep(0, num),
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -584,7 +598,7 @@ Inits_3 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = 0,
+                nu_p = rep(0, num),
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -599,7 +613,7 @@ Inits_4 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = 0,
+                nu_p = rep(0, num),
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -614,7 +628,7 @@ Inits_5 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = 0,
+                nu_p = rep(0, num),
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -629,7 +643,7 @@ Inits_6 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = 0,
+                nu_p = rep(0, num),
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
