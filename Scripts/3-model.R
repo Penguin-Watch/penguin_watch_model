@@ -549,11 +549,17 @@ setwd(dir[4])
 narray <- array(NA, dim = c(max(real_nests), DATA$NJ, DATA$NK))
 for (k in 1:DATA$NK)
 {
+  #k <- 1
   for (j in 1:DATA$NJ)
   {
+    #j <- 1
     for (i in 1:DATA$NI[j,k])
     {
-      narray[i,j,k] <- 0
+      #i <- 1
+      if (DATA$NI[j,k] > 0)
+      {
+        narray[i,j,k] <- 0
+      }
     }
   }
 }
