@@ -389,7 +389,7 @@ DATA <- list(
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
   w = w_array, #binary day (1)/night (0)
-  x = as.numeric(1:dim(nests_array)[1]), #time steps for increase in surv/detection over time 
+  x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE), #time steps for increase in surv/detection over time 
   KRILL = KRILL, #standardized krill catch data (total krill caught over the previous winter and current breeding season)
   SIC = SIC) #standardized SIC for previous winter
 
