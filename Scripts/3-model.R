@@ -545,19 +545,18 @@ setwd(dir[4])
 
 # Starting values ---------------------------------------------------------
 
-num <- 0
+#create and fill array with initial values for nu_p
+narray <- array(rep(NA, num), dim = c(max(real_nests), DATA$NJ, DATA$NK))
 for (k in 1:DATA$NK)
 {
   for (j in 1:DATA$NJ)
   {
     for (i in 1:DATA$NI[j,k])
     {
-      num <- num + 1
+      narray[i,j,k] <- 0
     }
   }
 }
-
-
 
 
 Inits_1 <- list(mu_phi = 0,
@@ -568,7 +567,7 @@ Inits_1 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = rep(0, num),
+                nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -583,7 +582,7 @@ Inits_2 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = rep(0, num),
+                nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -598,7 +597,7 @@ Inits_3 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = rep(0, num),
+                nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -613,7 +612,7 @@ Inits_4 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = rep(0, num),
+                nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -628,7 +627,7 @@ Inits_5 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = rep(0, num),
+                nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -643,7 +642,7 @@ Inits_6 <- list(mu_phi = 0,
                 rho_phi = 0,
                 mu_p = -4.15,
                 beta_p = -5,
-                nu_p = rep(0, num),
+                nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
