@@ -25,7 +25,7 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
   install.packages('pacman')
 }
 
-pacman::p_load(MCMCvis)
+pacman::p_load(MCMCvis, boot)
 
 
 
@@ -36,8 +36,9 @@ pacman::p_load(MCMCvis)
 #p = detection prob
 
 NAME <- 'May_3_2018_covariates'
+NAME <- 'May_2_2018'
 
-setwd(paste0('Results/', NAME))
+setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
 out <- readRDS(paste0(NAME, '.rds'))
 
@@ -45,26 +46,48 @@ out <- readRDS(paste0(NAME, '.rds'))
 
 # Summarize ---------------------------------------------------------------
 
-MCMCsummary(out)
+MCMCsummary(out, excl = 'nu_p')
 
+#grand intercept - surv
 MCMCsummary(out, params = 'mu_phi')
+#slope within a season
 MCMCsummary(out, params = 'beta_phi')
+#site effect
+MCMCsummary(out, params = 'eta_phi')
 MCMCsummary(out, params = 'sigma_eta_phi')
+#year effect
+MCMCsummary(out, params = 'gamma_phi')
 MCMCsummary(out, params = 'sigma_gamma_phi')
-MCMCsummary(out, params = 'mu_p')
-MCMCsummary(out, params = 'beta_p')
-MCMCsummary(out, params = 'sigma_nu_p')
+#covariates
 MCMCsummary(out, params = 'pi_phi')
 MCMCsummary(out, params = 'rho_phi')
 
 
+#grand intercept - detect
+MCMCsummary(out, params = 'mu_p')
+#slope within a season
+MCMCsummary(out, params = 'beta_p')
+#nest detection
+MCMCsummary(out, params = 'nu_p')
+MCMCsummary(out, params = 'sigma_nu_p')
+
+
+#plots
+MCMCplot(out, excl = 'nu_p')
 
 
 
 # PPO ---------------------------------------------------------------------
 
+tf <- function(PR)
+{
+  hist(inv.logit(PR))
+}
+
+
 #' mu_phi ~ dnorm(0, 0.386)   
-PR <- rnorm(15000, 0, 1/sqrt(0.386))
+PR <- rnorm(15000, 1, 1/sqrt(0.25))
+tf(PR)
 MCMCtrace(out, 
           params = 'mu_phi',
           ind = TRUE, 
@@ -72,9 +95,29 @@ MCMCtrace(out,
           pdf = FALSE,
           post_zm = FALSE)
 
+
+
+#FOR BETA params - need different prior
+
+#rise/run
+intended_slope <- (.9-.25)/768
+
+logit(intended_slope)
+logit(0.001)
+inv.logit(-8)
+PR <- rnorm(1000, -7, 1/sqrt(1))
+hist(PR)
+PR <- runif(1000, -8, -3)
+tf(PR)
+
+
+
+
+
 #' beta_phi ~ dnorm(0, 10) T(0,1)
 tt <- rnorm(15000, 0, 1/sqrt(10))
 PR <- tt[tt >= 0 & tt <= 1]
+tf(PR)
 MCMCtrace(out, 
           params = 'beta_phi',
           ind = TRUE, 
@@ -113,6 +156,7 @@ MCMCtrace(out,
 #' beta_p ~ dnorm(0, 1) T(0,1)
 tt <- rnorm(15000, 0, 1/sqrt(1))
 PR <- tt[tt >= 0 & tt <= 1]
+plot(density(inv.logit(PR)))
 MCMCtrace(out, 
           params = 'beta_p',
           ind = TRUE, 
