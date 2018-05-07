@@ -217,32 +217,32 @@ gg_color_hue <- function(n, ALPHA = 1)
 # #plot(Ant)
 # plot(AP)
 # #plot CCAMLR SSMUs
-# cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.2)
+# cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.3)
 # for (i in 1:length(SSMU_names))
 # {
 #   #i <- 2
 #   SSMU_names[i]
 #   plot(get(SSMU_names[i]), add = TRUE, col = cols[i])
 # }
-# #site buffers
-# #plot(all_site_buffers_150, col = rgb(0,0,1,0.5), add = TRUE)
 # #PW sites
 # points(t_col_points, col = rgb(0,0,1,0.5), pch = 19)
+# #site buffers
+# plot(all_site_buffers_150, col = rgb(0,0,1,0.2), add = TRUE)
 # #krill
 # #points(t_krill_points, col = rgb(1,0,0,0.05), pch = '.')
 # #CCAMLR zone 48.1
 # #plot(sub_481, add = TRUE)
 # 
-# #overlay krill trawls:
+# #overlay Aker krill trawls:
 # #just within 48.1
 # #points(aker_k481_pts, col = rgb(0,1,0,0.05), pch = '.')
-# #SSMUs
-# cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.3)
-# for (i in 1:length(SSMU_names))
-# {
-#   #i <- 7
-#   points(get(paste0('aker_', SSMU_names[i], '_pts')), col = cols[i], pch = '.')
-# }
+# #within SSMUs
+# # cols <- gg_color_hue(length(SSMU_names), ALPHA = 0.3)
+# # for (i in 1:length(SSMU_names))
+# # {
+# #   #i <- 7
+# #   points(get(paste0('aker_', SSMU_names[i], '_pts')), col = cols[i], pch = '.')
+# # }
 #--------------#
 
 #PW year is year t-1/t season (year 2000 is 1999/2000 season)
