@@ -77,6 +77,35 @@ MCMCplot(out, excl = 'nu_p')
 
 
 
+# diagnose model errors -------------------------------------------------
+
+
+
+Inits_1 <- list(mu_phi = 0,
+                beta_phi = 0.01,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NJ),
+                pi_phi = 0,
+                rho_phi = 0,
+                mu_p = 0,
+                beta_p = 0.01,
+                nu_p = narray)
+
+xvals <- scale(1:768, scale = FALSE)[,1]
+
+# Error in node y[21,2,2,1] - 1
+#DATA$y[1:21,2,2,1]
+#DATA$w[1:21,2,2,1]
+#DATA$z[1:21,2,2,1]
+#phi
+plot(inv.logit(5 + 0 + 0 + 0.005*xvals + 0 + 0))
+#p
+plot(inv.logit(-2 + 0.01*xvals + 0))
+
+
+
+
+
 # PPO ---------------------------------------------------------------------
 
 tf <- function(PR)
@@ -97,21 +126,11 @@ MCMCtrace(out,
 
 
 
-#FOR BETA params - need different prior
-
-#rise/run
-intended_slope <- (.9-.25)/768
-
-logit(intended_slope)
-logit(0.001)
-inv.logit(-8)
-PR <- rnorm(1000, -7, 1/sqrt(1))
-hist(PR)
-PR <- runif(1000, -8, -3)
-tf(PR)
-
-
-
+#FOR BETA params
+#should be < 0.03
+int_sl <- 0.01
+xvals <- scale(1:768, scale = FALSE)[,1]
+plot(inv.logit(0 + int_sl*xvals), ylim = c(0,1))
 
 
 #' beta_phi ~ dnorm(0, 10) T(0,1)
