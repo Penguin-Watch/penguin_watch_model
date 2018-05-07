@@ -50,7 +50,7 @@ setwd(dir[1])
 
 PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
-boots <- which(PW_data_p$site == 'BOOT')
+boots <- which(PW_data$site == 'BOOT')
 PW_data$site[boots] <- 'PCHA'
 
 #remove HALF bc it's not a full season
