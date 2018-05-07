@@ -546,7 +546,7 @@ setwd(dir[4])
 # Starting values ---------------------------------------------------------
 
 #create and fill array with initial values for nu_p
-narray <- array(rep(NA, num), dim = c(max(real_nests), DATA$NJ, DATA$NK))
+narray <- array(NA, dim = c(max(real_nests), DATA$NJ, DATA$NK))
 for (k in 1:DATA$NK)
 {
   for (j in 1:DATA$NJ)
