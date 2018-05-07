@@ -25,9 +25,27 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
   install.packages('pacman')
 }
 
-pacman::p_load(MCMCvis, boot)
+pacman::p_load(MCMCvis, boot, dplyr)
 
 
+
+
+# Relationship between krill and SIC --------------------------------------
+
+#no clear relationship between SIC and krill
+
+#50km radius for Dec - Feb
+CCAMLR_krill <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/Krill_data/CCAMLR/Processed_CCAMLR/CCAMLR_krill_breeding_season.csv')
+
+#500km radius for June - Sep
+SIC <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_W.csv')
+
+#500km radius MAX over last 5 years
+#SIC_max <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_MAX.csv')
+
+j_kr_SIC <- left_join(CCAMLR_krill, SIC, by = c('YEAR', 'SITE'))
+
+summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
 
 
 # Load data -------------------------------------------------------
