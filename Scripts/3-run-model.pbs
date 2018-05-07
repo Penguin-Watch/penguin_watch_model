@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#PBS -l nodes=1:ppn=28,walltime=1:00:00
-#PBS -q debug
-#PBS -N PW_model_prior_rework
+#PBS -l nodes=1:ppn=28,walltime=48:00:00
+#PBS -q long
+#PBS -N PW_fewer_sites
 
 module load shared
 module load R/3.4.4
