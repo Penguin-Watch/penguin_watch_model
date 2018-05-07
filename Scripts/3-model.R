@@ -11,10 +11,24 @@
 #################
 
 
-
 # Clear environment -------------------------------------------------------
 
+
 rm(list = ls())
+
+
+# DIR ---------------------------------------------------------------------
+
+
+#laptop
+# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/', 
+#          '../../Krill_data/CCAMLR/Processed_CCAMLR/',
+#          '../../../SIC_data/Processed/',
+#          '~/Google_Drive/R/penguin_watch_model/Results/')
+
+#HPC
+dir <- c('../Data', '../Data', '../Data', '../Results')
+
 
 
 
@@ -32,49 +46,50 @@ library(jagsRun)
 
 #ensures that row dimension (time steps within season) will have the same dimension
 
-#setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/')
-setwd('../Data')
+setwd(dir[1])
 
-PW_data_p <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
 boots <- which(PW_data_p$site == 'BOOT')
-PW_data_p$site[boots] <- 'PCHA'
-
-#merge site and cam for independent cameras (treating each cam as a different site)
-PW_data <- mutate(PW_data_p, site_p_cam = paste0(site, camera_letter))
+PW_data$site[boots] <- 'PCHA'
 
 #remove HALF bc it's not a full season
-un_sites_p <- unique(PW_data$site_p_cam)
-un_sites <- un_sites_p[which(un_sites_p != 'HALFb')]
+un_sites_p <- unique(PW_data$site)
+un_sites <- un_sites_p[which(un_sites_p != 'HALF')]
 
 #first date of each season
 yrs <- c()
 min_date <- as.Date(NA)
+max_date <- as.Date(NA)
 for (k in 1:length(un_sites))
 {
-  #k <- 1
-  temp <- filter(PW_data, site_p_cam == un_sites[k])
+  #k <- 2
+  temp <- filter(PW_data, site == un_sites[k])
   un_yrs <- unique(temp$season_year)
   
   yrs <- c(yrs, un_yrs)
   for (j in 1:length(un_yrs))
   {
-    #j <- 1
+    #j <- 2
     temp2 <- filter(temp, season_year == un_yrs[j])
     
     temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
     t_min_date <- min(temp_dates)
+    t_max_date <- max(temp_dates)
+    max_date <- c(max_date, t_max_date)
     min_date <- c(min_date, t_min_date)
   }
 }
 
 
 #first date of season to use across all years (add 1 to start on full day)
-f_min_date <- format((min_date+1), '%m-%d')
-first_date <- max(f_min_date, na.rm = TRUE)
+#f_min_date <- format((min_date+1), '%m-%d')
+#first_date <- max(f_min_date, na.rm = TRUE)
+#start Jan 15
+first_date <- format(as.Date('01-15', format = '%m-%d'), '%m-%d')
 
-#use Feb 1 as last date of season to use across all years
-last_date <- format(as.Date('02-01', format = '%m-%d'), '%m-%d')
+#use Feb 15 as last date of season to use across all years
+last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
 
 
 
@@ -97,9 +112,10 @@ tog <- c(ind, to.rm)
 tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 
-#number of time steps (rows) in response data (-1 to account for greater than FIRST and less than LAST) - t
-n_ts <- as.numeric(as.Date(paste0('2018', '-', last_date, format = '%Y-%m-%d')) - 
-                     as.Date(paste0('2017', '-', first_date, format = '%Y-%m-%d')) - 1) * 24
+#number of time steps (rows) in response data (+1 to account for start FIRST through LAST)
+n_ts <- as.numeric(as.Date(paste0('2017', '-', last_date, format = '%Y-%m-%d')) - 
+                     as.Date(paste0('2017', '-', first_date, format = '%Y-%m-%d')) + 1) * 24
+
 
 #number of nests (columns) in response data - i
 n_nests <- length(tog2)
@@ -114,12 +130,12 @@ n_sites <- length(un_sites)
 #create blank array
 nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 
-
+#SITE 2, YEAR 2
 #fill response data array
 for (k in 1:n_sites)
 {
-  #k <- 1
-  temp <- filter(PW_data, site_p_cam == un_sites[k])
+  #k <- 2
+  temp <- filter(PW_data, site == un_sites[k])
   
   for (j in 1:n_yrs)
   {
@@ -130,12 +146,40 @@ for (k in 1:n_sites)
       temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
       
       #first and last days in season
-      FIRST <- as.Date(paste0((d_yrs[j]-1), '-', first_date), format = "%Y-%m-%d")
+      FIRST <- as.Date(paste0((d_yrs[j]), '-', first_date), format = "%Y-%m-%d")
       LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
-      valid_dates <- which(temp_dates > FIRST & temp_dates < LAST)
+      
+      valid_dates <- which(temp_dates >= FIRST & temp_dates <= LAST)
+      sel_dates <- temp_dates[which(temp_dates >= FIRST & temp_dates <= LAST)]
+      
+      if (min(sel_dates) > FIRST)
+      {
+        #add NA vals to front
+        num_first <- length(which(sel_dates == min(sel_dates)))
+        
+        lna <- min(sel_dates) - FIRST
+        na_first <- matrix(NA, ncol = length(tog2), nrow = (lna * 24) + (24 - num_first))
+      } else {
+        na_first <- NULL
+      }
+      
+      if (max(sel_dates) < LAST)
+      {
+        #add NA vals to end
+        num_last <- length(which(sel_dates == max(sel_dates)))
+        
+        lna <- LAST - max(sel_dates)
+        na_last <- matrix(NA, ncol = length(tog2), nrow = (lna * 24) + (24 - num_last))
+      } else {
+        na_last <- NULL
+      }
+      
+      #add buffers to front and back (if needed)
+      vals <- as.matrix(temp2[valid_dates, tog2])
+      n_vals <- rbind(na_first, vals, na_last)
       
       #appropriate date range and appropriate columns for nests
-      nests_array[,,j,k] <- as.matrix(temp2[valid_dates, tog2])
+      nests_array[,,j,k] <- n_vals
     }
   }
 }
@@ -206,9 +250,9 @@ for (k in 1:dim(nests_array)[4])
 # observations with > 2 chicks --------------------------------------------
 
 # 1% of nest observations have more than 2 chicks in them
-# which(DATA$y > 2, arr.ind = TRUE)
-# num_o2 <- length(DATA$y[which(DATA$y > 2, arr.ind = TRUE)])
-# total <- length(DATA$y[which(!is.na(DATA$y), arr.ind = TRUE)])
+# which(nests_array > 2, arr.ind = TRUE)
+# num_o2 <- length(nests_array[which(nests_array > 2, arr.ind = TRUE)])
+# total <- length(nests_array[which(!is.na(nests_array), arr.ind = TRUE)])
 # num_o2/total
 
 #determine which observation have more than two chicks observed and change them to 2
@@ -267,8 +311,7 @@ z_array[ones] <- NA
 
 un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
 
-
-#setwd('../../Krill_data/CCAMLR/Processed_CCAMLR//')
+setwd(dir[2])
 
 krill <- read.csv('CCAMLR_krill_entire_season.csv')
 
@@ -300,8 +343,8 @@ KRILL <- matrix(t2, nrow = NROW(i_KRILL))
 #COULD ALSO ADD MAX OVER LAST 5 YEARS
 
 
+setwd(dir[3])
 
-#setwd('../../SIC_data/Processed/')
 
 sea_ice <- read.csv('SIC_500_W.csv')
 
@@ -351,13 +394,7 @@ DATA <- list(
   SIC = SIC) #standardized SIC for previous winter
 
 
-
-
-#ADD 'CAMERA' number in here somewhere (detection should not be the same for each camera at a site)
-
-
-#setwd('~/Google_Drive/R/penguin_watch_model/Results/')
-setwd('../Results')
+setwd(dir[4])
 
 # Model -------------------------------------------------------------------
 
@@ -439,10 +476,9 @@ setwd('../Results')
       
       
       #priors - phi
-      #Lunn prior - flat in probability space
-      mu_phi ~ dnorm(0, 0.386)   
+      mu_phi ~ dnorm(1, 0.25)   
 
-      beta_phi ~ dnorm(0, 10) T(0,1)
+      beta_phi ~ dunif(-8, -3)
 
 
       #covariates
@@ -451,8 +487,9 @@ setwd('../Results')
       
       for (k in 1:NK)
       {
-      eta_phi[k] ~ dnorm(0, tau_eta_phi)
-      
+      #eta_phi[k] ~ dnorm(0, tau_eta_phi)
+      eta_phi[k] ~ dnorm(0, 0.386)    
+
       #for (j in 1:NJ)
       #{
       #for (t in 1:NT)
@@ -464,14 +501,15 @@ setwd('../Results')
       
       for (j in 1:NJ)
       {
-      gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
+      #gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
+      gamma_phi[j] ~ dnorm(0, 0.386)
       }
       
-      tau_eta_phi <- pow(sigma_eta_phi, -2)
-      sigma_eta_phi ~ dunif(0, 5)
+      #tau_eta_phi <- pow(sigma_eta_phi, -2)
+      #sigma_eta_phi ~ dunif(0, 5)
       
-      tau_gamma_phi <- pow(sigma_gamma_phi, -2)
-      sigma_gamma_phi ~ dunif(0, 5)
+      #tau_gamma_phi <- pow(sigma_gamma_phi, -2)
+      #sigma_gamma_phi ~ dunif(0, 5)
       
       #tau_eps_phi <- pow(sigma_eps_phi, -2)
       #sigma_eps_phi ~ dunif(0.25, 8)
@@ -479,10 +517,9 @@ setwd('../Results')
       
       
       #priors - p
-      #Lunn prior - flat in probability space
-      mu_p ~ dnorm(0, 0.386)
+      mu_p ~ dnorm(1, 0.25)
       
-      beta_p ~ dnorm(0, 1) T(0,1)
+      beta_p ~ dunif(-8, -3)
       
       for (k in 1:NK)
       {
@@ -490,13 +527,14 @@ setwd('../Results')
       {
       for (i in 1:NI[j,k])
       {
-      nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
+      #nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
+      nu_p[i,j,k] ~ dnorm(0, 0.386) #T(-10,10)
       }
       }
       }
       
-      tau_nu_p <- pow(sigma_nu_p, -2)
-      sigma_nu_p ~ dunif(0, 5)
+      #tau_nu_p <- pow(sigma_nu_p, -2)
+      #sigma_nu_p ~ dunif(0, 5)
       
       }",fill = TRUE)
 
@@ -508,67 +546,97 @@ setwd('../Results')
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mu_phi = 0.59,
-                beta_phi = 0.01,
-                sigma_eta_phi = 0.78,
-                sigma_gamma_phi = 0.84,
-                mu_p = -4.15,
-                beta_p = 0,
-                sigma_nu_p = 1.06,
+Inits_1 <- list(mu_phi = 0,
+                beta_phi = -7,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NK),
                 pi_phi = 0,
                 rho_phi = 0,
+                mu_p = -4.15,
+                beta_p = 0,
+                nu_p = 0,
+                #sigma_eta_phi = 0.78,
+                #sigma_gamma_phi = 0.84,
+                #sigma_nu_p = 1.06,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = 2,
-                beta_phi = 0.02,
-                sigma_eta_phi = 1.5,
-                sigma_gamma_phi = 1.5,
-                mu_p = -4,
-                beta_p = 0,
-                sigma_nu_p = 1.1,
+Inits_2 <- list(mu_phi = 0,
+                beta_phi = -7,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NK),
                 pi_phi = 0,
                 rho_phi = 0,
+                mu_p = -4.15,
+                beta_p = 0,
+                nu_p = 0,
+                #sigma_eta_phi = 0.78,
+                #sigma_gamma_phi = 0.84,
+                #sigma_nu_p = 1.06,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = 3.31,
-                beta_phi = 0.03,
-                sigma_eta_phi = 2.08,
-                sigma_gamma_phi = 2.52,
-                mu_p = -3.96,
-                beta_p = 0,
-                sigma_nu_p = 1.2,
+Inits_3 <- list(mu_phi = 0,
+                beta_phi = -7,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NK),
                 pi_phi = 0,
                 rho_phi = 0,
+                mu_p = -4.15,
+                beta_p = 0,
+                nu_p = 0,
+                #sigma_eta_phi = 0.78,
+                #sigma_gamma_phi = 0.84,
+                #sigma_nu_p = 1.06,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
-Inits_4 <- list(mu_phi = 5,
-                beta_phi = 0.07,
-                sigma_eta_phi = 3,
-                sigma_gamma_phi = 3,
-                mu_p = -3.7,
-                beta_p = 0,
-                sigma_nu_p = 1.3,
+Inits_4 <- list(mu_phi = 0,
+                beta_phi = -7,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NK),
                 pi_phi = 0,
                 rho_phi = 0,
+                mu_p = -4.15,
+                beta_p = 0,
+                nu_p = 0,
+                #sigma_eta_phi = 0.78,
+                #sigma_gamma_phi = 0.84,
+                #sigma_nu_p = 1.06,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
-Inits_5 <- list(mu_phi = 6.04,
-                beta_phi = 0.08,
-                sigma_eta_phi = 3.5,
-                sigma_gamma_phi = 3.5,
-                mu_p = -3.77,
-                beta_p = 0,
-                sigma_nu_p = 1.4,
+Inits_5 <- list(mu_phi = 0,
+                beta_phi = -7,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NK),
                 pi_phi = 0,
                 rho_phi = 0,
+                mu_p = -4.15,
+                beta_p = 0,
+                nu_p = 0,
+                #sigma_eta_phi = 0.78,
+                #sigma_gamma_phi = 0.84,
+                #sigma_nu_p = 1.06,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
-F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5)
+Inits_6 <- list(mu_phi = 0,
+                beta_phi = -7,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NK),
+                pi_phi = 0,
+                rho_phi = 0,
+                mu_p = -4.15,
+                beta_p = 0,
+                nu_p = 0,
+                #sigma_eta_phi = 0.78,
+                #sigma_gamma_phi = 0.84,
+                #sigma_nu_p = 1.06,
+                .RNG.name = "base::Wichmann-Hill",
+                .RNG.seed = 6)
+
+F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 
 
 
@@ -578,14 +646,15 @@ Pars <- c('mu_phi',
           'eta_phi',
           'gamma_phi',
           'beta_phi',
-          'sigma_eta_phi',
-          'sigma_gamma_phi',
+          'pi_phi',
+          'rho_phi',
+          #'sigma_eta_phi',
+          #'sigma_gamma_phi',
           'mu_p',
           'beta_p',
-          'nu_p',
-          'sigma_nu_p',
-          'pi_phi',
-          'rho_phi')
+          'nu_p'#,
+          #'sigma_nu_p'
+          )
 
 
 # Run model ---------------------------------------------------------------
@@ -595,14 +664,14 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_5_2018_CCAMLR_krill',
-               jagsDsc = 'CCAMLR krill. Prios on precision runif(0,5) so isnt informative on probability scale. Extended queue. Include covariates: 1) entire year krill, 2) SIC previous winter',
+               jagsID = 'May_6_2018_CCAMLR',
+               jagsDsc = 'Redo prior specification. Change beta to uninformative on probability scale. Also no partial pooling for eta_phi, gamma_phi, and nu_p (0.386 precision). CCAMLR krill and SIC. Extended queue.',
                db_hash = 'Markrecap_data_15.05.18.csv',
-               n_chain = 5,
-               n_adapt = 5000,
-               n_burn = 40000,
-               n_draw = 40000,
-               n_thin = 20,
+               n_chain = 6,
+               n_adapt = 2,#5000,
+               n_burn = 1,#10000,
+               n_draw = 2,#10000,
+               n_thin = 1,#10,
                DEBUG = FALSE,
                EXTRA = FALSE,
                Rhat_max = 1.1,
