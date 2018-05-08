@@ -462,7 +462,7 @@ setwd(dir[4])
       #eps_phi = residuals
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
-      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] + beta_phi*x[t] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] #+ beta_phi*x[t] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
 
       #p = detection prob
@@ -479,14 +479,14 @@ setwd(dir[4])
       
       
       #priors - phi
-      mu_phi ~ dnorm(0, 0.25)   
+      mu_phi ~ dnorm(0, 0.25)
 
-      beta_phi ~ dnorm(0, 1000) T(0,0.03)
+      #beta_phi ~ dnorm(0, 1000) T(0,0.03)
 
 
       #covariates
-      pi_phi ~ dnorm(0, 0.386)
-      rho_phi ~ dnorm(0, 0.386)
+      #pi_phi ~ dnorm(0, 0.386)
+      #rho_phi ~ dnorm(0, 0.386)
       
       for (k in 1:NK)
       {
@@ -569,11 +569,11 @@ for (k in 1:DATA$NK)
 
 
 Inits_1 <- list(mu_phi = 5,
-                beta_phi = 0.01,
+                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.01,
                 nu_p = narray,
@@ -584,11 +584,11 @@ Inits_1 <- list(mu_phi = 5,
                 .RNG.seed = 1)
 
 Inits_2 <- list(mu_phi = 5,
-                beta_phi = 0.01,
+                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.01,
                 nu_p = narray,
@@ -599,11 +599,11 @@ Inits_2 <- list(mu_phi = 5,
                 .RNG.seed = 2)
 
 Inits_3 <- list(mu_phi = 5,
-                beta_phi = 0.01,
+                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.01,
                 nu_p = narray,
@@ -614,11 +614,11 @@ Inits_3 <- list(mu_phi = 5,
                 .RNG.seed = 3)
 
 Inits_4 <- list(mu_phi = 5,
-                beta_phi = 0.01,
+                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.01,
                 nu_p = narray,
@@ -629,11 +629,11 @@ Inits_4 <- list(mu_phi = 5,
                 .RNG.seed = 4)
 
 Inits_5 <- list(mu_phi = 5,
-                beta_phi = 0.01,
+                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.01,
                 nu_p = narray,
@@ -644,11 +644,11 @@ Inits_5 <- list(mu_phi = 5,
                 .RNG.seed = 5)
 
 Inits_6 <- list(mu_phi = 5,
-                beta_phi = 0.01,
+                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.01,
                 nu_p = narray,
@@ -667,9 +667,9 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 Pars <- c('mu_phi',
           'eta_phi',
           'gamma_phi',
-          'beta_phi',
-          'pi_phi',
-          'rho_phi',
+          #'beta_phi',
+          #'pi_phi',
+          #'rho_phi',
           #'sigma_eta_phi',
           #'sigma_gamma_phi',
           'mu_p',
@@ -685,22 +685,22 @@ Pars <- c('mu_phi',
 # jagsRun(jagsData = DATA,
 #         jagsModel = 'pwatch_surv.jags',
 #         jagsInits = F_Inits,
-#         TYPE = 'COMPILE')
+#         DEBUG = TRUE)
 
 
 jagsRun(jagsData = DATA, 
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_7_2018_CCAMLR',
-               jagsDsc = 'Fewer sites. Redo prior specification. Reset beta priors. Also no partial pooling for eta_phi, gamma_phi, and nu_p (0.386 precision). CCAMLR krill and SIC. Long queue.',
+               jagsID = 'May_8_2018_no_cov_no_beta_phi',
+               jagsDsc = 'Fewer sites. No covariates. No beta_phi. No partial pooling for eta_phi, gamma_phi, and nu_p (0.386 precision). Long queue.',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 6,
                n_adapt = 5000,
-               n_burn = 30000,
-               n_draw = 20000,
+               n_burn = 60000,
+               n_draw = 40000,
                n_thin = 15,
-               TYPE = 'STANDARD',
+               DEBUG = FALSE,
                EXTRA = FALSE,
                Rhat_max = 1.1,
                n_max = 100000,
