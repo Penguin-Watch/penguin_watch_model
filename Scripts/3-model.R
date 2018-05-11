@@ -462,14 +462,14 @@ setwd(dir[4])
       #eps_phi = residuals
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
-      logit(phi[t,i,j,k]) <- mu_phi + eta_phi[k] + gamma_phi[j] #+ beta_phi*x[t] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] #+ eta_phi[k] + beta_phi*x[t] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
 
       #p = detection prob
       #mu_p = grand mean for all sites/years
       #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
       #nu_p = effect of nest
-      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[i,j,k]
+      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] #+ nu_p[i,j,k]
 
       } #t
       } #i
@@ -479,7 +479,7 @@ setwd(dir[4])
       
       
       #priors - phi
-      mu_phi ~ dnorm(0, 0.25)
+      mu_phi ~ dnorm(0, 0.01)
 
       #beta_phi ~ dnorm(0, 1000) T(0,0.03)
 
@@ -488,10 +488,10 @@ setwd(dir[4])
       #pi_phi ~ dnorm(0, 0.386)
       #rho_phi ~ dnorm(0, 0.386)
       
-      for (k in 1:NK)
-      {
+      #for (k in 1:NK)
+      #{
       #eta_phi[k] ~ dnorm(0, tau_eta_phi)
-      eta_phi[k] ~ dnorm(0, 0.386)    
+      #eta_phi[k] ~ dnorm(0, 0.386)    
 
       #for (j in 1:NJ)
       #{
@@ -500,7 +500,7 @@ setwd(dir[4])
       #eps_phi[t,j,k] ~ dnorm(0, tau_eps_phi) #T(-10,10)
       #}
       #}
-      }
+      #}
       
       for (j in 1:NJ)
       {
@@ -520,21 +520,21 @@ setwd(dir[4])
       
       
       #priors - p
-      mu_p ~ dnorm(0, 0.1)
+      mu_p ~ dnorm(0, 0.5)
       
       beta_p ~ dnorm(0, 1000) T(0,0.03)
       
-      for (k in 1:NK)
-      {
-      for (j in 1:NJ)
-      {
-      for (i in 1:NI[j,k])
-      {
-      #nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
-      nu_p[i,j,k] ~ dnorm(0, 0.386) #T(-10,10)
-      }
-      }
-      }
+      # for (k in 1:NK)
+      # {
+      # for (j in 1:NJ)
+      # {
+      # for (i in 1:NI[j,k])
+      # {
+      # #nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
+      # nu_p[i,j,k] ~ dnorm(0, 0.386) #T(-10,10)
+      # }
+      # }
+      # }
       
       #tau_nu_p <- pow(sigma_nu_p, -2)
       #sigma_nu_p ~ dunif(0, 5)
@@ -570,13 +570,13 @@ for (k in 1:DATA$NK)
 
 Inits_1 <- list(mu_phi = 5,
                 #beta_phi = 0.01,
-                eta_phi = rep(0, DATA$NK),
+                #eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
                 mu_p = -2,
-                beta_p = 0.01,
-                nu_p = narray,
+                beta_p = 0.002,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -585,13 +585,13 @@ Inits_1 <- list(mu_phi = 5,
 
 Inits_2 <- list(mu_phi = 5,
                 #beta_phi = 0.01,
-                eta_phi = rep(0, DATA$NK),
+                #eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
                 mu_p = -2,
-                beta_p = 0.01,
-                nu_p = narray,
+                beta_p = 0.002,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -600,13 +600,13 @@ Inits_2 <- list(mu_phi = 5,
 
 Inits_3 <- list(mu_phi = 5,
                 #beta_phi = 0.01,
-                eta_phi = rep(0, DATA$NK),
+                #eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
                 mu_p = -2,
-                beta_p = 0.01,
-                nu_p = narray,
+                beta_p = 0.002,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -615,13 +615,13 @@ Inits_3 <- list(mu_phi = 5,
 
 Inits_4 <- list(mu_phi = 5,
                 #beta_phi = 0.01,
-                eta_phi = rep(0, DATA$NK),
+                #eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
                 mu_p = -2,
-                beta_p = 0.01,
-                nu_p = narray,
+                beta_p = 0.002,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -630,13 +630,13 @@ Inits_4 <- list(mu_phi = 5,
 
 Inits_5 <- list(mu_phi = 5,
                 #beta_phi = 0.01,
-                eta_phi = rep(0, DATA$NK),
+                #eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
                 mu_p = -2,
-                beta_p = 0.01,
-                nu_p = narray,
+                beta_p = 0.002,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -645,13 +645,13 @@ Inits_5 <- list(mu_phi = 5,
 
 Inits_6 <- list(mu_phi = 5,
                 #beta_phi = 0.01,
-                eta_phi = rep(0, DATA$NK),
+                #eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
                 mu_p = -2,
-                beta_p = 0.01,
-                nu_p = narray,
+                beta_p = 0.002,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
                 #sigma_nu_p = 1.06,
@@ -665,7 +665,7 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mu_phi',
-          'eta_phi',
+          #'eta_phi',
           'gamma_phi',
           #'beta_phi',
           #'pi_phi',
@@ -673,17 +673,17 @@ Pars <- c('mu_phi',
           #'sigma_eta_phi',
           #'sigma_gamma_phi',
           'mu_p',
-          'beta_p',
+          'beta_p'#,
           #'phi',
           #'p',
-          'nu_p'#,
+          #'nu_p'#,
           #'sigma_nu_p'
           )
 
 
 # Run model ---------------------------------------------------------------
 
-#make sure model compiles
+# #make sure model compiles
 # jagsRun(jagsData = DATA,
 #         jagsModel = 'pwatch_surv.jags',
 #         jagsInits = F_Inits,
@@ -694,8 +694,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_9_2018_no_c_no_bp',
-               jagsDsc = 'Fewer sites. No covariates. No beta_phi. No partial pooling for eta_phi, gamma_phi, and nu_p (0.386 precision). Long queue.',
+               jagsID = 'May_11_2018_gamma',
+               jagsDsc = 'Four sites. logit(phi) <- mu_phi + gamma_phi; logit(p) <- mu_p + beta_p*x; No partial pooling. Long queue.',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 6,
                n_adapt = 5000,
@@ -707,5 +707,4 @@ jagsRun(jagsData = DATA,
                Rhat_max = 1.1,
                n_max = 100000,
                save_data = TRUE)
-
 
