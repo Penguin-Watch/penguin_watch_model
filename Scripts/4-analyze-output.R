@@ -48,13 +48,15 @@ j_kr_SIC <- left_join(CCAMLR_krill, SIC, by = c('YEAR', 'SITE'))
 summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
 
 
+
+
+
 # Load data -------------------------------------------------------
 
 #phi = survival prob
 #p = detection prob
 
-NAME <- 'May_7_2018_CCAMLR'
-NAME <- 'May_2_2018'
+NAME <- 'May_9_2018_no_c_no_bp'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
@@ -133,7 +135,7 @@ tf <- function(PR)
 
 
 #' mu_phi ~ dnorm(0, 0.25)   
-PR <- rnorm(15000, 0, 1/sqrt(0.25))
+PR <- rnorm(15000, 0, 1/sqrt(0.1))
 tf(PR)
 MCMCtrace(out, 
           params = 'mu_phi',
@@ -203,7 +205,7 @@ MCMCtrace(out,
 
 
 #' mu_p ~ dnorm(0, 0.1)
-PR <- rnorm(15000, 0, 1/sqrt(0.1))
+PR <- rnorm(15000, 0, 1/sqrt(0.5))
 MCMCtrace(out, 
           params = 'mu_p',
           ind = TRUE, 
@@ -257,6 +259,15 @@ MCMCtrace(out,
           priors = PR,
           pdf = FALSE,
           post_zm = FALSE)
+
+
+
+
+# last values from previous model -----------------------------------------
+
+
+num_iter
+
 
 
 
