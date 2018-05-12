@@ -462,7 +462,7 @@ setwd(dir[4])
       #eps_phi = residuals
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
-      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] #+ eta_phi[k] + beta_phi*x[t] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] + eta_phi[k] #+ beta_phi*x[t] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
 
       #p = detection prob
@@ -488,10 +488,10 @@ setwd(dir[4])
       #pi_phi ~ dnorm(0, 0.386)
       #rho_phi ~ dnorm(0, 0.386)
       
-      #for (k in 1:NK)
-      #{
+      for (k in 1:NK)
+      {
       #eta_phi[k] ~ dnorm(0, tau_eta_phi)
-      #eta_phi[k] ~ dnorm(0, 0.386)    
+      eta_phi[k] ~ dnorm(0, 0.386)    
 
       #for (j in 1:NJ)
       #{
@@ -500,7 +500,7 @@ setwd(dir[4])
       #eps_phi[t,j,k] ~ dnorm(0, tau_eps_phi) #T(-10,10)
       #}
       #}
-      #}
+      }
       
       for (j in 1:NJ)
       {
@@ -568,9 +568,9 @@ for (k in 1:DATA$NK)
 }
 
 
-Inits_1 <- list(mu_phi = 5,
+Inits_1 <- list(mu_phi = 7,
                 #beta_phi = 0.01,
-                #eta_phi = rep(0, DATA$NK),
+                eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
@@ -583,9 +583,9 @@ Inits_1 <- list(mu_phi = 5,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = 5,
+Inits_2 <- list(mu_phi = 7,
                 #beta_phi = 0.01,
-                #eta_phi = rep(0, DATA$NK),
+                eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
@@ -598,9 +598,9 @@ Inits_2 <- list(mu_phi = 5,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = 5,
+Inits_3 <- list(mu_phi = 7,
                 #beta_phi = 0.01,
-                #eta_phi = rep(0, DATA$NK),
+                eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
@@ -613,9 +613,9 @@ Inits_3 <- list(mu_phi = 5,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
-Inits_4 <- list(mu_phi = 5,
+Inits_4 <- list(mu_phi = 7,
                 #beta_phi = 0.01,
-                #eta_phi = rep(0, DATA$NK),
+                eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
@@ -628,9 +628,9 @@ Inits_4 <- list(mu_phi = 5,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
-Inits_5 <- list(mu_phi = 5,
+Inits_5 <- list(mu_phi = 7,
                 #beta_phi = 0.01,
-                #eta_phi = rep(0, DATA$NK),
+                eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
@@ -643,9 +643,9 @@ Inits_5 <- list(mu_phi = 5,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
-Inits_6 <- list(mu_phi = 5,
+Inits_6 <- list(mu_phi = 7,
                 #beta_phi = 0.01,
-                #eta_phi = rep(0, DATA$NK),
+                eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 #pi_phi = 0,
                 #rho_phi = 0,
@@ -665,7 +665,7 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mu_phi',
-          #'eta_phi',
+          'eta_phi',
           'gamma_phi',
           #'beta_phi',
           #'pi_phi',
@@ -694,8 +694,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_11_2018_gamma',
-               jagsDsc = 'Four sites. logit(phi) <- mu_phi + gamma_phi; logit(p) <- mu_p + beta_p*x; No partial pooling. Long queue.',
+               jagsID = 'May_12_2018_gamma_eta',
+               jagsDsc = 'Four sites. logit(phi) <- mu_phi + gamma_phi + eta_phi; logit(p) <- mu_p + beta_p*x; No partial pooling. Long queue.',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 6,
                n_adapt = 5000,
