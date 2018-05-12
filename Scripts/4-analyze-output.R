@@ -57,6 +57,7 @@ summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
 #p = detection prob
 
 NAME <- 'May_9_2018_no_c_no_bp'
+NAME <- 'May_11_2018_gamma'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
@@ -135,7 +136,7 @@ tf <- function(PR)
 
 
 #' mu_phi ~ dnorm(0, 0.25)   
-PR <- rnorm(15000, 0, 1/sqrt(0.1))
+PR <- rnorm(15000, 0, 1/sqrt(0.01))
 tf(PR)
 MCMCtrace(out, 
           params = 'mu_phi',
@@ -206,6 +207,7 @@ MCMCtrace(out,
 
 #' mu_p ~ dnorm(0, 0.1)
 PR <- rnorm(15000, 0, 1/sqrt(0.5))
+tf(PR)
 MCMCtrace(out, 
           params = 'mu_p',
           ind = TRUE, 
