@@ -57,7 +57,7 @@ summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
 #p = detection prob
 
 NAME <- 'May_9_2018_no_c_no_bp'
-NAME <- 'May_11_2018_gamma'
+NAME <- 'May_12_2018_gamma_eta'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
