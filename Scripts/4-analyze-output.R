@@ -30,25 +30,6 @@ pacman::p_load(MCMCvis, boot, dplyr)
 
 
 
-# Relationship between krill and SIC --------------------------------------
-
-#no clear relationship between SIC and krill
-
-#50km radius for Dec - Feb
-CCAMLR_krill <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/Krill_data/CCAMLR/Processed_CCAMLR/CCAMLR_krill_breeding_season.csv')
-
-#500km radius for June - Sep
-SIC <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_W.csv')
-
-#500km radius MAX over last 5 years
-#SIC_max <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_MAX.csv')
-
-j_kr_SIC <- left_join(CCAMLR_krill, SIC, by = c('YEAR', 'SITE'))
-
-summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
-
-
-
 
 
 # Load data -------------------------------------------------------
@@ -56,7 +37,7 @@ summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
 #phi = survival prob
 #p = detection prob
 
-NAME <- 'May_9_2018_no_c_no_bp'
+NAME <- 'May_13_2018_gamma_eta_rho_pi'
 NAME <- 'May_12_2018_gamma_eta'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
@@ -67,10 +48,10 @@ out <- readRDS(paste0(NAME, '.rds'))
 
 # Summarize ---------------------------------------------------------------
 
-MCMCsummary(out, excl = 'nu_p')
+MCMCsummary(out, excl = 'nu_p', round = 2, n.eff = TRUE)
 
 #grand intercept - surv
-MCMCsummary(out, params = 'mu_phi')
+MCMCsummary(out, params = 'mu_phi', round = 2)
 #slope within a season
 MCMCsummary(out, params = 'beta_phi', digits = 5)
 #site effect
@@ -267,10 +248,53 @@ MCMCtrace(out,
 
 # last values from previous model -----------------------------------------
 
+tt <- tail(MCMCchains(out), n = 1)
+CHAIN <- 2
+Inits2 <- list(beta_p = tail(MCMCchains(out, 
+                                        params = 'beta_p', 
+                                        chain_num = CHAIN), n = 1),
+               eta_phi = c(tail(MCMCchains(out, 
+                                           params = 'eta_phi\\[1\\]', 
+                                           ISB = FALSE,
+                                           chain_num = CHAIN), n = 1),
+                           tail(MCMCchains(out, 
+                                           params = 'eta_phi\\[2\\]', 
+                                           ISB = FALSE,
+                                           chain_num = CHAIN), n = 1),
+                           tail(MCMCchains(out, 
+                                           params = 'eta_phi\\[3\\]', 
+                                           ISB = FALSE,
+                                           chain_num = CHAIN), n = 1),
+                           tail(MCMCchains(out, 
+                                           params = 'eta_phi\\[4\\]', 
+                                           ISB = FALSE,
+                                           chain_num = CHAIN), n = 1)),
+               gamma_phi = c(tail(MCMCchains(out, 
+                                             params = 'gamma_phi\\[1\\]', 
+                                             ISB = FALSE,
+                                             chain_num = CHAIN), n = 1),
+                             tail(MCMCchains(out, 
+                                             params = 'gamma_phi\\[2\\]', 
+                                             ISB = FALSE,
+                                             chain_num = CHAIN), n = 1)),
+               mu_p = tail(MCMCchains(out, 
+                                      params = 'mu_p',
+                                      chain_num = CHAIN), n = 1),
+               mu_phi = tail(MCMCchains(out, 
+                                        params = 'mu_phi',
+                                        chain_num = CHAIN), n = 1),
+               pi_phi = tail(MCMCchains(out, 
+                                        params = 'pi_phi',
+                                        chain_num = CHAIN), n = 1),
+               rho_phi = tail(MCMCchains(out, 
+                                         params = 'rho_phi',
+                                         chain_num = CHAIN), n = 1))
+     
 
-num_iter
+Inits1$rho_phi - Inits2$rho_phi
 
 
+MCMCsummary(out)
 
 
 # track detection and surv -----------------------------------------------------
@@ -340,6 +364,27 @@ mean_p_ch <- MCMCchains(out, 'mu_p')
 mean_phi_ch <- MCMCchains(out, 'mu_phi')
 plot(mean_p_ch, mean_phi_ch, pch = '.')
 cor(mean_p_ch, mean_phi_ch)
+
+
+
+
+# Relationship between krill and SIC --------------------------------------
+
+#no clear relationship between SIC and krill
+
+#50km radius for Dec - Feb
+CCAMLR_krill <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/Krill_data/CCAMLR/Processed_CCAMLR/CCAMLR_krill_breeding_season.csv')
+
+#500km radius for June - Sep
+SIC <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_W.csv')
+
+#500km radius MAX over last 5 years
+#SIC_max <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_MAX.csv')
+
+j_kr_SIC <- left_join(CCAMLR_krill, SIC, by = c('YEAR', 'SITE'))
+
+summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
+
 
 
 
