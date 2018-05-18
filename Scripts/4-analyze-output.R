@@ -37,7 +37,7 @@ pacman::p_load(MCMCvis, boot, dplyr)
 #phi = survival prob
 #p = detection prob
 
-NAME <- 'May_13_2018_gamma_eta_rho_pi'
+NAME <- 'May_16_2018_gamma_eta_rho_pi_nu_2'
 NAME <- 'May_12_2018_gamma_eta'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
@@ -48,6 +48,7 @@ out <- readRDS(paste0(NAME, '.rds'))
 
 # Summarize ---------------------------------------------------------------
 
+MCMCsummary(out, round = 4, n.eff = TRUE)
 MCMCsummary(out, excl = 'nu_p', round = 2, n.eff = TRUE)
 
 #grand intercept - surv
@@ -309,11 +310,11 @@ gamma_phi <- MCMCpstr(out, params = 'gamma_phi', func = median, digits = 3)[[1]]
 beta_phi <- MCMCpstr(out, params = 'beta_phi', func = median, digits = 3)[[1]]*1:840
 
 #grand intercept - detection
-mu_p <- MCMCpstr(out, params = 'mu_p', func = median, digits = 3)[[1]]
+mu_p <- MCMCpstr(out, params = 'mu_p', func = median)[[1]]
 #slope (time) detection
-beta_p <- MCMCpstr(out, params = 'beta_p', func = median, digits = 3)[[1]]*1:840
+beta_p <- MCMCpstr(out, params = 'beta_p', func = median)[[1]]*1:840
 #nest effect
-nu_p <- MCMCpstr(out, params = 'nu_p', func = median, digits = 3)[[1]]
+nu_p <- MCMCpstr(out, params = 'nu_p', func = median)[[1]]
 
 
 #surv <- data.frame(SITE = , YEAR = , NEST = )
@@ -342,13 +343,19 @@ nu_p <- MCMCpstr(out, params = 'nu_p', func = median, digits = 3)[[1]]
     for (i in 1:NI[j,k])
     {
       i <- 1
+      detect <- inv.logit(mu_p)
       detect <- inv.logit(mu_p + nu_p[i,j,k])
+      detect <- inv.logit(mu_p + beta_p)
+      detect <- inv.logit(mu_p + beta_p + nu_p[i,j,k])
+      detect <- inv.logit(mu_p + beta_p + -2)
     }
 #  }
 #}
 
-
-    
+plot(detect, type = 'l')
+PR <- rnorm(15000, 0, 1/sqrt(0.386))
+PR <- rnorm(15000, 0, 1/sqrt(5))
+hist(PR)
     
     
 # No correlations between parameters -----------------------------------------------

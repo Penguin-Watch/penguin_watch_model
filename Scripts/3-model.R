@@ -54,7 +54,7 @@ boots <- which(PW_data$site == 'BOOT')
 PW_data$site[boots] <- 'PCHA'
 
 #remove colonies to make dataset smaller (faster model run)
-to_rm <- c('BAIL', 'HALF', 'NEKO', 'ORNE')
+to_rm <- c('BAIL', 'HALF', 'NEKO', 'ORNE', 'PCHA', 'LOCK')
 
 un_sites_p <- unique(PW_data$site)
 un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
@@ -462,7 +462,8 @@ setwd(dir[4])
       #eps_phi = residuals
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
-      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] + eta_phi[k] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k] #+ beta_phi*x[t]
+      
+      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] + eta_phi[k] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
 
       #p = detection prob
@@ -480,8 +481,6 @@ setwd(dir[4])
       
       #priors - phi
       mu_phi ~ dnorm(0, 0.01)
-
-      #beta_phi ~ dnorm(0, 1000) T(0,0.03)
 
 
       #covariates
@@ -522,14 +521,14 @@ setwd(dir[4])
       {
       for (i in 1:NI[j,k])
       {
-      # #nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
-        nu_p[i,j,k] ~ dnorm(0, 0.386) #T(-10,10)
+        nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
+      #  nu_p[i,j,k] ~ dnorm(0, 0.386) #T(-10,10)
       }
       }
       }
       
-      #tau_nu_p <- pow(sigma_nu_p, -2)
-      #sigma_nu_p ~ dunif(0, 5)
+      tau_nu_p ~ dunif(0.5, 6) 
+      
       
       }",fill = TRUE)
 
@@ -568,10 +567,10 @@ Inits_1 <- list(mu_phi = 7,
                 rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                nu_p = narray,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #sigma_nu_p = 1.06,
+                tau_nu_p = 1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -583,10 +582,10 @@ Inits_2 <- list(mu_phi = 7,
                 rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                nu_p = narray,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #sigma_nu_p = 1.06,
+                tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -598,10 +597,10 @@ Inits_3 <- list(mu_phi = 7,
                 rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                nu_p = narray,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #sigma_nu_p = 1.06,
+                tau_nu_p = 1,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -613,10 +612,10 @@ Inits_4 <- list(mu_phi = 7,
                 rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                nu_p = narray,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #sigma_nu_p = 1.06,
+                tau_nu_p = 1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
@@ -628,10 +627,10 @@ Inits_5 <- list(mu_phi = 7,
                 rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                nu_p = narray,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #sigma_nu_p = 1.06,
+                tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
@@ -643,10 +642,10 @@ Inits_6 <- list(mu_phi = 7,
                 rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                nu_p = narray,
+                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #sigma_nu_p = 1.06,
+                tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
@@ -668,8 +667,8 @@ Pars <- c('mu_phi',
           'beta_p',
           #'phi',
           #'p',
-          'nu_p'#,
-          #'sigma_nu_p'
+          'nu_p',
+          'tau_nu_p'
           )
 
 
@@ -686,8 +685,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_14_2018_gamma_eta_rho_pi_nu',
-               jagsDsc = 'Four sites. logit(phi) <- mu + gamma + eta + rho + pi; logit(p) <- mu + beta*x + nu; No partial pooling. Long queue.',
+               jagsID = 'May_18_2018_gamma_eta_rho_pi_taunu',
+               jagsDsc = 'Four sites. logit(phi) <- mu + gamma + eta + rho + pi; logit(p) <- mu + beta*x + nu (constriant on tau_nu); No partial pooling. Long queue.',
                db_hash = 'Markrecap_data_15.05.18.csv',
                n_chain = 6,
                n_adapt = 5000,
