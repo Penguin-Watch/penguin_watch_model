@@ -44,10 +44,9 @@ library(jagsRun)
 
 # determine PW dates to use -----------------------------------------------
 
-#ensures that row dimension (time steps within season) will have the same dimension
-
 setwd(dir[1])
 
+#make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
 PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 PW_data <- read.csv('CY_test_May_19_2018.csv', stringsAsFactors = FALSE)
 
@@ -63,15 +62,16 @@ un_sites_p <- unique(PW_data$site)
 un_sites <- un_sites_p
 
 
-#first date of season to use across all years (add 1 to start on full day)
-#f_min_date <- format((min_date+1), '%m-%d')
-#first_date <- max(f_min_date, na.rm = TRUE)
-#start Jan 15
-first_date <- format(as.Date('01-15', format = '%m-%d'), '%m-%d')
-
-#use Feb 15 as last date of season to use across all years
-last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
-
+#determine years
+yrs <- c()
+for (k in 1:length(un_sites))
+{
+  #k <- 2
+  temp <- filter(PW_data, site == un_sites[k])
+  un_yrs <- unique(temp$season_year)
+  
+  yrs <- c(yrs, un_yrs)
+}
 
 
 
@@ -108,11 +108,23 @@ n_yrs <- length(d_yrs)
 #number of sites (4th dim) in response data - k
 n_sites <- length(un_sites)
 
+
+
+#DATES FOR MODEL DATA
+#start Jan 15
+first_date <- format(as.Date('01-15', format = '%m-%d'), '%m-%d')
+
+#use Feb 15 as last date of season to use across all years
+last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
+
+
+
 #create blank array
 nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 
-#SITE 2, YEAR 2
-#fill response data array
+#FILL RESPONSE DATA ARRAY
+#adds NA buffer to beginning and end of data (using cutoff dates)
+#nests with NAs are simply removed (e.g., if there are 4 nests, and nest 3 is all NAs, nest 4 becomes nest 3)
 for (k in 1:n_sites)
 {
   #k <- 1
@@ -130,6 +142,7 @@ for (k in 1:n_sites)
       FIRST <- as.Date(paste0((d_yrs[j]), '-', first_date), format = "%Y-%m-%d")
       LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
       
+      #which dates are within the designated period
       valid_dates <- which(temp_dates >= FIRST & temp_dates <= LAST)
       sel_dates <- temp_dates[which(temp_dates >= FIRST & temp_dates <= LAST)]
       
@@ -159,8 +172,22 @@ for (k in 1:n_sites)
       vals <- as.matrix(temp2[valid_dates, tog2])
       n_vals <- rbind(na_first, vals, na_last)
       
+      #determines if there are any nests with NA values for the entire column (removed during the QC step)
+      #first time step with value at nest 1
+      ft <- n_vals[min(which(!is.na(n_vals[,1]))),]
+      #last nest with value at this time step
+      lnv <- max(which(!is.na(ft)))
+      #are there any NA vals in this row?
+      nst_na <- which(is.na(ft[1:lnv]))
+      if (length(nst_na) > 0)
+      {
+        f_n_vals <- n_vals[,-nst_na]
+      } else {
+        f_n_vals <- n_vals
+      }
+      
       #appropriate date range and appropriate columns for nests
-      nests_array[,,j,k] <- n_vals
+      nests_array[,,j,k] <- f_n_vals
     }
   }
 }
@@ -176,21 +203,26 @@ for (k in 1:n_sites)
 real_nests <- matrix(NA, nrow = n_yrs, ncol = n_sites)
 for (k in 1:dim(nests_array)[4])
 {
-  #k <- 1
+  #k <- 2
   for (j in 1:dim(nests_array)[3])
   {
     #j <- 2
-    #13 rows to make sure NA are due to night 
-    temp <- nests_array[1:13,,j,k]
     
-    tsum <- c()
-    for (m in 1:13)
+    #just nest 1 - which positions are not NA
+    idx_nna <- which(!is.na(nests_array[,1,j,k]))
+    
+    if (length(idx_nna) > 0)
     {
-      #m <- 7
-      tsum <- c(tsum, sum(!is.na(temp[m,])))
+      #values at that time point
+      ft <- nests_array[min(idx_nna),,j,k]
+      #last nest with value at this time step
+      lnv <- max(which(!is.na(ft)))
+    } else {
+      lnv <- 0
     }
+    
     #max is going to be number of nests in image
-    real_nests[j,k] <- max(tsum)
+    real_nests[j,k] <- lnv
   }
 }
 
