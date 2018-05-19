@@ -22,7 +22,7 @@ rm(list = ls())
 
 #laptop
 # dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
-#          '../../Krill_data/CCAMLR/Processed_CCAMLR/',
+#          '../Krill_data/CCAMLR/Processed_CCAMLR/',
 #          '../../../SIC_data/Processed/',
 #          '~/Google_Drive/R/penguin_watch_model/Results/')
 
@@ -47,7 +47,8 @@ library(jagsRun)
 setwd(dir[1])
 
 #make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
-PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
+#unused nests should be marked with all NAs
+#PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 PW_data <- read.csv('CY_test_May_19_2018.csv', stringsAsFactors = FALSE)
 
 boots <- which(PW_data$site == 'BOOT')
@@ -93,10 +94,19 @@ tog <- c(ind, to.rm)
 tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 
+
+
+#DATES FOR MODEL DATA
+#start Jan 15
+first_date <- format(as.Date('01-15', format = '%m-%d'), '%m-%d')
+
+#use Feb 15 as last date of season to use across all years
+last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
+
+
 #number of time steps (rows) in response data (+1 to account for start FIRST through LAST)
 n_ts <- as.numeric(as.Date(paste0('2017', '-', last_date, format = '%Y-%m-%d')) - 
                      as.Date(paste0('2017', '-', first_date, format = '%Y-%m-%d')) + 1) * 24
-
 
 #number of nests (columns) in response data - i
 n_nests <- length(tog2)
@@ -108,14 +118,6 @@ n_yrs <- length(d_yrs)
 #number of sites (4th dim) in response data - k
 n_sites <- length(un_sites)
 
-
-
-#DATES FOR MODEL DATA
-#start Jan 15
-first_date <- format(as.Date('01-15', format = '%m-%d'), '%m-%d')
-
-#use Feb 15 as last date of season to use across all years
-last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
 
 
 
@@ -232,7 +234,7 @@ for (k in 1:dim(nests_array)[4])
 
 # create w_array ----------------------------------------------------------
 
-#create w_array (day and night) - and before and after actual dates we have data for
+#create w_array (day and night; and all other time points where there is not data, either because the camera was off, or we excluded data from these time points])
 
 w_array <- nests_array
 #assign 1 to values with observations (either 0/1/2 for nests_array)
@@ -241,10 +243,10 @@ w_array[which(!is.na(w_array), arr.ind = TRUE)] <- 1
 #only fill in 0 if this was a night (there is data on either side and not just missing nests)
 for (k in 1:dim(nests_array)[4])
 {
-  #k <- 4
+  #k <- 1
   for (j in 1:dim(nests_array)[3])
   {
-    #j <- 1
+    #j <- 2
     #if there are more than 0 nests in that year (there is data for that site/year)
     if (real_nests[j,k] > 0)
     {
@@ -262,15 +264,15 @@ for (k in 1:dim(nests_array)[4])
 
 # observations with > 2 chicks --------------------------------------------
 
-# 1% of nest observations have more than 2 chicks in them
+# check to see if any nests have observations with more than 2 chicks
 # which(nests_array > 2, arr.ind = TRUE)
 # num_o2 <- length(nests_array[which(nests_array > 2, arr.ind = TRUE)])
 # total <- length(nests_array[which(!is.na(nests_array), arr.ind = TRUE)])
 # num_o2/total
 
 #determine which observation have more than two chicks observed and change them to 2
-ind.g2 <- which(nests_array > 2, arr.ind = TRUE)
-nests_array[ind.g2] <- 2
+#ind.g2 <- which(nests_array > 2, arr.ind = TRUE)
+#nests_array[ind.g2] <- 2
 
 
 
@@ -473,7 +475,7 @@ setwd(dir[4])
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
       
-      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] + eta_phi[k] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] + eta_phi[k] #+ pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
 
       #p = detection prob
@@ -494,8 +496,8 @@ setwd(dir[4])
 
 
       #covariates
-      pi_phi ~ dnorm(0, 0.386)
-      rho_phi ~ dnorm(0, 0.386)
+      #pi_phi ~ dnorm(0, 0.386)
+      #rho_phi ~ dnorm(0, 0.386)
       
       for (k in 1:NK)
       {
@@ -570,11 +572,10 @@ for (k in 1:DATA$NK)
 
 
 Inits_1 <- list(mu_phi = 7,
-                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
                 #nu_p = narray,
@@ -585,11 +586,10 @@ Inits_1 <- list(mu_phi = 7,
                 .RNG.seed = 1)
 
 Inits_2 <- list(mu_phi = 7,
-                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
                 #nu_p = narray,
@@ -600,11 +600,10 @@ Inits_2 <- list(mu_phi = 7,
                 .RNG.seed = 2)
 
 Inits_3 <- list(mu_phi = 7,
-                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
                 #nu_p = narray,
@@ -615,11 +614,10 @@ Inits_3 <- list(mu_phi = 7,
                 .RNG.seed = 3)
 
 Inits_4 <- list(mu_phi = 7,
-                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
                 #nu_p = narray,
@@ -630,11 +628,10 @@ Inits_4 <- list(mu_phi = 7,
                 .RNG.seed = 4)
 
 Inits_5 <- list(mu_phi = 7,
-                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
                 #nu_p = narray,
@@ -645,11 +642,10 @@ Inits_5 <- list(mu_phi = 7,
                 .RNG.seed = 5)
 
 Inits_6 <- list(mu_phi = 7,
-                #beta_phi = 0.01,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
-                pi_phi = 0,
-                rho_phi = 0,
+                #pi_phi = 0,
+                #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
                 #nu_p = narray,
@@ -668,15 +664,12 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 Pars <- c('mu_phi',
           'eta_phi',
           'gamma_phi',
-          #'beta_phi',
-          'pi_phi',
-          'rho_phi',
+          #'pi_phi',
+          #'rho_phi',
           #'sigma_eta_phi',
           #'sigma_gamma_phi',
           'mu_p',
           'beta_p',
-          #'phi',
-          #'p',
           'nu_p',
           'tau_nu_p'
           )
@@ -695,13 +688,13 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_18_2018_gamma_eta_rho_pi_taunu',
-               jagsDsc = 'Two sites. logit(phi) <- mu + gamma + eta + rho + pi; logit(p) <- mu + beta*x + nu (constriant on tau_nu); No partial pooling. Long queue.',
-               db_hash = 'Markrecap_data_15.05.18.csv',
+               jagsID = 'May_19_2018_ind_detect',
+               jagsDsc = 'Two QCed sites. Individual nest detection. logit(phi) <- mu + gamma + eta; logit(p) <- mu + beta*x + nu (hierarchical nu with constraned tau_nu); Long queue.',
+               db_hash = 'CY_test_May_19_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
-               n_burn = 75000,
-               n_draw = 30000,
+               n_burn = 150000,
+               n_draw = 50000,
                n_thin = 20,
                DEBUG = FALSE,
                EXTRA = FALSE,
