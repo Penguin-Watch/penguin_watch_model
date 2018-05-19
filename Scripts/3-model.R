@@ -21,7 +21,7 @@ rm(list = ls())
 
 
 #laptop
-# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/',
+# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
 #          '../../Krill_data/CCAMLR/Processed_CCAMLR/',
 #          '../../../SIC_data/Processed/',
 #          '~/Google_Drive/R/penguin_watch_model/Results/')
@@ -49,40 +49,18 @@ library(jagsRun)
 setwd(dir[1])
 
 PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('CY_test_May_19_2018.csv', stringsAsFactors = FALSE)
 
 boots <- which(PW_data$site == 'BOOT')
 PW_data$site[boots] <- 'PCHA'
 
-#remove colonies to make dataset smaller (faster model run)
-to_rm <- c('BAIL', 'HALF', 'NEKO', 'ORNE', 'PCHA', 'LOCK')
-
 un_sites_p <- unique(PW_data$site)
-un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
 
+#remove colonies to make dataset smaller (faster model run)
+#to_rm <- c('BAIL', 'HALF', 'NEKO', 'ORNE', 'PCHA', 'LOCK')
+#un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
 
-#first date of each season
-yrs <- c()
-min_date <- as.Date(NA)
-max_date <- as.Date(NA)
-for (k in 1:length(un_sites))
-{
-  #k <- 2
-  temp <- filter(PW_data, site == un_sites[k])
-  un_yrs <- unique(temp$season_year)
-  
-  yrs <- c(yrs, un_yrs)
-  for (j in 1:length(un_yrs))
-  {
-    #j <- 2
-    temp2 <- filter(temp, season_year == un_yrs[j])
-    
-    temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
-    t_min_date <- min(temp_dates)
-    t_max_date <- max(temp_dates)
-    max_date <- c(max_date, t_max_date)
-    min_date <- c(min_date, t_min_date)
-  }
-}
+un_sites <- un_sites_p
 
 
 #first date of season to use across all years (add 1 to start on full day)
