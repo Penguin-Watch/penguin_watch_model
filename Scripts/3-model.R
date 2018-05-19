@@ -129,12 +129,12 @@ nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 #nests with NAs are simply removed (e.g., if there are 4 nests, and nest 3 is all NAs, nest 4 becomes nest 3)
 for (k in 1:n_sites)
 {
-  #k <- 1
+  #k <- 2
   temp <- filter(PW_data, site == un_sites[k])
   
   for (j in 1:n_yrs)
   {
-    #j <- 2
+    #j <- 1
     temp2 <- filter(temp, season_year == d_yrs[j])
     if (NROW(temp2) > 0)
     {
@@ -183,7 +183,8 @@ for (k in 1:n_sites)
       nst_na <- which(is.na(ft[1:lnv]))
       if (length(nst_na) > 0)
       {
-        f_n_vals <- n_vals[,-nst_na]
+        fill_mat <- matrix(NA, nrow = NROW(n_vals), ncol = length(nst_na))
+        f_n_vals <- cbind(n_vals[,-nst_na], fill_mat)
       } else {
         f_n_vals <- n_vals
       }
@@ -482,7 +483,7 @@ setwd(dir[4])
       #mu_p = grand mean for all sites/years
       #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
       #nu_p = effect of nest
-      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[i,j,k]
+      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] #+ nu_p[i,j,k]
 
       } #t
       } #i
@@ -527,19 +528,19 @@ setwd(dir[4])
       
       beta_p ~ dnorm(0, 1000) T(0,0.03)
       
-      for (k in 1:NK)
-      {
-      for (j in 1:NJ)
-      {
-      for (i in 1:NI[j,k])
-      {
-        nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
+      #for (k in 1:NK)
+      #{
+      #for (j in 1:NJ)
+      #{
+      #for (i in 1:NI[j,k])
+      #{
+      #  nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
       #  nu_p[i,j,k] ~ dnorm(0, 0.386) #T(-10,10)
-      }
-      }
-      }
+      #}
+      #}
+      #}
       
-      tau_nu_p ~ dunif(0.5, 6) 
+      #tau_nu_p ~ dunif(0.5, 6) 
       
       
       }",fill = TRUE)
@@ -581,7 +582,7 @@ Inits_1 <- list(mu_phi = 7,
                 #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
+                #tau_nu_p = 1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -595,7 +596,7 @@ Inits_2 <- list(mu_phi = 7,
                 #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
+                #tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -609,7 +610,7 @@ Inits_3 <- list(mu_phi = 7,
                 #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
+                #tau_nu_p = 1,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -623,7 +624,7 @@ Inits_4 <- list(mu_phi = 7,
                 #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
+                #tau_nu_p = 1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
@@ -637,7 +638,7 @@ Inits_5 <- list(mu_phi = 7,
                 #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
+                #tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
@@ -651,7 +652,7 @@ Inits_6 <- list(mu_phi = 7,
                 #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
+                #tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
@@ -669,9 +670,9 @@ Pars <- c('mu_phi',
           #'sigma_eta_phi',
           #'sigma_gamma_phi',
           'mu_p',
-          'beta_p',
-          'nu_p',
-          'tau_nu_p'
+          'beta_p'#,
+          #'nu_p',
+          #'tau_nu_p'
           )
 
 
@@ -688,8 +689,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_19_2018_ind_detect',
-               jagsDsc = 'Two QCed sites. Individual nest detection. logit(phi) <- mu + gamma + eta; logit(p) <- mu + beta*x + nu (hierarchical nu with constraned tau_nu); Long queue.',
+               jagsID = 'May_19_2018_one_detect',
+               jagsDsc = 'Two QCed sites. One detection param. logit(phi) <- mu + gamma + eta; logit(p) <- mu + beta*x; Long queue.',
                db_hash = 'CY_test_May_19_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
