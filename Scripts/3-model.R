@@ -540,7 +540,7 @@ setwd(dir[4])
       }
       }
       
-      tau_nu_p ~ dunif(0.5, 6) 
+      tau_nu_p ~ dunif(0, 2) 
       
       
       }",fill = TRUE)
@@ -689,15 +689,14 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_19_2018_ind_detect',
-               jagsDsc = 'Two QCed sites. Detection params for each nest. logit(phi) <- mu + gamma + eta; logit(p) <- mu + beta*x + nu (hierarchical nu with constrained tau_nu); Long queue.',
+               jagsID = 'May_20_2018_ind_detect',
+               jagsDsc = 'Two QCed sites. More iter. Detection params for each nest. logit(phi) <- mu + gamma + eta; logit(p) <- mu + beta*x + nu (hierarchical nu); Long queue.',
                db_hash = 'CY_test_May_19_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
-               n_burn = 150000,
-               n_draw = 50000,
+               n_burn = 500000,
+               n_draw = 75000,
                n_thin = 20,
-               DEBUG = FALSE,
                EXTRA = FALSE,
                Rhat_max = 1.1,
                n_max = 100000,
