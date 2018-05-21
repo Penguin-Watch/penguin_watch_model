@@ -25,7 +25,7 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
   install.packages('pacman')
 }
 
-pacman::p_load(rjags, MCMCvis, parallel, jagsRun)
+pacman::p_load(rjags, MCMCvis, parallel, jagsRun, boot)
 
 
 
@@ -38,11 +38,11 @@ x <- 1:n_ts
 nests <- 15 #number of nests
 
 
-
+OUT <- c()
 for (i in 1:10)
 {
   # survival ----------------------------------------------------------------
-  #i <- 1
+  
   #survival probability - change over time
   # sim_p_fun <- function(START, RATE = 0.008, TOP = 1)
   # {
@@ -59,6 +59,10 @@ for (i in 1:10)
   # }
   # 
   # phi_data <- sim_p_fun(0.985)
+  
+  
+  
+  #i <- 1
   
   set.seed(i)
   dphi <- runif(nests, 0.990, 0.999)
@@ -314,17 +318,17 @@ for (i in 1:10)
   # Run model ---------------------------------------------------------------
   
   
-  tt <- proc.time()
+  tt <- proc.time()[3]
   OUT_ind <- jagsRun(jagsData = DATA, 
           jagsModel = 'pwatch_sim.jags',
           jagsInits = F_Inits,
           params = Pars,
           n_chain = 3,
-          n_adapt = 5,#000,
-          n_burn = 3,#00000,
-          n_draw = 5,#0000,
+          n_adapt = 5000,
+          n_burn = 300000,
+          n_draw = 50000,
           report = FALSE)
-  time_ind <- proc.time() - tt
+  time_ind <- round(proc.time()[3] - tt, digits = 1)
   
   
   
@@ -431,15 +435,14 @@ for (i in 1:10)
                      jagsInits = F_Inits,
                      params = Pars,
                      n_chain = 3,
-                     n_adapt = 5,#5000,
-                     n_burn = 3,#30000,
-                     n_draw = 5,#10000,
+                     n_adapt = 5000,
+                     n_burn = 30000,
+                     n_draw = 10000,
                      report = FALSE)
   
   
   # Analyze -----------------------------------------------------------------
   
-  require(boot)
   mn_phi <- mean(dphi)
   
   #individual detection
