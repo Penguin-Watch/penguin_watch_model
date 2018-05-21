@@ -448,17 +448,5 @@ for (j in 1:J)
   }
   row.names(OUT) <- NULL
 }
-
-
 close(pb)
-
-# require(mailR)
-# send.mail(from = 'caseyyoungflesh@gmail.com', 
-#           to = '9707595238@txt.att.net',
-#          subject = 'code complete', 
-#          body = 'DONE!',
-#          smtp = list(host.name = "smtp.gmail.com",
-#                      user.name="caseyyoungflesh@gmail.com", passwd="XXXX", ssl=TRUE),
-#          authenticate = TRUE,
-#          send = TRUE)
 
