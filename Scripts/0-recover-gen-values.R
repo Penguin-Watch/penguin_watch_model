@@ -14,6 +14,9 @@
 #determine whether one detection params for all nests or individual detection params recovers generating survival value better
 #Run time < 2.5 hours
 
+#RESULTS: Using 150 time steps and 'runif(1, 0.99, 0.9999)' for survival, one detection and ind detection params obth recover generating values
+
+
 
 # Clear environment -------------------------------------------------------
 
