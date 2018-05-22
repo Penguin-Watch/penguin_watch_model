@@ -483,22 +483,20 @@ setwd(dir[4])
       #mu_p = grand mean for all sites/years
       #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
       #nu_p = effect of nest
-      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[i,j,k]
+      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t]
 
       } #t
       } #i
       } #j
       } #k
       
-      
-      
-      #priors - phi
-      mu_phi ~ dnorm(0, 0.01)
 
-
-      #covariates
+      #priors - covariates
       #pi_phi ~ dnorm(0, 0.386)
       #rho_phi ~ dnorm(0, 0.386)
+
+      #priors - phi
+      mu_phi ~ dnorm(0, 0.01)
       
       for (k in 1:NK)
       {
@@ -522,25 +520,9 @@ setwd(dir[4])
       #sigma_eps_phi ~ dunif(0.25, 8)
       
       
-      
       #priors - p
       mu_p ~ dnorm(0, 0.5)
-      
       beta_p ~ dnorm(0, 1000) T(0,0.03)
-      
-      for (k in 1:NK)
-      {
-      for (j in 1:NJ)
-      {
-      for (i in 1:NI[j,k])
-      {
-        nu_p[i,j,k] ~ dnorm(0, tau_nu_p) #T(-10,10)
-      #  nu_p[i,j,k] ~ dnorm(0, 0.386) #T(-10,10)
-      }
-      }
-      }
-      
-      tau_nu_p ~ dunif(0, 2) 
       
       
       }",fill = TRUE)
@@ -552,25 +534,6 @@ setwd(dir[4])
 
 # Starting values ---------------------------------------------------------
 
-#create and fill array with initial values for nu_p
-narray <- array(NA, dim = c(max(real_nests), DATA$NJ, DATA$NK))
-for (k in 1:DATA$NK)
-{
-  #k <- 1
-  for (j in 1:DATA$NJ)
-  {
-    #j <- 1
-    for (i in 1:DATA$NI[j,k])
-    {
-      #i <- 1
-      if (DATA$NI[j,k] > 0)
-      {
-        narray[i,j,k] <- 0
-      }
-    }
-  }
-}
-
 
 Inits_1 <- list(mu_phi = 7,
                 eta_phi = rep(0, DATA$NK),
@@ -579,10 +542,8 @@ Inits_1 <- list(mu_phi = 7,
                 #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -593,10 +554,8 @@ Inits_2 <- list(mu_phi = 7,
                 #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -607,10 +566,8 @@ Inits_3 <- list(mu_phi = 7,
                 #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -621,10 +578,8 @@ Inits_4 <- list(mu_phi = 7,
                 #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
@@ -635,10 +590,8 @@ Inits_5 <- list(mu_phi = 7,
                 #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
@@ -649,10 +602,8 @@ Inits_6 <- list(mu_phi = 7,
                 #rho_phi = 0,
                 mu_p = -2,
                 beta_p = 0.002,
-                #nu_p = narray,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
@@ -671,8 +622,6 @@ Pars <- c('mu_phi',
           #'sigma_gamma_phi',
           'mu_p',
           'beta_p',
-          'nu_p',
-          'tau_nu_p'
           )
 
 
