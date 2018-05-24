@@ -487,7 +487,7 @@ setwd(dir[4])
       rho_phi ~ dnorm(0, 0.386)
 
       #priors - phi
-      mu_phi ~ dnorm(0, 0.01)
+      mu_phi ~ dnorm(0, 0.1)
       
       for (k in 1:NK)
       {
@@ -509,7 +509,7 @@ setwd(dir[4])
       
       #priors - p
       mu_p ~ dnorm(0, 0.1)
-      beta_p ~ dnorm(0, 1000) T(0, 0.03)
+      beta_p ~ dnorm(0, 1000) T(0, 0.1)
 
       for (k in 1:NK)
       {
