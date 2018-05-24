@@ -2,7 +2,9 @@
 
 #PBS -l nodes=1:ppn=28,walltime=48:00:00
 #PBS -q long
-#PBS -N PW_run_2
+#PBS -N PW_run
+#PBS -j oe
+#PBS -o out.txt
 
 module load shared
 module load R/3.4.4
@@ -16,4 +18,4 @@ export R_LIBS=/gpfs/home/cyoungflesh/R_libs
 
 cd /gpfs/home/cyoungflesh/penguin_watch_model/Scripts
 
-Rscript 3-model.R >& SO-SE2.txt
+Rscript 3-model.R

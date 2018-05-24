@@ -491,7 +491,7 @@ setwd(dir[4])
       #sigma_gamma_phi ~ dunif(0, 5)
       
       #priors - p
-      mu_p ~ dnorm(0, 0.5)
+      mu_p ~ dnorm(0, 0.1)
       beta_p ~ dnorm(0, 1000) T(0, 0.03)
 
       for (k in 1:NK)
@@ -520,11 +520,11 @@ Inits_1 <- list(mu_phi = 7,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -2,
+                mu_p = 1.5,
                 beta_p = 0.002,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 10,
+                tau_nu_p = 6,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
@@ -533,11 +533,11 @@ Inits_2 <- list(mu_phi = 7,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -2,
+                mu_p = 1.5,
                 beta_p = 0.002,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 10,
+                tau_nu_p = 6,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
@@ -546,11 +546,11 @@ Inits_3 <- list(mu_phi = 7,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -2,
+                mu_p = 1.5,
                 beta_p = 0.002,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 10,
+                tau_nu_p = 6,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
@@ -559,11 +559,11 @@ Inits_4 <- list(mu_phi = 7,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -2,
+                mu_p = 1.5,
                 beta_p = 0.002,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 10,
+                tau_nu_p = 6,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
@@ -572,11 +572,11 @@ Inits_5 <- list(mu_phi = 7,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -2,
+                mu_p = 1.5,
                 beta_p = 0.002,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 10,
+                tau_nu_p = 6,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
@@ -585,11 +585,11 @@ Inits_6 <- list(mu_phi = 7,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = -2,
+                mu_p = 1.5,
                 beta_p = 0.002,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 10,
+                tau_nu_p = 6,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
@@ -626,8 +626,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_23_2018_3',
-               jagsDsc = 'Two QCed sites. Change start 2 chicks. NO W_ARRAY. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Long queue.',
+               jagsID = 'May_24_2018',
+               jagsDsc = 'Two QCed sites. Relaxed prior on mu_p. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Long queue.',
                db_hash = 'CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
