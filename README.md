@@ -4,7 +4,7 @@
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=z_{t,i,j,k}&space;\sim&space;Binom(\phi_{t,i,j,k},&space;z_{t-1,i,j,k,})" target="_blank"><img src="https://latex.codecogs.com/gif.latex?z_{t,i,j,k}&space;\sim&space;Binom(\phi_{t,i,j,k},&space;z_{t-1,i,j,k,})" title="z_{t,i,j,k} \sim Binom(\phi_{t,i,j,k}, z_{t-1,i,j,k,})" /></a>
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=y_{t,i,j,k}&space;\sim&space;Binom(p_{t,i,j,k}&space;*&space;w_{t,i,j,k},&space;z_{t,i,j,k})" target="_blank"><img src="https://latex.codecogs.com/gif.latex?y_{t,i,j,k}&space;\sim&space;Binom(p_{t,i,j,k}&space;*&space;w_{t,i,j,k},&space;z_{t,i,j,k})" title="y_{t,i,j,k} \sim Binom(p_{t,i,j,k} * w_{t,i,j,k}, z_{t,i,j,k})" /></a>
+<a href="http://www.codecogs.com/eqnedit.php?latex=y_{t,i,j,k}&space;\sim&space;Binom(p_{t,i,j,k},&space;z_{t,i,j,k})" target="_blank"><img src="http://latex.codecogs.com/gif.latex?y_{t,i,j,k}&space;\sim&space;Binom(p_{t,i,j,k},&space;z_{t,i,j,k})" title="y_{t,i,j,k} \sim Binom(p_{t,i,j,k}, z_{t,i,j,k})" /></a>
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=logit(\phi_{t,i,j,k})&space;=&space;\mu^{\phi}&space;&plus;&space;\gamma^{\phi}_{j}&space;&plus;&space;\eta^{\phi}_{k}&space;&plus;&space;\pi^{\phi}&space;*&space;SIC_{j,k}&space;&plus;&space;\rho^{\phi}&space;*&space;KRILL_{j,k}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?logit(\phi_{t,i,j,k})&space;=&space;\mu^{\phi}&space;&plus;&space;\gamma^{\phi}_{j}&space;&plus;&space;\eta^{\phi}_{k}&space;&plus;&space;\pi^{\phi}&space;*&space;SIC_{j,k}&space;&plus;&space;\rho^{\phi}&space;*&space;KRILL_{j,k}" title="logit(\phi_{t,i,j,k}) = \mu^{\phi} + \gamma^{\phi}_{j} + \eta^{\phi}_{k} + \pi^{\phi} * SIC_{j,k} + \rho^{\phi} * KRILL_{j,k}" /></a>
 
@@ -20,8 +20,6 @@
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=p" target="_blank"><img src="https://latex.codecogs.com/gif.latex?p" title="p" /></a> = detection probability
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=w" target="_blank"><img src="https://latex.codecogs.com/gif.latex?w" title="w" /></a> = 1/0 whether camera was on (whether there was an opportunity for detection)
-
 <a href="https://www.codecogs.com/eqnedit.php?latex=\mu" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\mu" title="\mu" /></a> = intercept term
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=\gamma" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\gamma" title="\gamma" /></a> = year effect
@@ -33,6 +31,8 @@
 <a href="https://www.codecogs.com/eqnedit.php?latex=\rho" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\rho" title="\rho" /></a> = krill catch effect
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=\beta" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\beta" title="\beta" /></a> = slope (change in detection over time)
+
+<a href="http://www.codecogs.com/eqnedit.php?latex=x" target="_blank"><img src="http://latex.codecogs.com/gif.latex?x" title="x" /></a> = time step within season
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=\nu" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\nu" title="\nu" /></a> = site/year effect on detection
 
