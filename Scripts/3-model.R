@@ -231,8 +231,6 @@ for (k in 1:dim(nests_array)[4])
 
 
 
-
-
 # create w_array ----------------------------------------------------------
 
 #create w_array (day and night; and all other time points where there is not data, either because the camera was off, or we excluded data from these time points])
@@ -257,10 +255,6 @@ for (k in 1:dim(nests_array)[4])
   }
 }
 
-#checks:
-#nests_array[1:15, 2, 1, 4]
-#w_array[1:15, 1:10, 1, 4]
-#z_array[1:30, 1:10, 1, 4]
 
 
 # observations with > 2 chicks --------------------------------------------
@@ -289,20 +283,25 @@ for (k in 1:dim(nests_array)[4])
   #k <- 1
   for (j in 1:dim(nests_array)[3])
   {
-    #j <- 2
-    for (i in 1:real_nests[j,k])
+    #j <- 1
+    if (real_nests[j,k] > 0)
     {
-      n1 <- 1
-      if (sum(z_array[,i,j,k] == 2, na.rm = TRUE) > 0)
+      for (i in 1:real_nests[j,k])
       {
-        #last sight with two chicks
-        n2 <- max(which(z_array[,i,j,k] == 2))
-        #fill 2 for all between first val and last sight of 2
-        z_array[n1:n2,i,j,k] <- 2
+        #two chicks in first position (alive at time step one)
+        z_array[1,i,j,k] <- 2
+        
+        if (sum(z_array[,i,j,k] == 2, na.rm = TRUE) > 0)
+        {
+          #last sight with two chicks
+          n2 <- max(which(z_array[,i,j,k] == 2))
+          #fill 2 for all between first val and last sight of 2
+          z_array[1:n2,i,j,k] <- 2
+        }
+        
+        #NA at first state because model designates 2 chicks at time step 1
+        #z_array[1,i,j,k] <- NA
       }
-      
-      #NA at first state because model designates 2 chicks at time step 1
-      z_array[n1,i,j,k] <- NA
     }
   }
 }
@@ -410,6 +409,14 @@ DATA <- list(
   SIC = SIC) #standardized SIC for previous winter
 
 
+#checks:
+# nests_array[1:10, 1:10, 2, 1]
+# w_array[1:10, 1:10, 2, 1]
+# z_array[1:10, 1:11, 2, 1]
+# DATA$NI[2,1]
+
+
+
 setwd(dir[4])
 
 # Model -------------------------------------------------------------------
@@ -431,7 +438,7 @@ setwd(dir[4])
       for (i in 1:NI[j,k])
       {
       #both chicks alive at time step 1
-      z[1,i,j,k] <- 2
+      #z[1,i,j,k] <- 2 #already built into z_array now
       
       #time step
       for (t in 2:NT)
@@ -639,7 +646,7 @@ Pars <- c('mu_phi',
 
 # Run model ---------------------------------------------------------------
 
-# #make sure model compiles
+#make sure model compiles
 # jagsRun(jagsData = DATA,
 #         jagsModel = 'pwatch_surv.jags',
 #         jagsInits = F_Inits,
@@ -650,8 +657,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_23_2018',
-               jagsDsc = 'Two QCed sites. Detection params for each site/year. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu); Long queue.',
+               jagsID = 'May_23_2018_2',
+               jagsDsc = 'Two QCed sites. Change start 2 chicks. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Long queue.',
                db_hash = 'CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
