@@ -487,7 +487,7 @@ setwd(dir[4])
       rho_phi ~ dnorm(0, 0.386)
 
       #priors - phi
-      mu_phi ~ dnorm(0, 0.1)
+      mu_phi ~ dnorm(3, 0.1)
       
       for (k in 1:NK)
       {
@@ -509,7 +509,7 @@ setwd(dir[4])
       
       #priors - p
       mu_p ~ dnorm(0, 0.1)
-      beta_p ~ dnorm(0, 1000) T(0, 0.1)
+      beta_p ~ dnorm(0, 100) T(0, 0.5)
 
       for (k in 1:NK)
       {
@@ -519,7 +519,7 @@ setwd(dir[4])
         }
       }
       
-      tau_nu_p ~ dunif(0, 25)
+      tau_nu_p ~ dunif(0, 100)
 
       
       }",fill = TRUE)
@@ -532,81 +532,81 @@ setwd(dir[4])
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mu_phi = 7,
+Inits_1 <- list(mu_phi = 4,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1.5,
-                beta_p = 0.002,
+                mu_p = 1,
+                beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 6,
+                tau_nu_p = 15,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = 7,
+Inits_2 <- list(mu_phi = 4,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1.5,
-                beta_p = 0.002,
+                mu_p = 1,
+                beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 6,
+                tau_nu_p = 15,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = 7,
+Inits_3 <- list(mu_phi = 4,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1.5,
-                beta_p = 0.002,
+                mu_p = 1,
+                beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 6,
+                tau_nu_p = 15,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
-Inits_4 <- list(mu_phi = 7,
+Inits_4 <- list(mu_phi = 4,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1.5,
-                beta_p = 0.002,
+                mu_p = 1,
+                beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 6,
+                tau_nu_p = 15,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
-Inits_5 <- list(mu_phi = 7,
+Inits_5 <- list(mu_phi = 4,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1.5,
-                beta_p = 0.002,
+                mu_p = 1,
+                beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 6,
+                tau_nu_p = 15,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
-Inits_6 <- list(mu_phi = 7,
+Inits_6 <- list(mu_phi = 4,
                 eta_phi = rep(0, DATA$NK),
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1.5,
-                beta_p = 0.002,
+                mu_p = 1,
+                beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                tau_nu_p = 6,
+                tau_nu_p = 15,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
@@ -644,7 +644,7 @@ jagsRun(jagsData = DATA,
                jagsInits = F_Inits,
                params = Pars,
                jagsID = 'May_24_2018',
-               jagsDsc = 'Aggregate data by day. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Long queue.',
+               jagsDsc = 'Adjust priors. Aggregate data by day run 2. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Short queue.',
                db_hash = 'Corrected CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
