@@ -410,7 +410,7 @@ DATA <- list(
 
 
 #checks:
-# nests_array[1:10, 1:10, 2, 1]
+# nests_array[1:50, 1:10, 2, 1]
 # w_array[1:10, 1:10, 2, 1]
 # z_array[1:10, 1:11, 2, 1]
 # DATA$NI[2,1]
@@ -450,7 +450,7 @@ setwd(dir[4])
       phi[t,i,j,k])
       
       #observation model
-      y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k] * w[t,i,j,k], z[t,i,j,k]) #w binary day/night
+      y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k], z[t,i,j,k]) #w binary day/night
       p_sight[t,i,j,k] <- ifelse(z[t,i,j,k] < 2,
       p[t,i,j,k] * z[t,i,j,k],
       p[t,i,j,k])
@@ -657,8 +657,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_23_2018_2',
-               jagsDsc = 'Two QCed sites. Change start 2 chicks. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Long queue.',
+               jagsID = 'May_23_2018_3',
+               jagsDsc = 'Two QCed sites. Change start 2 chicks. NO W_ARRAY. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Long queue.',
                db_hash = 'CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
