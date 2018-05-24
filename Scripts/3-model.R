@@ -10,6 +10,8 @@
 # Author: Casey Youngflesh
 #################
 
+#include data starting at first chick sighting, ending at creche point. No NA needed for night.
+
 
 # Clear environment -------------------------------------------------------
 
@@ -98,7 +100,7 @@ tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 #DATES FOR MODEL DATA
 #start Jan 15
-first_date <- format(as.Date('01-15', format = '%m-%d'), '%m-%d')
+first_date <- format(as.Date('12-15', format = '%m-%d'), '%m-%d')
 
 #use Feb 15 as last date of season to use across all years
 last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
@@ -106,7 +108,7 @@ last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
 
 #number of time steps (rows) in response data (+1 to account for start FIRST through LAST)
 n_ts <- as.numeric(as.Date(paste0('2017', '-', last_date, format = '%Y-%m-%d')) - 
-                     as.Date(paste0('2017', '-', first_date, format = '%Y-%m-%d')) + 1) * 24
+                     as.Date(paste0('2016', '-', first_date, format = '%Y-%m-%d')) + 1)
 
 #number of nests (columns) in response data - i
 n_nests <- length(tog2)
@@ -119,7 +121,8 @@ n_yrs <- length(d_yrs)
 n_sites <- length(un_sites)
 
 
-
+#aggregate data by day (max number of chicks for each day)
+#currently setting start and end day - could use lay date 30 days before first chick sighting
 
 #create blank array
 nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
@@ -136,25 +139,47 @@ for (k in 1:n_sites)
   {
     #j <- 1
     temp2 <- filter(temp, season_year == d_yrs[j])
+    
     if (NROW(temp2) > 0)
     {
       temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
       
+      #date range (includes days that might be missing for some reason)
+      date_rng <- seq(temp_dates[1], temp_dates[length(temp_dates)], by = 'day')
+  
+      temp_agg <- data.frame()
+      for (t in 1:length(date_rng))
+      {
+        #t <- 1
+        td_filt <- which(temp_dates == date_rng[t])
+        temp3 <- temp2[td_filt,]
+        temp_max <- suppressWarnings(apply(temp3[,tog2], 2, function(x) max(x, na.rm = TRUE)))
+        temp4 <- data.frame(datetime = date_rng[t], t(temp_max))
+        temp_agg <- rbind(temp_agg , temp4)
+      }
+      
+      #replace -Inf (from max) with NA
+      temp_agg[which(temp_agg == -Inf, arr.ind = TRUE)] <- NA
+      
+      
       #first and last days in season
-      FIRST <- as.Date(paste0((d_yrs[j]), '-', first_date), format = "%Y-%m-%d")
+      #could assing first day as lay date (approx 35 days before chick hatch)
+      #FIRST <- min(date_rng) - 35
+      FIRST <- as.Date(paste0((d_yrs[j]-1), '-', first_date), format = "%Y-%m-%d")
       LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
       
+      
       #which dates are within the designated period
-      valid_dates <- which(temp_dates >= FIRST & temp_dates <= LAST)
-      sel_dates <- temp_dates[which(temp_dates >= FIRST & temp_dates <= LAST)]
+      valid_dates <- which(temp_agg$datetime >= FIRST & temp_agg$datetime <= LAST)
+      sel_dates <- temp_agg$datetime[valid_dates]
       
       if (min(sel_dates) > FIRST)
       {
         #add NA vals to front
-        num_first <- length(which(sel_dates == min(sel_dates)))
+        #num_first <- length(which(sel_dates == min(sel_dates))) #used when not aggregating days
         
         lna <- min(sel_dates) - FIRST
-        na_first <- matrix(NA, ncol = length(tog2), nrow = (lna * 24) + (24 - num_first))
+        na_first <- matrix(NA, ncol = length(tog2), nrow = (lna)) # + (num_first))
       } else {
         na_first <- NULL
       }
@@ -162,16 +187,16 @@ for (k in 1:n_sites)
       if (max(sel_dates) < LAST)
       {
         #add NA vals to end
-        num_last <- length(which(sel_dates == max(sel_dates)))
+        #num_last <- length(which(sel_dates == max(sel_dates))) #used when not aggregating days
         
         lna <- LAST - max(sel_dates)
-        na_last <- matrix(NA, ncol = length(tog2), nrow = (lna * 24) + (24 - num_last))
+        na_last <- matrix(NA, ncol = length(tog2), nrow = (lna))# + (num_last))
       } else {
         na_last <- NULL
       }
       
       #add buffers to front and back (if needed)
-      vals <- as.matrix(temp2[valid_dates, tog2])
+      vals <- as.matrix(temp_agg[, -1])
       n_vals <- rbind(na_first, vals, na_last)
       
       #determines if there are any nests with NA values for the entire column (removed during the QC step)
@@ -188,14 +213,12 @@ for (k in 1:n_sites)
       } else {
         f_n_vals <- n_vals
       }
-      
+
       #appropriate date range and appropriate columns for nests
       nests_array[,,j,k] <- f_n_vals
     }
   }
 }
-
-
 
 
 # create real_nests matrix ------------------------------------------------
@@ -209,8 +232,7 @@ for (k in 1:dim(nests_array)[4])
   #k <- 2
   for (j in 1:dim(nests_array)[3])
   {
-    #j <- 2
-    
+    #j <- 1
     #just nest 1 - which positions are not NA
     idx_nna <- which(!is.na(nests_array[,1,j,k]))
     
@@ -254,7 +276,7 @@ z_array <- nests_array
 
 for (k in 1:dim(nests_array)[4])
 {
-  #k <- 1
+  #k <- 2
   for (j in 1:dim(nests_array)[3])
   {
     #j <- 1
@@ -272,12 +294,10 @@ for (k in 1:dim(nests_array)[4])
           #fill 2 for all between first val and last sight of 2
           z_array[1:n2,i,j,k] <- 2
         }
-        
       }
     }
   }
 }
-
 
 #after there aren't two, don't know if there are actually 2, 1, or 0 so NA
 zeros <- which(z_array == 0, arr.ind = TRUE)
@@ -359,17 +379,14 @@ SIC <- matrix(t2, nrow = NROW(i_SIC))
 
 # Create Data for JAGS ---------------------------------------------------------
 
-#data object for JAGS model
-
 #nests_array:
 #dim1 (rows) [t] = time steps
 #dim2 (cols) [i] = nests
 #dim3 [j] = years (d_yrs)
 #dim4 [k] = sites (un_sites)
 
-
 DATA <- list(
-  y = nests_array, #reponse
+  y = nests_array, #response
   NK = dim(nests_array)[4], #number of sites
   NJ = dim(nests_array)[3], #number of years covered for all sites
   NI = real_nests, #matrix with number of nests for each site/year NI[j,k]
@@ -419,7 +436,7 @@ setwd(dir[4])
       phi[t,i,j,k])
       
       #observation model
-      y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k], z[t,i,j,k]) #w binary day/night
+      y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k], z[t,i,j,k])
       p_sight[t,i,j,k] <- ifelse(z[t,i,j,k] < 2,
       p[t,i,j,k] * z[t,i,j,k],
       p[t,i,j,k])
