@@ -231,32 +231,6 @@ for (k in 1:dim(nests_array)[4])
 
 
 
-# create w_array ----------------------------------------------------------
-
-#create w_array (day and night; and all other time points where there is not data, either because the camera was off, or we excluded data from these time points])
-
-w_array <- nests_array
-#assign 1 to values with observations (either 0/1/2 for nests_array)
-w_array[which(!is.na(w_array), arr.ind = TRUE)] <- 1
-
-#only fill in 0 if this was a night (there is data on either side and not just missing nests)
-for (k in 1:dim(nests_array)[4])
-{
-  #k <- 1
-  for (j in 1:dim(nests_array)[3])
-  {
-    #j <- 2
-    #if there are more than 0 nests in that year (there is data for that site/year)
-    if (real_nests[j,k] > 0)
-    {
-      sub_i <- real_nests[j,k]
-      w_array[cbind(which(is.na(w_array[,1:sub_i,j,k]), arr.ind = TRUE), j, k)] <- 0
-    }
-  }
-}
-
-
-
 # observations with > 2 chicks --------------------------------------------
 
 # check to see if any nests have observations with more than 2 chicks
@@ -299,8 +273,6 @@ for (k in 1:dim(nests_array)[4])
           z_array[1:n2,i,j,k] <- 2
         }
         
-        #NA at first state because model designates 2 chicks at time step 1
-        #z_array[1,i,j,k] <- NA
       }
     }
   }
@@ -403,7 +375,6 @@ DATA <- list(
   NI = real_nests, #matrix with number of nests for each site/year NI[j,k]
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
-  w = w_array, #binary day (1)/night (0)
   x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE)[,1], #time steps for increase in surv/detection over time 
   KRILL = KRILL, #standardized krill catch data (total krill caught over the previous winter and current breeding season)
   SIC = SIC) #standardized SIC for previous winter
@@ -411,7 +382,6 @@ DATA <- list(
 
 #checks:
 # nests_array[1:50, 1:10, 2, 1]
-# w_array[1:10, 1:10, 2, 1]
 # z_array[1:10, 1:11, 2, 1]
 # DATA$NI[2,1]
 
@@ -437,8 +407,7 @@ setwd(dir[4])
       #nests
       for (i in 1:NI[j,k])
       {
-      #both chicks alive at time step 1
-      #z[1,i,j,k] <- 2 #already built into z_array now
+      #both chicks alive at time step 1 (z[1,i,j,k] = 2)
       
       #time step
       for (t in 2:NT)
