@@ -24,7 +24,7 @@ rm(list = ls())
 
 
 #laptop
-setwd('~/Google_Drive/R/penguin_watch_model/Scripts/')
+#setwd('~/Google_Drive/R/penguin_watch_model/Scripts/')
 
 
 #HPC
