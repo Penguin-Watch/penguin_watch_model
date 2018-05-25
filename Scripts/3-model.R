@@ -96,19 +96,8 @@ tog <- c(ind, to.rm)
 tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 
-
-
-#DATES FOR MODEL DATA
-#start Jan 15
-first_date <- format(as.Date('12-15', format = '%m-%d'), '%m-%d')
-
-#use Feb 15 as last date of season to use across all years
-last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
-
-
-#number of time steps (rows) in response data (+1 to account for start FIRST through LAST)
-n_ts <- as.numeric(as.Date(paste0('2017', '-', last_date, format = '%Y-%m-%d')) - 
-                     as.Date(paste0('2016', '-', first_date, format = '%Y-%m-%d')) + 1)
+#number of time steps (rows) in response data - 30 days before chick sighting, 29 days after chick sighting
+n_ts <- 60
 
 #number of nests (columns) in response data - i
 n_nests <- length(tog2)
@@ -162,11 +151,16 @@ for (k in 1:n_sites)
       temp_agg[which(temp_agg == -Inf, arr.ind = TRUE)] <- NA
       
       
-      #first and last days in season
-      #could assing first day as lay date (approx 35 days before chick hatch)
-      #FIRST <- min(date_rng) - 35
-      FIRST <- as.Date(paste0((d_yrs[j]-1), '-', first_date), format = "%Y-%m-%d")
-      LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
+      #FIRST and LAST days of season
+      #First day of season is approx lay date - last day is 29 days after first chick sighting (at latest)
+      FIRST <- min(date_rng) - 30
+      LAST <- min(date_rng) + 29
+      
+      # #Use same dates across all sites
+      # first_date <- format(as.Date('12-15', format = '%m-%d'), '%m-%d')
+      # last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
+      # FIRST <- as.Date(paste0((d_yrs[j]-1), '-', first_date), format = "%Y-%m-%d")
+      # LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
       
       
       #which dates are within the designated period
@@ -219,7 +213,6 @@ for (k in 1:n_sites)
     }
   }
 }
-
 
 # create real_nests matrix ------------------------------------------------
 
@@ -487,7 +480,7 @@ setwd(dir[4])
       rho_phi ~ dnorm(0, 0.386)
 
       #priors - phi
-      mu_phi ~ dnorm(3, 0.1)
+      mu_phi ~ dnorm(3, 0.01)
       
       for (k in 1:NK)
       {
@@ -508,8 +501,8 @@ setwd(dir[4])
       #sigma_gamma_phi ~ dunif(0, 5)
       
       #priors - p
-      mu_p ~ dnorm(0, 0.1)
-      beta_p ~ dnorm(0, 100) T(0, 0.5)
+      mu_p ~ dnorm(2, 0.1)
+      beta_p ~ dnorm(0.1, 10) T(0, 0.5)
 
       for (k in 1:NK)
       {
@@ -537,7 +530,7 @@ Inits_1 <- list(mu_phi = 4,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1,
+                mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -550,7 +543,7 @@ Inits_2 <- list(mu_phi = 4,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1,
+                mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -563,7 +556,7 @@ Inits_3 <- list(mu_phi = 4,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1,
+                mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -576,7 +569,7 @@ Inits_4 <- list(mu_phi = 4,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1,
+                mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -589,7 +582,7 @@ Inits_5 <- list(mu_phi = 4,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1,
+                mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -602,7 +595,7 @@ Inits_6 <- list(mu_phi = 4,
                 gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
-                mu_p = 1,
+                mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
@@ -643,8 +636,8 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_24_2018',
-               jagsDsc = 'Adjust priors. Aggregate data by day run 2. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Short queue.',
+               jagsID = 'May_25_2018',
+               jagsDsc = 'Adjust priors. Adjust start/end date. Aggregate data by day run 3. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Short queue.',
                db_hash = 'Corrected CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
