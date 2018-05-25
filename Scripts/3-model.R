@@ -282,7 +282,7 @@ for (k in 1:dim(nests_array)[4])
         #two chicks in first position (alive at time step one)
         z_array[1,i,j,k] <- 2
         
-        if (sum(z_array[,i,j,k] == 2, na.rm = TRUE) > 0)
+        if (sum(z_array[,i,j,k] == 2, na.rm = TRUE) > 1)
         {
           #last sight with two chicks
           n2 <- max(which(z_array[,i,j,k] == 2))
