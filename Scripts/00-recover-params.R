@@ -332,10 +332,10 @@ for (j in 1:10)
           jagsInits = F_Inits,
           params = Pars,
           n_chain = 3,
-          n_adapt = 5,#000,
-          n_burn = 1,#0000,
-          n_draw = 10,#000,
-          n_thin = 1,#0,
+          n_adapt = 5000,
+          n_burn = 10000,
+          n_draw = 10000,
+          n_thin = 10,
           report = FALSE)
   
   
