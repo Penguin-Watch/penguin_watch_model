@@ -96,8 +96,12 @@ tog <- c(ind, to.rm)
 tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 
-#number of time steps (rows) in response data - 30 days before chick sighting, 29 days after chick sighting
-n_ts <- 60
+#set dates to use for model - days before first data point in input .csv (first chick sighting)
+DAYS_BEFORE <- 10
+DAYS_AFTER <- 29
+
+#number of time steps (rows) in response data
+n_ts <- DAYS_BEFORE + DAYS_AFTER + 1
 
 #number of nests (columns) in response data - i
 n_nests <- length(tog2)
@@ -151,17 +155,15 @@ for (k in 1:n_sites)
       temp_agg[which(temp_agg == -Inf, arr.ind = TRUE)] <- NA
       
       
-      #FIRST and LAST days of season
-      #First day of season is approx lay date - last day is 29 days after first chick sighting (at latest)
-      FIRST <- min(date_rng) - 30
-      LAST <- min(date_rng) + 29
+      #Specify FIRST and LAST days of season - number of days before and after first data point (first chick sighting)
+      FIRST <- min(date_rng) - DAYS_BEFORE
+      LAST <- min(date_rng) + DAYS_AFTER
       
       # #Use same dates across all sites
       # first_date <- format(as.Date('12-15', format = '%m-%d'), '%m-%d')
       # last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
       # FIRST <- as.Date(paste0((d_yrs[j]-1), '-', first_date), format = "%Y-%m-%d")
       # LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
-      
       
       #which dates are within the designated period
       valid_dates <- which(temp_agg$datetime >= FIRST & temp_agg$datetime <= LAST)
@@ -512,7 +514,7 @@ setwd(dir[4])
         }
       }
       
-      tau_nu_p ~ dunif(0, 100)
+      tau_nu_p ~ dunif(0, 25)
 
       
       }",fill = TRUE)
@@ -636,9 +638,9 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_25_2018_adj_priors',
-               jagsDsc = 'Adjust priors. Adjust start/end date. Aggregate data by day run 3. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Short queue.',
-               db_hash = 'Corrected CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
+               jagsID = 'May_25_2018_adj_priors_2',
+               jagsDsc = 'Adjust priors. Adjust start/end date again. logit(phi) <- mu + gamma + eta + pi + rho; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Short queue.',
+               db_hash = 'Aggregate data by day. Corrected CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
                n_chain = 6,
                n_adapt = 5000,
                n_burn = 50000,
