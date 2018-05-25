@@ -61,13 +61,13 @@ for (j in 1:10)
   
   # Values from May_25_2018 run - first day aggregation
   #                 mean     sd    2.5%     50%   97.5% Rhat n.eff
-  # beta_p        0.2979 0.0259  0.2493  0.2973  0.3511 1.00 14975
-  # mu_p          1.6106 0.5973  0.4612  1.6045  2.7366 1.01  2142
   # mu_phi        4.9776 2.0232  1.0291  4.9873  8.9211 1.00  4130
+  # mu_p          1.6106 0.5973  0.4612  1.6045  2.7366 1.01  2142
+  # beta_p        0.2979 0.0259  0.2493  0.2973  0.3511 1.00 14975
   
   #use values from model fit
-  mu_p <- 1.6045
   mu_phi <- 4.9873
+  mu_p <- 1.6045
   beta_p <- 0.2973
   
   x_sc <- scale(x, scale = FALSE)[,1] - 1
