@@ -26,6 +26,10 @@
 # *number of nests DOES NOT impact recovery of phi param (always recovers) but more nests do shrink CI on proportion of chicks alive at end of season
 #   -more nests leads to worse recovery of mu_p for some reason (does not substantialy change the shape of the detection curve over the course of the season though - lines 126-128)
 
+# TAKE AWAYS
+# *cannot have too 'steep' a slope for the detection over time (lines 126-128)
+# *possibly start later than first day a chick is seen, bc detection prob is so low
+
 
 
 # Clear environment -------------------------------------------------------
@@ -37,13 +41,13 @@ rm(list = ls())
 
 
 #laptop
-#setwd('~/Google_Drive/R/penguin_watch_model/Scripts/')
+# setwd('~/Google_Drive/R/penguin_watch_model/Results/')
 
 #desktop
-#setwd('~/gdrive/R/penguin_watch_model/Scripts/')
+# dir <- '~/gdrive/R/penguin_watch_model/Results/'
 
 #HPC
-dir <- '~/gdrive/R/penguin_watch_model/Results/'
+
 
 
 
@@ -109,8 +113,8 @@ pbi <- 1
       prop_surv <- 0.85 #proportion of chicks alive at creche
       
       #specify detection params
-      detect <- 0.8 #dp[m] #actual detection prob
-      beta_p <- 0.08 #bv[l] #values$BETA_P[m] #detection slope #40 = 0.4, 160 = 0.1, 320 = 0.05, 640 = 0.025
+      detect <- 0.85 #dp[m] #actual detection prob
+      beta_p <- 0.3 #bv[l] #values$BETA_P[m] #detection slope #40 = 0.4, 160 = 0.1, 320 = 0.05, 640 = 0.025
       
       mu_phi <- logit(prop_surv^(1/n_ts))
       mu_p <- logit(detect)
