@@ -1,3 +1,5 @@
 Rscript 3-model.R
-Rscript 
-Rscript 
+Rscript 3-model-BUFF2.R
+Rscript 3-model-BUFF4.R
+Rscript 3-model-BUFF6.R
+Rscript 3-model-BUFF8.R
