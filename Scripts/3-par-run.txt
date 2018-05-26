@@ -1,0 +1,3 @@
+Rscript 3-model.R
+Rscript 
+Rscript 

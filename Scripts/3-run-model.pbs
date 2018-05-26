@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #PBS -l nodes=1:ppn=24,walltime=4:00:00
-#PBS -q short-24core
+#PBS -q short
 #PBS -N PW_run
 #PBS -j oe
 #PBS -o out.txt
@@ -18,4 +18,4 @@ export R_LIBS=/gpfs/home/cyoungflesh/R_libs
 
 cd /gpfs/home/cyoungflesh/penguin_watch_model/Scripts
 
-Rscript 3-model.R
+parallel < 3-par-run.txt

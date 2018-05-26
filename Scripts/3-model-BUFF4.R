@@ -1,18 +1,3 @@
-#################
-# Penguin Watch Model - 3 - Penguin model (run with PBS script; results saved to Results)
-#
-# 1-process-krill-data.R | process krill data
-# 2-process-SIC-data.R | process SIC data
-# 3-model.R | penguin model
-# 3-run-model.pbs | pbs script to run penguin model on HPC resources
-# 4-analyze-output.R | analyze model output
-#
-# Author: Casey Youngflesh
-#################
-
-#include data starting at first chick sighting, ending at creche point. No NA needed for night.
-#can control number of days starting data from first chick sighting with DAYS_BUFF_FIRST_CHICK
-
 
 # Clear environment -------------------------------------------------------
 
@@ -99,7 +84,7 @@ tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 #set dates to use for model - days before first data point in input .csv (first chick sighting)
 DAYS_BEFORE <- 30
-DAYS_BUFF_FIRST_CHICK <- 0
+DAYS_BUFF_FIRST_CHICK <- 4
 DAYS_AFTER <- 29 - DAYS_BUFF_FIRST_CHICK
 
 #number of time steps (rows) in response data
@@ -141,7 +126,7 @@ for (k in 1:n_sites)
       
       #date range (includes days that might be missing for some reason)
       date_rng <- seq(temp_dates[1], temp_dates[length(temp_dates)], by = 'day')
-  
+      
       temp_agg <- data.frame()
       for (t in 1:length(date_rng))
       {
@@ -211,7 +196,7 @@ for (k in 1:n_sites)
       } else {
         f_n_vals <- n_vals
       }
-
+      
       #appropriate date range and appropriate columns for nests
       nests_array[,,j,k] <- f_n_vals
     }
@@ -409,7 +394,7 @@ setwd(dir[4])
   sink("pwatch_surv.jags")
   
   cat("
-
+      
       model {
       
       #sites
@@ -465,24 +450,24 @@ setwd(dir[4])
       #rho_phi = effect of KRILL on survival
       
       logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] + eta_phi[k] #+ pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
-
+      
       #p = detection prob
       #mu_p = grand mean for all sites/years
       #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
       #nu_p = detection probability random effect for site/year
       
       logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[j,k]
-
+      
       } #t
       } #i
       } #j
       } #k
       
-
+      
       #priors - covariates
       #pi_phi ~ dnorm(0, 0.386)
       #rho_phi ~ dnorm(0, 0.386)
-
+      
       #priors - phi
       mu_phi ~ dnorm(3, 0.1)
       
@@ -507,17 +492,17 @@ setwd(dir[4])
       #priors - p
       mu_p ~ dnorm(2, 0.1)
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
-
+      
       for (k in 1:NK)
       {
-        for (j in 1:NJ)
-        {
-          nu_p[j,k] ~ dnorm(0, tau_nu_p)
-        }
+      for (j in 1:NJ)
+      {
+      nu_p[j,k] ~ dnorm(0, tau_nu_p)
+      }
       }
       
       tau_nu_p ~ dunif(0, 25)
-
+      
       
       }",fill = TRUE)
 
@@ -624,7 +609,7 @@ Pars <- c('mu_phi',
           'beta_p',
           'nu_p',
           'tau_nu_p'
-          )
+)
 
 
 # Run model ---------------------------------------------------------------
@@ -637,20 +622,18 @@ Pars <- c('mu_phi',
 
 
 jagsRun(jagsData = DATA, 
-               jagsModel = 'pwatch_surv.jags',
-               jagsInits = F_Inits,
-               params = Pars,
-               jagsID = 'May_26_2018_BUFF_0',
-               jagsDsc = 'DAYS_BUFF_FIRST_CHICK = 0; 5 chains; logit(phi) <- mu + gamma + eta; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Short queue',
-               db_hash = 'Aggregate data by day. Corrected CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
-               n_chain = 5,
-               n_adapt = 5000,
-               n_burn = 50000,
-               n_draw = 50000,
-               n_thin = 20,
-               EXTRA = FALSE,
-               Rhat_max = 1.1,
-               n_max = 100000,
-               save_data = TRUE)
-
-
+        jagsModel = 'pwatch_surv.jags',
+        jagsInits = F_Inits,
+        params = Pars,
+        jagsID = 'May_26_2018_BUFF_4',
+        jagsDsc = 'DAYS_BUFF_FIRST_CHICK = 4; 5 chains; logit(phi) <- mu + gamma + eta; logit(p) <- mu + beta*x + nu (hierarchical nu for site/year); Short queue',
+        db_hash = 'Aggregate data by day. Corrected CY_test_May_21_2018.csv - QC AITCa2014, QC GEORa2013',
+        n_chain = 5,
+        n_adapt = 5000,
+        n_burn = 50000,
+        n_draw = 50000,
+        n_thin = 20,
+        EXTRA = FALSE,
+        Rhat_max = 1.1,
+        n_max = 100000,
+        save_data = TRUE)
