@@ -41,7 +41,7 @@ rm(list = ls())
 
 
 #laptop
-# setwd('~/Google_Drive/R/penguin_watch_model/Results/')
+setwd('~/Google_Drive/R/penguin_watch_model/Results/')
 
 #desktop
 # dir <- '~/gdrive/R/penguin_watch_model/Results/'
@@ -77,10 +77,10 @@ OUT <- data.frame()
 
 
 #progress bar for det and beta_p
-#pb <- txtProgressBar(min = 0, max = length(dp)*length(bv)*5, style = 3)
+# pb <- txtProgressBar(min = 0, max = length(dp)*length(bv)*5, style = 3)
 #progress bar for nests
-pb <- txtProgressBar(min = 0, max = length(nn)*5, style = 3)
-pbi <- 1
+# pb <- txtProgressBar(min = 0, max = length(nn)*5, style = 3)
+# pbi <- 1
 
 # for (m in 1:length(dp))
 # {
@@ -88,33 +88,38 @@ pbi <- 1
 #   for (l in 1:length(bv))
 #   {
     #l <- 3
-  for (q in 1:length(nn))
-  {
+  # for (q in 1:length(nn))
+  # {
     out_ret_phi <- c()
     out_ret_p <- c()
     out_ret_beta_p <- c()
     out_surv_diff <- c()
     out_rhat <- c()
     
-    #generate 5 sets of data to attempt to recover parameters
-    for (j in 1:5)
+    #generate X sets of data to attempt to recover parameters
+    X <- 10
+    
+    pb <- txtProgressBar(min = 0, max = X, style = 3)
+    pbi <- 1
+    
+    for (j in 1:X)
     {
       #j <- 1
       set.seed(j)
     
       #number of time steps
-      n_ts <- 160 #values$NTS[m] #number of time steps (two on, two off; first 40 are NA)
+      n_ts <- 60 #160 #values$NTS[m] #number of time steps (two on, two off; first 40 are NA)
       x <- 1:n_ts
-      period <- ifelse(n_ts == 40, 0, n_ts/80) #number of 'dark' time steps between observable periods
-      ep <- ifelse(period == 0, 10, period * 2 * 10) #number of NA before data starts (egg period)
+      period <- 0 #ifelse(n_ts == 40, 0, n_ts/80) #number of 'dark' time steps between observable periods
+      ep <- 30 #ifelse(period == 0, 10, period * 2 * 10) #number of NA before data starts (egg period)
       
       #colony nest and survival params
-      nests <- nn[q] #number of nests
-      prop_surv <- 0.85 #proportion of chicks alive at creche
+      nests <- 15 #nn[q] #number of nests
+      prop_surv <- 0.65 #proportion of chicks alive at creche
       
       #specify detection params
-      detect <- 0.85 #dp[m] #actual detection prob
-      beta_p <- 0.3 #bv[l] #values$BETA_P[m] #detection slope #40 = 0.4, 160 = 0.1, 320 = 0.05, 640 = 0.025
+      detect <- 0.3137 #dp[m] #detection prob
+      beta_p <- 0.2953 #0.3 #bv[l] #values$BETA_P[m] #detection slope #40 = 0.4, 160 = 0.1, 320 = 0.05, 640 = 0.025
       
       mu_phi <- logit(prop_surv^(1/n_ts))
       mu_p <- logit(detect)
@@ -127,11 +132,11 @@ pbi <- 1
       # #abline(v = ms_idx, col = 'red')
       # rect(0, 0, ep, 1, col = rgb(0,0,1,0.5))
 
-      # Values from May_25_2018 run - first day aggregation
+      # Values from May_26_2018_BUFF_0 run - aggregate by day
       #                 mean     sd    2.5%     50%   97.5% Rhat n.eff
-      # mu_phi        4.9776 2.0232  1.0291  4.9873  8.9211 1.00  4130
-      # mu_p          1.6106 0.5973  0.4612  1.6045  2.7366 1.01  2142
-      # beta_p        0.2979 0.0259  0.2493  0.2973  0.3511 1.00 14975
+      # mu_phi        4.9185 1.4517  2.0598  4.9214  7.7934    1  5568
+      # mu_p         -1.2951 0.5545 -2.3545 -1.3005 -0.1750    1  2514
+      # beta_p        0.2956 0.0257  0.2474  0.2953  0.3482    1 12152
       
       phi_sim <- inv.logit(mu_phi)
       
@@ -223,7 +228,7 @@ pbi <- 1
         sim_data[idx,] <- NA
       }
       
-      
+      sim_data[54:60,] <- NA
       
       # Create z-state matrix ---------------------------------------------------
       
@@ -285,8 +290,6 @@ pbi <- 1
         z = z_matrix, #known points of bird being alive
         x = scale(as.numeric(1:dim(sim_data)[1]), scale = FALSE)[,1]) #time steps for increase in surv/detection over time   
       
-      
-      setwd(dir)
       
       # Model -------------------------------------------------------------------
       
@@ -452,15 +455,15 @@ pbi <- 1
       pbi <- pbi + 1
     }#end repetition loop
     
-    s_ret_phi <- sum(out_ret_phi)/5
-    s_ret_p <- sum(out_ret_p)/5
-    s_ret_beta_p <- sum(out_ret_beta_p)/5
+    s_ret_phi <- sum(out_ret_phi)/X
+    s_ret_p <- sum(out_ret_p)/X
+    s_ret_beta_p <- sum(out_ret_beta_p)/X
     m_surv_diff <- mean(out_surv_diff)
     max_rhat <- max(out_rhat)
     
     temp <- data.frame(time_steps = n_ts,
                        period = period,
-                       nests = nn[q],
+                       nests = 15,
                        GEN_mu_phi = mu_phi,
                        PRC_phi = s_ret_phi,
                        GEN_pca = prop_surv,
@@ -473,7 +476,7 @@ pbi <- 1
                        max_Rhat = max_rhat)
     
     OUT <- rbind(OUT, temp)
-  }
+  # }
  # }
 #} 
 
@@ -484,7 +487,7 @@ close(pb)
 #pca = proportion chicks alive (at end of season)
 #RNG = mean range between 97.5 and 0.25 posterior quantiles
 
-sink(paste0('nests_simulation_results.txt'))
+sink(paste0('May_27_simulation_results.txt'))
 print(OUT)
 sink()
 
