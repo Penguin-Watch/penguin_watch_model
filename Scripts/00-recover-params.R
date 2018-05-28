@@ -114,7 +114,7 @@ OUT <- data.frame()
       ep <- 30 #ifelse(period == 0, 10, period * 2 * 10) #number of NA before data starts (egg period)
       
       #colony nest and survival params
-      nests <- 15 #nn[q] #number of nests
+      nests <- 25 #nn[q] #number of nests
       prop_surv <- 0.65 #proportion of chicks alive at creche
       
       #specify detection params
@@ -463,7 +463,7 @@ OUT <- data.frame()
     
     temp <- data.frame(time_steps = n_ts,
                        period = period,
-                       nests = 15,
+                       nests = nests,
                        GEN_mu_phi = mu_phi,
                        PRC_phi = s_ret_phi,
                        GEN_pca = prop_surv,
@@ -487,7 +487,7 @@ close(pb)
 #pca = proportion chicks alive (at end of season)
 #RNG = mean range between 97.5 and 0.25 posterior quantiles
 
-sink(paste0('May_27_simulation_results.txt'))
+sink(paste0('May_27_simulation_results_2.txt'))
 print(OUT)
 sink()
 
