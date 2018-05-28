@@ -37,18 +37,25 @@ pacman::p_load(MCMCvis, boot, dplyr)
 #phi = survival prob
 #p = detection prob
 
-NAME <- 'May_16_2018_gamma_eta_rho_pi_nu_2'
-NAME <- 'May_12_2018_gamma_eta'
+NAME <- 'May_19_2018_one_detect'
+NAME <- 'May_27_2018_one_site'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
 out <- readRDS(paste0(NAME, '.rds'))
+data <- readRDS('jagsData.rds')
 
 
-
-# Summarize ---------------------------------------------------------------
+  # Summarize ---------------------------------------------------------------
 
 MCMCsummary(out, round = 4, n.eff = TRUE)
+MCMCtrace(out,
+          ind = TRUE)
+
+inv.logit(MCMCsummary(out, params = 'mu_phi')[4])
+
+
+
 MCMCsummary(out, excl = 'nu_p', round = 2, n.eff = TRUE)
 
 #grand intercept - surv
@@ -117,29 +124,11 @@ tf <- function(PR)
 }
 
 
-#' mu_phi ~ dnorm(0, 0.25)   
-PR <- rnorm(15000, 0, 1/sqrt(0.01))
+#' mu_phi ~ dnorm(0, 0.01)   
+PR <- rnorm(15000, 3, 1/sqrt(0.01))
 tf(PR)
 MCMCtrace(out, 
           params = 'mu_phi',
-          ind = TRUE, 
-          priors = PR,
-          pdf = FALSE,
-          post_zm = FALSE)
-
-
-#FOR BETA params
-#should be < 0.03
-int_sl <- 0.01
-xvals <- scale(1:768, scale = FALSE)[,1]
-plot(inv.logit(0 + int_sl*xvals), ylim = c(0,1))
-
-#' beta_phi ~ dnorm(0, 1000) T(0,0.03)
-tt <- rnorm(15000, 0, 1/sqrt(1000))
-PR <- tt[tt >= 0 & tt <= 0.03]
-tf(PR)
-MCMCtrace(out, 
-          params = 'beta_phi',
           ind = TRUE, 
           priors = PR,
           pdf = FALSE,
@@ -166,8 +155,6 @@ MCMCtrace(out,
           post_zm = FALSE)
 
 
-
-
 #' #' sigma_eta_phi ~ dunif(0, 100)
 #' PR <- runif(15000, 0, 100)
 #' MCMCtrace(out, 
@@ -188,7 +175,7 @@ MCMCtrace(out,
 
 
 #' mu_p ~ dnorm(0, 0.1)
-PR <- rnorm(15000, 0, 1/sqrt(0.5))
+PR <- rnorm(15000, 2, 1/sqrt(0.1))
 tf(PR)
 MCMCtrace(out, 
           params = 'mu_p',
@@ -198,8 +185,8 @@ MCMCtrace(out,
           post_zm = FALSE)
 
 #' beta_p ~ dnorm(0, 1000) T(0,0.03)
-tt <- rnorm(15000, 0, 1/sqrt(1000))
-PR <- tt[tt >= 0 & tt <= 0.03]
+tt <- rnorm(15000, 0.1, 1/sqrt(10))
+PR <- tt[tt >= 0 & tt <= 0.5]
 tf(PR)
 MCMCtrace(out, 
           params = 'beta_p',
@@ -235,14 +222,111 @@ MCMCtrace(out,
           pdf = FALSE,
           post_zm = FALSE)
 
-#' nu_p ~ dnorm(0, 0.386)
-PR <- rnorm(15000, 0, 1/sqrt(0.386))
+#' tau_nu_p ~ dunif(0, 25)
+PR <- runif(15000, 0, 25)
 MCMCtrace(out, 
-          params = 'nu_p',
+          params = 'tau_nu_p',
           ind = TRUE, 
           priors = PR,
           pdf = FALSE,
           post_zm = FALSE)
+
+
+
+
+# track detection and surv -----------------------------------------------------
+
+#grand intercept - survival
+mu_phi <- MCMCpstr(out, params = 'mu_phi', func = median)[[1]]
+#site effect
+eta_phi <- MCMCpstr(out, params = 'eta_phi', func = median)[[1]]
+#year effect
+gamma_phi <- MCMCpstr(out, params = 'gamma_phi', func = median)[[1]]
+
+
+#grand intercept - detection
+mu_p <- MCMCpstr(out, params = 'mu_p', func = median)[[1]]
+#slope (time) detection
+beta_p <- MCMCpstr(out, params = 'beta_p', func = median)[[1]] 
+#beta_p <- 0.1
+beta_p_vals <- beta_p * scale(as.numeric(1:63), scale = FALSE)[,1]
+#site/year effect
+nu_p <- MCMCpstr(out, params = 'nu_p', func = median)[[1]]
+
+
+#surv <- data.frame(SITE = , YEAR = , NEST = )
+
+#survival
+#for (k in 1:NK)
+#{
+#k <- 2
+#  for (j in 1:NJ)
+#  {
+#j <- 1
+#surv <- inv.logit(mu_phi + eta_phi[k] + gamma_phi[j])
+#  }
+#}
+
+
+
+#detection
+#for (k in 1:NK)
+#{
+k <- 2
+#  for (j in 1:NJ)
+#  {
+j <- 1
+  #detect <- inv.logit(mu_p)
+  #detect <- inv.logit(mu_p + nu_p[j,k])
+  #detect <- inv.logit(mu_p + beta_p_vals)
+  detect <- inv.logit(mu_p + beta_p_vals + nu_p[j,k])
+  detect_nil <- mu_p + beta_p_vals + nu_p[j,k]
+#  }
+#}
+
+plot(detect, type = 'l')
+plot(detect_nil, type = 'l')
+PR <- rnorm(15000, 0, 1/sqrt(0.386))
+PR <- rnorm(15000, 0, 1/sqrt(5))
+hist(PR)
+
+data$y[1:30,,1,2]
+
+
+
+# No correlations between parameters -----------------------------------------------
+
+#correlation of beta_p and beta_phi
+beta_p_ch <- MCMCchains(out, 'beta_p')
+beta_phi_ch <- MCMCchains(out, 'beta_phi')
+plot(beta_p_ch, beta_phi_ch, pch = '.')
+cor(beta_p_ch, beta_phi_ch)
+
+#correlation of mu_p and mu_phi
+mean_p_ch <- MCMCchains(out, 'mu_p')
+mean_phi_ch <- MCMCchains(out, 'mu_phi')
+plot(mean_p_ch, mean_phi_ch, pch = '.')
+cor(mean_p_ch, mean_phi_ch)
+
+
+
+
+# Relationship between krill and SIC --------------------------------------
+
+#no clear relationship between SIC and krill
+
+#50km radius for Dec - Feb
+CCAMLR_krill <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/Krill_data/CCAMLR/Processed_CCAMLR/CCAMLR_krill_breeding_season.csv')
+
+#500km radius for June - Sep
+SIC <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_W.csv')
+
+#500km radius MAX over last 5 years
+#SIC_max <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_MAX.csv')
+
+j_kr_SIC <- left_join(CCAMLR_krill, SIC, by = c('YEAR', 'SITE'))
+
+summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
 
 
 
@@ -290,109 +374,10 @@ Inits2 <- list(beta_p = tail(MCMCchains(out,
                rho_phi = tail(MCMCchains(out, 
                                          params = 'rho_phi',
                                          chain_num = CHAIN), n = 1))
-     
+
 
 Inits1$rho_phi - Inits2$rho_phi
 
 
 MCMCsummary(out)
-
-
-# track detection and surv -----------------------------------------------------
-
-#grand intercept - survival
-mu_phi <- MCMCpstr(out, params = 'mu_phi', func = median, digits = 3)[[1]]
-#site effect
-eta_phi <- MCMCpstr(out, params = 'eta_phi', func = median, digits = 3)[[1]]
-#year effect
-gamma_phi <- MCMCpstr(out, params = 'gamma_phi', func = median, digits = 3)[[1]]
-#slope (time) survival
-beta_phi <- MCMCpstr(out, params = 'beta_phi', func = median, digits = 3)[[1]]*1:840
-
-#grand intercept - detection
-mu_p <- MCMCpstr(out, params = 'mu_p', func = median)[[1]]
-#slope (time) detection
-beta_p <- MCMCpstr(out, params = 'beta_p', func = median)[[1]]*1:840
-#nest effect
-nu_p <- MCMCpstr(out, params = 'nu_p', func = median)[[1]]
-
-
-#surv <- data.frame(SITE = , YEAR = , NEST = )
-
-#survival
-#for (k in 1:NK)
-#{
-  k <- 2
-#  for (j in 1:NJ)
-#  {
-    j <- 1
-    surv <- inv.logit(mu_phi + eta_phi[k] + gamma_phi[j])
-#  }
-#}
-
-
-#detect <- data.frame(SITE = , YEAR = , NEST = )
-
-#detection
-#for (k in 1:NK)
-#{
-   k <- 2
-#  for (j in 1:NJ)
-#  {
-    j <- 1
-    for (i in 1:NI[j,k])
-    {
-      i <- 1
-      detect <- inv.logit(mu_p)
-      detect <- inv.logit(mu_p + nu_p[i,j,k])
-      detect <- inv.logit(mu_p + beta_p)
-      detect <- inv.logit(mu_p + beta_p + nu_p[i,j,k])
-      detect <- inv.logit(mu_p + beta_p + -2)
-    }
-#  }
-#}
-
-plot(detect, type = 'l')
-PR <- rnorm(15000, 0, 1/sqrt(0.386))
-PR <- rnorm(15000, 0, 1/sqrt(5))
-hist(PR)
-    
-    
-# No correlations between parameters -----------------------------------------------
-
-#correlation of beta_p and beta_phi
-beta_p_ch <- MCMCchains(out, 'beta_p')
-beta_phi_ch <- MCMCchains(out, 'beta_phi')
-plot(beta_p_ch, beta_phi_ch, pch = '.')
-cor(beta_p_ch, beta_phi_ch)
-
-#correlation of mu_p and mu_phi
-mean_p_ch <- MCMCchains(out, 'mu_p')
-mean_phi_ch <- MCMCchains(out, 'mu_phi')
-plot(mean_p_ch, mean_phi_ch, pch = '.')
-cor(mean_p_ch, mean_phi_ch)
-
-
-
-
-# Relationship between krill and SIC --------------------------------------
-
-#no clear relationship between SIC and krill
-
-#50km radius for Dec - Feb
-CCAMLR_krill <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/Krill_data/CCAMLR/Processed_CCAMLR/CCAMLR_krill_breeding_season.csv')
-
-#500km radius for June - Sep
-SIC <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_W.csv')
-
-#500km radius MAX over last 5 years
-#SIC_max <- read.csv('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/Processed/SIC_500_MAX.csv')
-
-j_kr_SIC <- left_join(CCAMLR_krill, SIC, by = c('YEAR', 'SITE'))
-
-summary(lm(j_kr_SIC$T_KRILL ~ j_kr_SIC$WMN))
-
-
-
-
 
