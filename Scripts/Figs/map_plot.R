@@ -482,8 +482,12 @@ cols <- gg_color_hue(length(SSMU_names), ALPHA = 1)
 
 
 
+
+
 # #AP shapefile
 # plot(AP)
+# plot(mn_ay)
+# plot(AP, add = TRUE)
 # 
 # #plot CCAMLR SSMUs
 # for (i in 1:length(SSMU_names))
@@ -501,13 +505,53 @@ cols <- gg_color_hue(length(SSMU_names), ALPHA = 1)
 
 require(ggplot2)
 
+# colonies <- data.frame(SITE = SLL$SITE,
+#                    long = t_col_points@coords[,1],
+#                    lat = t_col_points@coords[,2],
+#                    KRILL = CCAMLR_kr_AY$T_KRILL)
+
+#without KRILL
 colonies <- data.frame(SITE = SLL$SITE,
-                   long = t_col_points@coords[,1],
-                   lat = t_col_points@coords[,2],
-                   KRILL = CCAMLR_kr_AY$T_KRILL)
+                       long = t_col_points@coords[,1],
+                       lat = t_col_points@coords[,2])
+
 
 
 #zoom in on AP sites
+
+#convert raster to dataframe
+mn_ay_spdf <- as(mn_ay, 'SpatialPixelsDataFrame')
+mn_ay_df <- as.data.frame(mn_ay_spdf)
+colnames(mn_ay_df) <- c('value', 'x', 'y')
+
+#NA vals for 251 (cicular mask), 252 (unused), 253 (coastlines), 254 (landmask), and 255 (missing data)
+mn_ay_df$value[which(mn_ay_df$value > 250)] <- NA
+#scale 0 - 100
+mn_ay_df$value <- (mn_ay_df$value/250)*100
+
+#Add SIC to map plot
+
+ggplot(mn_ay_df, aes(x=x, y=y, fill = value)) + 
+  geom_tile() +
+  theme_void() +
+  coord_equal(xlim = c(-2750000, -2200000), 
+              ylim = c(1000000, 2000000)) +
+  scale_fill_gradient2('SIC',
+                       limits = c(0,
+                                100),
+                       na.value = 'white',
+                       low = 'white',
+                       high = 'light blue') +
+  geom_polygon(data = AP, aes(long, lat, group = group),
+               inherit.aes = FALSE,
+               fill = 'grey') + 
+  geom_path(data = AP, aes(long, lat, group = group), 
+            inherit.aes = FALSE,
+            color = 'black')
+
+
+
+
 
 ggplot(AP, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
@@ -557,26 +601,29 @@ ggplot(AP, aes(long, lat, group = group)) +
   #              color = 'black',
   #              #color = cols[7],
   #              inherit.aes = FALSE) +
-  geom_point(data = colonies,
-             inherit.aes = FALSE,
-             size = 8,
-             alpha = 0.4,
-             aes(long, lat, color = KRILL)) +
-  scale_color_gradient('Commercial Krill Catch (tons)',
-                       limits = c(min(colonies$KRILL),
-                                  max(colonies$KRILL)),
-                       low = 'blue',
-                       high = 'red') + 
-  ggtitle('Average yearly Commercial Krill Catch - 2012 - 2017') 
+  # geom_point(data = colonies,
+  #            inherit.aes = FALSE,
+  #            size = 8,
+  #            alpha = 0.4,
+  #            aes(long, lat, color = KRILL)) +
+  # scale_color_gradient('Commercial Krill Catch (tons)',
+  #                      limits = c(min(colonies$KRILL),
+  #                                 max(colonies$KRILL)),
+  #                      low = 'blue',
+  #                      high = 'red') + 
+  ggtitle('Average yearly Commercial Krill Catch - 2012 - 2017') +
+  geom_tile()
 
 
 
 
-ggplot(Ant, aes(long, lat, group = group)) +
-  geom_polygon(fill = 'grey') + 
-  geom_path(color = 'black') +
-  coord_equal() +
-  theme_void()
+
+# #entirity of Antarctica
+# ggplot(Ant, aes(long, lat, group = group)) +
+#   geom_polygon(fill = 'grey') + 
+#   geom_path(color = 'black') +
+#   coord_equal() +
+#   theme_void()
 
 
   
