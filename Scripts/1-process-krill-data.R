@@ -46,8 +46,10 @@ pacman::p_load(dplyr, rgdal, rgeos, ggplot2)
 
 #created buffers around actual lat/lons - don't want low-res land mask to interfere with krill trawls
 
+#if using actual data
+
 #determine which sites we have PW data for
-setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/RAW_Fiona_Apr_15_2018/')
+setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
 PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
 
 un_sites <- unique(PW_data$site)
@@ -75,24 +77,28 @@ PW_data$site[which(PW_data$site == 'BOOT')] <- 'PCHA'
 
 
 #determine lat/lons for all site we have data for
-site_ll <- data.frame(SITE = cam_sites, LON = rep(NA, length(cam_sites)), LAT = rep(NA, length(cam_sites)))
+
+SLL <- data.frame(SITE = cam_sites, LON = rep(NA, length(cam_sites)), LAT = rep(NA, length(cam_sites)))
 for (i in 1:length(cam_sites))
 {
   #i <- 1
   temp <- filter(PW_data, site == cam_sites[i])[1,]
-  site_ll$LON[i] <- temp$col_lon
-  site_ll$LAT[i] <- temp$col_lat
+
+  SLL$LON[i] <- temp$col_lon
+
+  SLL$LAT[i] <- temp$col_lat
 }
 
 
 #remove name column
-p_site_ll <- site_ll[,-1]
+
+p_SLL <- cbind(SLL$LON, SLL$LAT)
 
 #points are in 4326 (uses lat/lon)
-col_points <- SpatialPoints(p_site_ll, proj4string = CRS('+init=epsg:4326'))
+col_points <- SpatialPoints(p_SLL, proj4string = CRS('+init=epsg:4326'))
 
 #load Antarctic polygon
-setwd('../../Coastline_medium_res_polygon/')
+setwd('../Coastline_medium_res_polygon/')
 Ant <- rgdal::readOGR('Coastline_medium_res_polygon.shp')
 
 #AP
@@ -110,14 +116,10 @@ setwd('../ssmu-shapefile-WGS84/')
 sm <- rgdal::readOGR('ssmu-shapefile-WGS84.shp')
 SSMU <- spTransform(sm, CRS(proj4string(Ant)))
 SSMU_names <- as.character(unique(SSMU@data$ShortLabel))
-#use names from 'CCAMLR/CCAMLR_2017_Statistical_Bulletin_Volume_29_Data_Files/ReferenceDataGeographicArea.csv
 
-# SSMU_names <- c('APPA', 'APW', 'APDPW',
-#                 'APDPE', 'APBSW', 'APBSE',
-#                 'APEI', 'SOPA', 'SOW',
-#                 'SONE', 'SOSE', 'SGPA',
-#                 'SGW', 'SGE', 'SSPA',
-#                 'SS', 'APE')
+
+
+
 for (i in 1:length(SSMU_names))
 {
   #i <- 1
@@ -332,7 +334,7 @@ aker_master_krill_25 <- data.frame()
 for (i in 1:length(cam_sites))
 {
   #i <- 2
-  temp_site <- filter(site_ll, SITE == cam_sites[i])
+  temp_site <- filter(SLL, SITE == cam_sites[i])
   
   #convert to spatial points
   temp_site_sp <- SpatialPoints(temp_site[-1], proj4string = CRS('+init=epsg:4326'))
@@ -415,7 +417,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   for (i in 1:length(cam_sites))
   {
     #i <- 1
-    temp_site <- filter(site_ll, SITE == cam_sites[i])
+    temp_site <- filter(SLL, SITE == cam_sites[i])
   
     #convert to spatial points
     temp_site_sp <- SpatialPoints(temp_site[-1], proj4string = CRS('+init=epsg:4326'))
