@@ -129,6 +129,45 @@ for (i in 1:length(cam_sites))
 
 
 
+#150km radius for June - Sep
+
+
+data_150 <- read.csv('ALLSITES_SIC_150_MEAN.csv')
+
+SIC_150_W <- data.frame()
+for (i in 1:length(cam_sites))
+{
+  #i <- 1
+  temp_SIC <- filter(data_150, site_id == cam_sites[i])
+  
+  T_OUT <- data.frame()
+  for (j in 1979:2016)
+  {
+    #j <- 1979
+    temp <- filter(temp_SIC, year == j)
+    jun <- temp$SIC_MONTH_6
+    jul <- temp$SIC_MONTH_7
+    aug <- temp$SIC_MONTH_8
+    sep <- temp$SIC_MONTH_9
+    mn_jjas <- mean(c(jun, jul, aug, sep))
+    temp2 <- data.frame(YEAR = j+1,
+                        SITE = cam_sites[i],
+                        JUN = jun,
+                        JUL = jul,
+                        AUG = aug,
+                        SEP = sep,
+                        W_MN = mn_jjas)
+    T_OUT <- rbind(T_OUT, temp2)
+  }
+  SIC_150_W <- rbind(SIC_150_W, T_OUT)
+}
+
+# setwd('../Processed/')
+# 
+# write.csv(SIC_150_W, 'SIC_150_W.csv', row.names = FALSE)
+
+
+
 # Effect of SIC during previous 5 years -----------------------------------
 
 #500km radius for Jun - Sep for previous 5 winters

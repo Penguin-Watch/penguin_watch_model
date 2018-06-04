@@ -7,6 +7,7 @@
 
 # Clear environment -------------------------------------------------------
 
+
 rm(list = ls())
 
 
@@ -18,15 +19,19 @@ if('pacman' %in% rownames(installed.packages()) == FALSE)
   install.packages('pacman', repos = "http://cran.case.edu")
 }
 
-pacman::p_load(dplyr, rgdal, rgeos, ggplot2, raster)
+pacman::p_load(dplyr, rgdal, rgeos, ggplot2, raster, plotrix)
 
 
 
 
 # cam sites and lat/lons --------------------------------------------------
 
-#setwd('~/Google_Drive/R/penguin_watch_model/Data/')
-setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Data/')
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Data/')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Data/')
+}
 
 
 #cam sites is taken from 'Camera List' tab of google doc
@@ -187,6 +192,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
                                 length(cam_sites), 
                                 length(SSMU_n@data$ShortLabel)+1))
   colnames(zone_ovl) <- c('SITE', as.character(SSMU_n@data$ShortLabel))
+  
   for (i in 1:length(cam_sites))
   {
     #i <- 1
@@ -279,7 +285,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
 }
 
 #krill weighted is total krill catch within site buffer, weighted by percent overlap with SSMU
-krill_weighted_25 <- weight_krill_fun(BUFFER_SIZE = 25)
+#krill_weighted_25 <- weight_krill_fun(BUFFER_SIZE = 25)
 krill_weighted_150 <- weight_krill_fun(BUFFER_SIZE = 150)
 
 
@@ -415,7 +421,6 @@ ggplot(CCAMLR_kr_AY, aes(SITE, T_KRILL)) +
 
 
 
-
 # When is krill fishing most intense in this region? ----------------------
 
 
@@ -442,19 +447,25 @@ ggplot(krill_time, aes(x = MONTH, y = KRILL)) +
 # Average winter SIC 2012-2017 --------------------------------------------
 
 
-setwd("~/Google_Drive/R/Project_archive/MAPPPD/SiteCovariates/PassiveMicrowaveSIC")
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/Project_archive/MAPPPD/SiteCovariates/PassiveMicrowaveSIC')
+} else {
+  setwd("~/Google_Drive/R/Project_archive/MAPPPD/SiteCovariates/PassiveMicrowaveSIC")
+}
 
-#calculate mean winter SIC in each cell for each year
+
+#calculate mean winter SIC in each cell for each year - years PW years (1999/2000 season is 2000)
 yrs <- 2012:2017
 for (i in 1:length(yrs))
 {
   #i <- 2
-  june <- raster(paste0('nt_', yrs[i] - 1, '06_f17_v1.1_s.tif'))
-  july <- raster(paste0('nt_', yrs[i] - 1, '07_f17_v1.1_s.tif'))
-  aug <- raster(paste0('nt_', yrs[i] - 1, '08_f17_v1.1_s.tif'))
-  sep <- raster(paste0('nt_', yrs[i] - 1, '09_f17_v1.1_s.tif'))
+  june <- raster::raster(paste0('nt_', yrs[i] - 1, '06_f17_v1.1_s.tif'))
+  july <- raster::raster(paste0('nt_', yrs[i] - 1, '07_f17_v1.1_s.tif'))
+  aug <- raster::raster(paste0('nt_', yrs[i] - 1, '08_f17_v1.1_s.tif'))
+  sep <- raster::raster(paste0('nt_', yrs[i] - 1, '09_f17_v1.1_s.tif'))
   
-  win <- stack(june, july, aug, sep)
+  win <- raster::stack(june, july, aug, sep)
   mn_win <- mean(win)
   #plot(mn_win, main = yrs[i])
   
@@ -463,14 +474,107 @@ for (i in 1:length(yrs))
 
 
 #calculate mean across years for each cell
-ay <- stack(mn_win_2012, mn_win_2013, mn_win_2014, 
-            mn_win_2015, mn_win_2016, mn_win_2017)
+ay <- raster::stack(mn_win_2012, mn_win_2013, mn_win_2014, 
+                    mn_win_2015, mn_win_2016, mn_win_2017)
 mn_ay <- mean(ay)
 
 
 
+# Fluctuations in krill and SIC over time at each site -------------------------------
 
-# create plots ------------------------------------------------------------
+
+#Order sites from N -> S latitude
+
+site_lats <- SLL[,c(1,3)]
+k_lat_t <- left_join(CCAMLR_kr_WS, site_lats, by = 'SITE')
+k_lat_t2 <- k_lat_t[order(k_lat_t$LAT, decreasing = TRUE),]
+k_lat <- mutate(k_lat_t2, idx = rep(1:length(unique(k_lat_t2$LAT)), each = 5))
+
+
+#krill - 150km buffer - years PW years (1999/2000 season is 2000)
+#color denotes N -> S latitude
+
+ggplot(k_lat, aes(YEAR, T_KRILL, group = SITE, color = idx)) +
+  geom_line(size = 1.2) + 
+  theme_bw() +
+  scale_color_gradient(low = 'grey', high = 'black') + 
+  ggtitle('KRILL - 150 km buffer - grey = high lat; black = low lat')
+
+
+# #mean changes in krill over time
+# yrs <- 2012:2016
+# avg_kr <- data.frame()
+# for (i in 1:length(yrs))
+# {
+#   #i <- 1
+#   temp <- filter(CCAMLR_kr_WS, YEAR == yrs[i])
+#   tk <- mean(temp$T_KRILL)
+#   tout <- data.frame(yrs[i], tk)
+#   avg_kr <- rbind(avg_kr, tout)
+# }
+# 
+# colnames(avg_kr) <- c('YEAR', 'T_KRILL')
+# 
+# ggplot(avg_kr, aes(YEAR, T_KRILL)) +
+#   geom_line(size = 1.2) + 
+#   theme_bw()
+
+
+
+#SIC - 150km buffer
+
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Data/SIC_data/RAW/')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/RAW')
+}
+
+data_150 <- read.csv('ALLSITES_SIC_150_MEAN.csv')
+
+SIC_150_W <- data.frame()
+for (i in 1:length(cam_sites))
+{
+  #i <- 1
+  temp_SIC <- filter(data_150, site_id == cam_sites[i])
+  
+  T_OUT <- data.frame()
+  for (j in 1979:2016)
+  {
+    #j <- 1979
+    temp <- filter(temp_SIC, year == j)
+    jun <- temp$SIC_MONTH_6
+    jul <- temp$SIC_MONTH_7
+    aug <- temp$SIC_MONTH_8
+    sep <- temp$SIC_MONTH_9
+    mn_jjas <- mean(c(jun, jul, aug, sep))
+    temp2 <- data.frame(YEAR = j+1,
+                        SITE = cam_sites[i],
+                        JUN = jun,
+                        JUL = jul,
+                        AUG = aug,
+                        SEP = sep,
+                        W_MN = mn_jjas)
+    T_OUT <- rbind(T_OUT, temp2)
+  }
+  SIC_150_W <- rbind(SIC_150_W, T_OUT)
+}
+
+n_SIC_1 <- filter(SIC_150_W, YEAR >= 2012, YEAR <= 2016)
+n_SIC_2 <- left_join(n_SIC_1, site_lats, by = 'SITE')
+n_SIC_3 <- n_SIC_2[order(n_SIC_2$LAT, decreasing = TRUE),]
+SIC_lat <- mutate(n_SIC_3, idx = rep(1:length(unique(n_SIC_3$LAT)), each = 5))
+
+
+ggplot(SIC_lat, aes(YEAR, W_MN, group = SITE, color = idx)) +
+  geom_line(size = 1.2) +
+  theme_bw() + 
+  scale_color_gradient(low = 'grey', high = 'black') + 
+  ggtitle('SIC - 150 km buffer - grey = high lat; black = low lat')
+
+
+
+# create map plots ------------------------------------------------------------
 
 #colors
 gg_color_hue <- function(n, ALPHA = 1)
@@ -483,7 +587,7 @@ cols <- gg_color_hue(length(SSMU_names), ALPHA = 1)
 
 
 
-
+#base plot
 # #AP shapefile
 # plot(AP)
 # plot(mn_ay)
@@ -503,17 +607,16 @@ cols <- gg_color_hue(length(SSMU_names), ALPHA = 1)
 # plot(all_site_buffers_150, col = rgb(0,0,1,0.2), add = TRUE)
 
 
-require(ggplot2)
-
-# colonies <- data.frame(SITE = SLL$SITE,
-#                    long = t_col_points@coords[,1],
-#                    lat = t_col_points@coords[,2],
-#                    KRILL = CCAMLR_kr_AY$T_KRILL)
-
-#without KRILL
+#ggplot
 colonies <- data.frame(SITE = SLL$SITE,
-                       long = t_col_points@coords[,1],
-                       lat = t_col_points@coords[,2])
+                   long = t_col_points@coords[,1],
+                   lat = t_col_points@coords[,2],
+                   KRILL = CCAMLR_kr_AY$T_KRILL)
+
+# #without KRILL
+# colonies <- data.frame(SITE = SLL$SITE,
+#                        long = t_col_points@coords[,1],
+#                        lat = t_col_points@coords[,2])
 
 
 
@@ -529,90 +632,179 @@ mn_ay_df$value[which(mn_ay_df$value > 250)] <- NA
 #scale 0 - 100
 mn_ay_df$value <- (mn_ay_df$value/250)*100
 
-#Add SIC to map plot
+
+# #just SIC
+# 
+# ggplot(mn_ay_df, aes(x=x, y=y, fill = value)) +
+#   geom_tile() +
+#   theme_void() +
+#   coord_equal(xlim = c(-2750000, -2200000),
+#               ylim = c(1000000, 2000000)) +
+#   scale_fill_gradient2('Mean SIC - June - Sep',
+#                        limits = c(0,
+#                                 100),
+#                        na.value = 'white',
+#                        low = 'white',
+#                        high = 'light blue') +
+#   geom_polygon(data = AP, aes(long, lat, group = group),
+#                inherit.aes = FALSE,
+#                fill = 'grey') +
+#   geom_path(data = AP, aes(long, lat, group = group),
+#             inherit.aes = FALSE,
+#             color = 'black')
+
+# 
+# #just krill catch
+# ggplot(AP, aes(long, lat, group = group)) +
+#   geom_polygon(fill = 'grey') + 
+#   geom_path(color = 'black') +
+#   coord_equal(xlim = c(-2750000, -2200000), 
+#             ylim = c(1000000, 2000000)) +
+#   theme_void() +
+#   # geom_polygon(data = APW,
+#   #              aes(long, lat),
+#   #              fill = NA,
+#   #              color = 'black',
+#   #              #color = cols[1],
+#   #              inherit.aes = FALSE) +
+#   # geom_polygon(data = APDPW,
+#   #              aes(long, lat),
+#   #              fill = NA,
+#   #              color = 'black',
+#   #              #color = cols[2],
+#   #              inherit.aes = FALSE) +
+#   # geom_polygon(data = APDPE,
+#   #              aes(long, lat),
+#   #              fill = NA,
+#   #              color = 'black',
+#   #              #color = cols[3],
+#   #              inherit.aes = FALSE) +
+#   # geom_polygon(data = APBSW,
+#   #              aes(long, lat),
+#   #              fill = NA,
+#   #              color = 'black',
+#   #              #color = cols[4],
+#   #              inherit.aes = FALSE) +
+#   # geom_polygon(data = APBSE,
+#   #              aes(long, lat),
+#   #              fill = NA,
+#   #              color = 'black',
+#   #              #color = cols[5],
+#   #              inherit.aes = FALSE) +
+#   # geom_polygon(data = APEI,
+#   #              aes(long, lat),
+#   #              fill = NA,
+#   #              color = 'black',
+#   #              #color = cols[6],
+#   #              inherit.aes = FALSE) +
+#   # geom_polygon(data = APE,
+#   #              aes(long, lat),
+#   #              fill = NA,
+#   #              color = 'black',
+#   #              #color = cols[7],
+#   #              inherit.aes = FALSE) +
+#   geom_point(data = colonies,
+#              inherit.aes = FALSE,
+#              size = 8,
+#              alpha = 0.6,
+#              aes(long, lat, color = KRILL)) +
+#   scale_color_gradient('Commercial Krill Catch (tons)',
+#                        limits = c(min(colonies$KRILL),
+#                                   max(colonies$KRILL)),
+#                        low = 'white',
+#                        high = 'red') +
+#   geom_point(data = colonies,
+#              inherit.aes = FALSE,
+#              size = 8,
+#              shape = 21,
+#              alpha = 0.6,
+#              stroke = 1.2,
+#              color = 'black',
+#              aes(long, lat))
+#   ggtitle('Average yearly Commercial Krill Catch - 2012 - 2017') +
+#   geom_tile()
+
+
+#SIC and krill
 
 ggplot(mn_ay_df, aes(x=x, y=y, fill = value)) + 
+  #plot settings
   geom_tile() +
   theme_void() +
-  coord_equal(xlim = c(-2750000, -2200000), 
+  coord_equal(xlim = c(-2850000, -2050000), 
               ylim = c(1000000, 2000000)) +
-  scale_fill_gradient2('SIC',
+  #SIC
+  scale_fill_gradient2('Mean SIC - June - Sep',
                        limits = c(0,
-                                100),
+                                  100),
                        na.value = 'white',
                        low = 'white',
                        high = 'light blue') +
+  #AP shp file
   geom_polygon(data = AP, aes(long, lat, group = group),
                inherit.aes = FALSE,
                fill = 'grey') + 
   geom_path(data = AP, aes(long, lat, group = group), 
             inherit.aes = FALSE,
-            color = 'black')
+            color = 'black') +
+  #krill
+  geom_point(data = colonies,
+             inherit.aes = FALSE,
+             size = 8,
+             alpha = 0.6,
+             aes(long, lat, color = KRILL)) +
+  scale_color_gradient('Commercial Krill Catch (tons)',
+                       limits = c(min(colonies$KRILL),
+                                  max(colonies$KRILL)),
+                       low = 'white',
+                       high = 'red') +
+  #krill point outlines
+  geom_point(data = colonies,
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.6,
+             stroke = 1,
+             color = 'black',
+             aes(long, lat)) +
+  theme(legend.position='none')
 
 
 
 
 
-ggplot(AP, aes(long, lat, group = group)) +
-  geom_polygon(fill = 'grey') + 
-  geom_path(color = 'black') +
-  coord_equal(xlim = c(-2750000, -2200000), 
-            ylim = c(1000000, 2000000)) +
-  theme_void() +
-  # geom_polygon(data = APW,
-  #              aes(long, lat),
-  #              fill = NA,
-  #              color = 'black',
-  #              #color = cols[1],
-  #              inherit.aes = FALSE) +
-  # geom_polygon(data = APDPW,
-  #              aes(long, lat),
-  #              fill = NA,
-  #              color = 'black',
-  #              #color = cols[2],
-  #              inherit.aes = FALSE) +
-  # geom_polygon(data = APDPE,
-  #              aes(long, lat),
-  #              fill = NA,
-  #              color = 'black',
-  #              #color = cols[3],
-  #              inherit.aes = FALSE) +
-  # geom_polygon(data = APBSW,
-  #              aes(long, lat),
-  #              fill = NA,
-  #              color = 'black',
-  #              #color = cols[4],
-  #              inherit.aes = FALSE) +
-  # geom_polygon(data = APBSE,
-  #              aes(long, lat),
-  #              fill = NA,
-  #              color = 'black',
-  #              #color = cols[5],
-  #              inherit.aes = FALSE) +
-  # geom_polygon(data = APEI,
-  #              aes(long, lat),
-  #              fill = NA,
-  #              color = 'black',
-  #              #color = cols[6],
-  #              inherit.aes = FALSE) +
-  # geom_polygon(data = APE,
-  #              aes(long, lat),
-  #              fill = NA,
-  #              color = 'black',
-  #              #color = cols[7],
-  #              inherit.aes = FALSE) +
-  # geom_point(data = colonies,
-  #            inherit.aes = FALSE,
-  #            size = 8,
-  #            alpha = 0.4,
-  #            aes(long, lat, color = KRILL)) +
-  # scale_color_gradient('Commercial Krill Catch (tons)',
-  #                      limits = c(min(colonies$KRILL),
-  #                                 max(colonies$KRILL)),
-  #                      low = 'blue',
-  #                      high = 'red') + 
-  ggtitle('Average yearly Commercial Krill Catch - 2012 - 2017') +
-  geom_tile()
+
+#legend KRILL
+#pdf(file = 'Legend.pdf', width = 5, height = 5, useDingbats = FALSE)
+plot(1:100, 1:100, type = "n", 
+     ann = TRUE, xaxt = 'n', yaxt = "n", 
+     bty = "n", ylab = NA, xlab = NA,
+     main = paste0('Krill'))
+
+colfunc <- colorRampPalette(c('white', 'red'))
+cols <- colfunc(201)
+
+plotrix::gradient.rect(30, 0, 70, 100, 
+              col = cols, gradient = "v", 
+              border = 'black')
+#dev.off()
+
+
+#legend SIC
+#pdf(file = 'Legend.pdf', width = 5, height = 5, useDingbats = FALSE)
+plot(1:100, 1:100, type = "n", 
+     ann = TRUE, xaxt = 'n', yaxt = "n", 
+     bty = "n", ylab = NA, xlab = NA,
+     main = paste0('SIC'))
+
+colfunc <- colorRampPalette(c('white','light blue'))
+cols <- colfunc(201)
+
+plotrix::gradient.rect(30, 0, 70, 100, 
+                       col = cols, gradient = "v", 
+                       border = 'black')
+#dev.off()
+
 
 
 
