@@ -30,8 +30,6 @@ pacman::p_load(MCMCvis, boot, dplyr)
 
 
 
-
-
 # Load data -------------------------------------------------------
 
 #phi = survival prob
