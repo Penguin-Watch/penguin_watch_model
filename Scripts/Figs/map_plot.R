@@ -773,7 +773,6 @@ ggplot(mn_ay_df, aes(x=x, y=y, fill = value)) +
 
 
 
-
 #legend KRILL
 #pdf(file = 'Legend.pdf', width = 5, height = 5, useDingbats = FALSE)
 plot(1:100, 1:100, type = "n", 
@@ -804,6 +803,23 @@ plotrix::gradient.rect(30, 0, 70, 100,
                        col = cols, gradient = "v", 
                        border = 'black')
 #dev.off()
+
+
+#legend latitude
+#pdf(file = 'Legend.pdf', width = 5, height = 5, useDingbats = FALSE)
+plot(1:100, 1:100, type = "n", 
+     ann = TRUE, xaxt = 'n', yaxt = "n", 
+     bty = "n", ylab = NA, xlab = NA,
+     main = paste0('Site Latitude'))
+
+colfunc <- colorRampPalette(c('grey', 'black'))
+cols <- colfunc(201)
+
+plotrix::gradient.rect(30, 0, 70, 100, 
+                       col = cols, gradient = "v", 
+                       border = 'black')
+#dev.off()
+
 
 
 

@@ -931,3 +931,23 @@ ggplot(krill_time, aes(x = MONTH, y = KRILL)) +
 # rect(xleft = 240, ybottom = 0, xright = 270, ytop = 12000, col = rgb(0.8,0,0,0.2))
 # rect(xleft = 300, ybottom = 0, xright = 330, ytop = 12000, col = rgb(0.8,0,0,0.2))
 
+
+
+
+# number of krill present in AP region ------------------------------------
+
+
+#area in buffer around each site in m^2
+area <- 150000*150000*pi
+
+#number of krill in 150 km - from Atkinson et al. 2009 Seep Sea Research (Fig 2)
+low_kr <- 10*area
+high_kr <- 50*area
+
+#biomass in thousands of tonnes
+#0.486g per krill
+low_bm <- (((low_kr * 0.486) / 1000) / 1000) / 1000
+high_bm <- (((high_kr * 0.486 ) / 1000) / 1000) / 1000
+
+
+
