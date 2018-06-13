@@ -644,7 +644,7 @@ jagsRun(jagsData = DATA,
                jagsID = 'June_12_2018_10k',
                jagsDsc = '5 sites, 3 years
             10k iter
-            Short queue
+            Long queue
             First QC data - before POLAR
             non-hierarchical gamma, etc, hierarchical nu
             logit(phi) <- mu + gamma + eta + pi + rho; 
