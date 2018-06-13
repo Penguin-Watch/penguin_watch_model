@@ -56,16 +56,11 @@ setwd(dir[1])
 
 PW_data <- read.csv('PW_data_June_12_2018.csv', stringsAsFactors = FALSE)
 
-boots <- which(PW_data$site == 'BOOT')
-PW_data$site[boots] <- 'PCHA'
-
+#remove specified colonies
 un_sites_p <- unique(PW_data$site)
-
-#remove colonies to make dataset smaller (faster model run)
-#to_rm <- c('AITC')
-#un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
-
-un_sites <- un_sites_p
+to_rm <- c('AITC')
+un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
+#un_sites <- un_sites_p
 
 
 #determine years
@@ -641,9 +636,9 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'June_12_2018_100k',
-               jagsDsc = '5 sites, 3 years
-            100k iter
+               jagsID = 'June_13_2018_50k',
+               jagsDsc = '4 sites, 3 years
+            50k iter
             Long queue
             First QC data - before POLAR
             non-hierarchical gamma, etc, hierarchical nu
@@ -652,8 +647,8 @@ jagsRun(jagsData = DATA,
                db_hash = 'PW_data_June_12_2018.csv',
                n_chain = 6,
                n_adapt = 5000,
-               n_burn = 100000,
-               n_draw = 100000,
+               n_burn = 50000,
+               n_draw = 50000,
                n_thin = 20,
                EXTRA = FALSE,
                Rhat_max = 1.1,
