@@ -494,12 +494,22 @@ k_lat <- mutate(k_lat_t2, idx = rep(1:length(unique(k_lat_t2$LAT)), each = 5))
 #krill - 150km buffer - years PW years (1999/2000 season is 2000)
 #color denotes N -> S latitude
 
+
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Figures')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Figures')
+}
+
+
+pdf(file = 'krill_ts.pdf', width = 7, height = 6, useDingbats = FALSE)
 ggplot(k_lat, aes(YEAR, T_KRILL, group = SITE, color = idx)) +
   geom_line(size = 1.2) + 
   theme_bw() +
   scale_color_gradient(low = 'grey', high = 'black') + 
   ggtitle('KRILL - 150 km buffer - grey = high lat; black = low lat')
-
+dev.off()
 
 # #mean changes in krill over time
 # yrs <- 2012:2016
@@ -566,12 +576,21 @@ n_SIC_3 <- n_SIC_2[order(n_SIC_2$LAT, decreasing = TRUE),]
 SIC_lat <- mutate(n_SIC_3, idx = rep(1:length(unique(n_SIC_3$LAT)), each = 5))
 
 
+
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Figures')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Figures')
+}
+
+pdf(file = 'sic_ts.pdf', width = 7, height = 6, useDingbats = FALSE)
 ggplot(SIC_lat, aes(YEAR, W_MN, group = SITE, color = idx)) +
   geom_line(size = 1.2) +
   theme_bw() + 
   scale_color_gradient(low = 'grey', high = 'black') + 
   ggtitle('SIC - 150 km buffer - grey = high lat; black = low lat')
-
+dev.off()
 
 
 # create map plots ------------------------------------------------------------
@@ -725,8 +744,18 @@ mn_ay_df$value <- (mn_ay_df$value/250)*100
 #   geom_tile()
 
 
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Figures')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Figures')
+}
+
+
+
 #SIC and krill
 
+pdf(file = 'SK_map.pdf', width = 7, height = 6, useDingbats = FALSE)
 ggplot(mn_ay_df, aes(x=x, y=y, fill = value)) + 
   #plot settings
   geom_tile() +
@@ -768,7 +797,7 @@ ggplot(mn_ay_df, aes(x=x, y=y, fill = value)) +
              color = 'black',
              aes(long, lat)) +
   theme(legend.position='none')
-
+dev.off()
 
 
 
@@ -834,4 +863,51 @@ plotrix::gradient.rect(30, 0, 70, 100,
 #   theme_void()
 
 
-  
+
+
+
+#map of current data sites
+
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Data/PW_data/')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
+}
+
+#just current list of sites
+m_data <- read.csv('PW_data_June_12_2018.csv', stringsAsFactors = FALSE)
+sites <- unique(m_data$site)
+sites[which(sites == 'LOCK')] <- 'PORT'
+n_colonies <- colonies[which(colonies$SITE %in% sites),]
+
+
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Figures')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Figures')
+}
+
+
+pdf(file = 'AP.pdf', width = 7, height = 6, useDingbats = FALSE)
+ggplot(data = AP, aes(long, lat, group = group),
+       fill = 'grey') + 
+  geom_polygon() +
+  theme_void() +
+  coord_equal(xlim = c(-2850000, -2050000), 
+              ylim = c(1000000, 2000000)) +
+  geom_path(data = AP, aes(long, lat, group = group), 
+            inherit.aes = FALSE,
+            color = 'black') #+
+  # #sites with data
+  # geom_point(data = n_colonies,
+  #            inherit.aes = FALSE,
+  #            size = 8,
+  #            #shape = 21,
+  #            alpha = 0.6,
+  #            #stroke = 1,
+  #            #color = 'black',
+  #            aes(long, lat, color = SITE)) +
+  # theme(legend.position='none')
+dev.off()
