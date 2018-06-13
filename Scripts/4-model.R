@@ -608,7 +608,7 @@ Inits_6 <- list(mu_phi = 4,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
-F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
+F_Inits <- list(Inits_1, Inits_2, Inits_3)#, Inits_4, Inits_5, Inits_6)
 
 
 
@@ -641,9 +641,9 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'June_12_2018_10k',
+               jagsID = 'June_12_2018_100k',
                jagsDsc = '5 sites, 3 years
-            50k iter
+            100k iter
             Long queue
             First QC data - before POLAR
             non-hierarchical gamma, etc, hierarchical nu
@@ -652,8 +652,8 @@ jagsRun(jagsData = DATA,
                db_hash = 'PW_data_June_12_2018.csv',
                n_chain = 6,
                n_adapt = 5000,
-               n_burn = 50000,
-               n_draw = 50000,
+               n_burn = 100000,
+               n_draw = 100000,
                n_thin = 20,
                EXTRA = FALSE,
                Rhat_max = 1.1,

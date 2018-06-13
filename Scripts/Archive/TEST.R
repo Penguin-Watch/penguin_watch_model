@@ -1,4 +1,4 @@
-
+#test for geos crashing Rstudio
 
 # Clear environment -------------------------------------------------------
 
