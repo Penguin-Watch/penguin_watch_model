@@ -52,45 +52,29 @@ pacman::p_load(dplyr, rgdal, rgeos, ggplot2)
 #if using actual data
 
 #determine which sites we have PW data for
-setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
-PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
+setwd('~/Google_Drive/R/penguin_watch_model/Data/')
 
-un_sites <- unique(PW_data$site)
+cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
+ASI <- read.csv('ASI_sites_expanded.csv')
 
-site_year <- c()
-for(i in 1:length(un_sites))
+
+SLL <- data.frame()
+for (i in 1:length(cam_sites))
 {
-  #i <- 1
-  tdat <- filter(PW_data, site == un_sites[i])
-  tsy <- unique(tdat$season_year)
-  tout <- data.frame(SITE = rep(un_sites[i], length(tsy)), YEAR = tsy)
-  site_year <- rbind(site_year, tout)
+  #i <- 4
+  idx <- ASI$Site.code %in% cam_sites[i]
+  lat <- ASI$Lat[idx]
+  lon <- ASI$Lon[idx]
+  temp <- data.frame(SITE = cam_sites[i], 
+                     NAME = ASI$Hotspot.Name[idx],
+                     LAT = lat, 
+                     LON = lon)
+  SLL <- rbind(SLL, temp)
 }
-
-#site/years we have data for:
-#site_year
 
 
 #BOOT is now PCHA in MAPPPD database
-pos <- which(un_sites == 'BOOT')
-cam_sites_p <- un_sites[-pos]
-cam_sites <- c(cam_sites_p, 'PCHA')
-
-PW_data$site[which(PW_data$site == 'BOOT')] <- 'PCHA'
-
-
-#determine lat/lons for all site we have data for
-
-SLL <- data.frame(SITE = cam_sites, LON = rep(NA, length(cam_sites)), LAT = rep(NA, length(cam_sites)))
-for (i in 1:length(cam_sites))
-{
-  #i <- 1
-  temp <- filter(PW_data, site == cam_sites[i])[1,]
-
-  SLL$LON[i] <- temp$col_lon
-
-  SLL$LAT[i] <- temp$col_lat
-}
+#LOCK is PORT in MAPPPD database
 
 
 #remove name column
@@ -101,7 +85,7 @@ p_SLL <- cbind(SLL$LON, SLL$LAT)
 col_points <- SpatialPoints(p_SLL, proj4string = CRS('+init=epsg:4326'))
 
 #load Antarctic polygon
-setwd('../Coastline_medium_res_polygon/')
+setwd('Coastline_medium_res_polygon/')
 Ant <- rgdal::readOGR('Coastline_medium_res_polygon.shp')
 
 #AP
@@ -339,8 +323,10 @@ for (i in 1:length(cam_sites))
   #i <- 2
   temp_site <- filter(SLL, SITE == cam_sites[i])
   
+  tt_site <- cbind(temp_site$LON, temp_site$LAT)
+  
   #convert to spatial points
-  temp_site_sp <- SpatialPoints(temp_site[-1], proj4string = CRS('+init=epsg:4326'))
+  temp_site_sp <- SpatialPoints(tt_site, proj4string = CRS('+init=epsg:4326'))
   
   #transform to 3031
   temp_site <- spTransform(temp_site_sp, CRS(proj4string(Ant)))
@@ -414,6 +400,7 @@ for (i in 1:length(cam_sites))
 
 weight_krill_fun <- function(BUFFER_SIZE = 150)
 {
+  #BUFFER_SIZE = 25
   
   #create buffers for each site
   #buffer size in KM
@@ -422,8 +409,9 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
     #i <- 1
     temp_site <- filter(SLL, SITE == cam_sites[i])
   
+    tt_site <- cbind(temp_site$LON, temp_site$LAT)
     #convert to spatial points
-    temp_site_sp <- SpatialPoints(temp_site[-1], proj4string = CRS('+init=epsg:4326'))
+    temp_site_sp <- SpatialPoints(tt_site, proj4string = CRS('+init=epsg:4326'))
   
     #transform to 3031
     temp_site <- spTransform(temp_site_sp, CRS(proj4string(Ant)))
@@ -433,8 +421,8 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
 
 
   #create data.frame that shows which SSMU each buffer intersects (more than 10% buffer area)
-  #remove APPA (AP pelagic area) and APE (AP East)
-  SSMU_n <- SSMU[which(!SSMU@data$ShortLabel %in% c('APPA', 'APE')),]
+  #remove APPA (AP pelagic area)
+  SSMU_n <- SSMU[which(!SSMU@data$ShortLabel %in% c('APPA')),]
   #empty data.frame with SSMU as colnames
   zone_ovl <- data.frame(matrix(vector(), 
                                 length(cam_sites), 
@@ -442,7 +430,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   colnames(zone_ovl) <- c('SITE', as.character(SSMU_n@data$ShortLabel))
   for (i in 1:length(cam_sites))
   {
-    #i <- 1
+    #i <- 9
     t_data <- get(cam_sites[i])
     vals <- which(gIntersects(t_data, SSMU_n, byid = TRUE) == TRUE)
   
@@ -532,7 +520,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
 }
 
 #krill weighted is total krill catch within site buffer, weighted by percent overlap with SSMU
-krill_weighted_25 <- weight_krill_fun(BUFFER_SIZE = 25)
+#krill_weighted_25 <- weight_krill_fun(BUFFER_SIZE = 25)
 krill_weighted_150 <- weight_krill_fun(BUFFER_SIZE = 150)
 
 
@@ -556,42 +544,42 @@ yrs <- 2012:2016
 #YEAR is PW year
 
 #CCAMLR data
-CCAMLR_kr_BS <- data.frame()
-for (i in 1:length(cam_sites))
-{
-  #i <- 1
-  temp_krill <- filter(krill_weighted_25, SITE == cam_sites[i])
-
-  #PW year (1999/2000 season is PW year 2000)
-  for (j in 1:length(yrs))
-  {
-    #j <- 1
-    #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
-    
-    yr_one <- filter(temp_krill, YEAR == yrs[j]-1)
-    DEC <- filter(yr_one, MONTH == 12)
-    yr_two <- filter(temp_krill, YEAR == yrs[j])
-    JAN <- filter(yr_two, MONTH == 1)
-    
-    #total krill caught over this period
-    t_krill <- sum(c(DEC$WEIGHTED_KRILL, JAN$WEIGHTED_KRILL), na.rm = TRUE)
-    
-    if (!is.na(t_krill))
-    {
-      #output
-      t_out <- data.frame(SITE = cam_sites[i],
-                          YEAR = yrs[j],
-                          T_KRILL = t_krill)
-      #merge with final output
-      CCAMLR_kr_BS <- rbind(CCAMLR_kr_BS, t_out)
-    } else {
-      t_out <- data.frame(SITE = cam_sites[i],
-                          YEAR = yrs[j],
-                          T_KRILL = 0)
-      CCAMLR_kr_BS <- rbind(CCAMLR_kr_BS, t_out)
-    }
-  }
-}
+# CCAMLR_kr_BS <- data.frame()
+# for (i in 1:length(cam_sites))
+# {
+#   #i <- 1
+#   temp_krill <- filter(krill_weighted_25, SITE == cam_sites[i])
+# 
+#   #PW year (1999/2000 season is PW year 2000)
+#   for (j in 1:length(yrs))
+#   {
+#     #j <- 1
+#     #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+#     
+#     yr_one <- filter(temp_krill, YEAR == yrs[j]-1)
+#     DEC <- filter(yr_one, MONTH == 12)
+#     yr_two <- filter(temp_krill, YEAR == yrs[j])
+#     JAN <- filter(yr_two, MONTH == 1)
+#     
+#     #total krill caught over this period
+#     t_krill <- sum(c(DEC$WEIGHTED_KRILL, JAN$WEIGHTED_KRILL), na.rm = TRUE)
+#     
+#     if (!is.na(t_krill))
+#     {
+#       #output
+#       t_out <- data.frame(SITE = cam_sites[i],
+#                           YEAR = yrs[j],
+#                           T_KRILL = t_krill)
+#       #merge with final output
+#       CCAMLR_kr_BS <- rbind(CCAMLR_kr_BS, t_out)
+#     } else {
+#       t_out <- data.frame(SITE = cam_sites[i],
+#                           YEAR = yrs[j],
+#                           T_KRILL = 0)
+#       CCAMLR_kr_BS <- rbind(CCAMLR_kr_BS, t_out)
+#     }
+#   }
+# }
 
 # setwd('../Processed_CCAMLR/')
 # write.csv(CCAMLR_kr_BS, 'CCAMLR_krill_breeding_season.csv', row.names = FALSE)
@@ -692,6 +680,23 @@ for (i in 1:length(cam_sites))
   }
 }
 
+
+#LOCK is PORT in MAPPPD
+#BOOT is PCHA is MAPPP
+
+CCAMLR_kr_WS$SITE <- as.character(CCAMLR_kr_WS$SITE)
+
+if (length(which(CCAMLR_kr_WS$SITE == 'PORT')) > 0)
+{
+  CCAMLR_kr_WS$SITE[which(CCAMLR_kr_WS$SITE == 'PORT')] <- 'LOCK'
+}
+
+if (length(which(CCAMLR_kr_WS$SITE == 'PCHA')) > 0)
+{
+  CCAMLR_kr_WS$SITE[which(CCAMLR_kr_WS$SITE == 'PCHA')] <- 'BOOT'
+}
+
+# setwd('../Processed_CCAMLR/')
 # write.csv(CCAMLR_kr_WS, 'CCAMLR_krill_entire_season.csv', row.names = FALSE)
 
 
