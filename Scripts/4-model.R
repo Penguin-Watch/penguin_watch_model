@@ -643,7 +643,7 @@ jagsRun(jagsData = DATA,
                params = Pars,
                jagsID = 'June_12_2018_10k',
                jagsDsc = '5 sites, 3 years
-            10k iter
+            50k iter
             Long queue
             First QC data - before POLAR
             non-hierarchical gamma, etc, hierarchical nu
@@ -652,8 +652,8 @@ jagsRun(jagsData = DATA,
                db_hash = 'PW_data_June_12_2018.csv',
                n_chain = 6,
                n_adapt = 5000,
-               n_burn = 10000,
-               n_draw = 10000,
+               n_burn = 50000,
+               n_draw = 50000,
                n_thin = 20,
                EXTRA = FALSE,
                Rhat_max = 1.1,

@@ -2,7 +2,7 @@
 
 #PBS -l nodes=1:ppn=28,walltime=48:00:00
 #PBS -q long
-#PBS -N PW_run
+#PBS -N PW_run_50k
 #PBS -j oe
 #PBS -o out.txt
 
