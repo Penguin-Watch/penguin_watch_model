@@ -1,0 +1,5 @@
+Rscript 4-model.R
+Rscript 4-model-BUFF2.R
+Rscript 4-model-BUFF4.R
+Rscript 4-model-BUFF6.R
+Rscript 4-model-BUFF8.R
