@@ -42,13 +42,19 @@ pacman::p_load(dplyr)
 
 
 
+# Load site data ----------------------------------------------------------
+
+setwd('~/Google_Drive/R/penguin_watch_model/Data/')
+
+cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
+
 
 
 # Effect of SIC during breeding season -------------------------------------
 
 #50km radius for Dec - Feb in each year
 
-setwd('~/Google_Drive/R/penguin_watch_model/Data/SIC_data/RAW')
+setwd('SIC_data/RAW')
 
 #year for OUT is PW year (e.g., year 2000 in OUT is 1999/2000 breeding season)
 
@@ -125,6 +131,24 @@ for (i in 1:length(cam_sites))
   SIC_500_W <- rbind(SIC_500_W, T_OUT)
 }
 
+
+
+#LOCK is PORT in MAPPPD
+#BOOT is PCHA is MAPPP
+
+SIC_500_W$SITE <- as.character(SIC_500_W$SITE)
+
+if (length(which(SIC_500_W$SITE == 'PORT')) > 0)
+{
+  SIC_500_W$SITE[which(SIC_500_W$SITE == 'PORT')] <- 'LOCK'
+}
+
+if (length(which(SIC_500_W$SITE == 'PCHA')) > 0)
+{
+  SIC_500_W$SITE[which(SIC_500_W$SITE == 'PCHA')] <- 'BOOT'
+}
+
+
 # setwd('../Processed/')
 # 
 # write.csv(SIC_500_W, 'SIC_500_W.csv', row.names = FALSE)
@@ -164,6 +188,23 @@ for (i in 1:length(cam_sites))
   }
   SIC_150_W <- rbind(SIC_150_W, T_OUT)
 }
+
+
+#LOCK is PORT in MAPPPD
+#BOOT is PCHA is MAPPP
+
+SIC_150_W$SITE <- as.character(SIC_150_W$SITE)
+
+if (length(which(SIC_150_W$SITE == 'PORT')) > 0)
+{
+  SIC_150_W$SITE[which(SIC_150_W$SITE == 'PORT')] <- 'LOCK'
+}
+
+if (length(which(SIC_150_W$SITE == 'PCHA')) > 0)
+{
+  SIC_150_W$SITE[which(SIC_150_W$SITE == 'PCHA')] <- 'BOOT'
+}
+
 
 # setwd('../Processed/')
 # 
