@@ -185,8 +185,8 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   
   
   #create data.frame that shows which SSMU each buffer intersects (more than 10% buffer area)
-  #remove APPA (AP pelagic area) and APE (AP East)
-  SSMU_n <- SSMU[which(!SSMU@data$ShortLabel %in% c('APPA', 'APE')),]
+  #remove APPA (AP pelagic area)
+  SSMU_n <- SSMU[which(!SSMU@data$ShortLabel %in% c('APPA')),]
   #empty data.frame with SSMU as colnames
   zone_ovl <- data.frame(matrix(vector(), 
                                 length(cam_sites), 
