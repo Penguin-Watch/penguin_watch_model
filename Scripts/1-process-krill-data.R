@@ -52,7 +52,14 @@ pacman::p_load(dplyr, rgdal, rgeos, ggplot2)
 #if using actual data
 
 #determine which sites we have PW data for
-setwd('~/Google_Drive/R/penguin_watch_model/Data/')
+
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Data/')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Data/')
+}
+
 
 cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
 ASI <- read.csv('ASI_sites_expanded.csv')

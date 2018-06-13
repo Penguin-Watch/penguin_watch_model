@@ -44,7 +44,13 @@ pacman::p_load(dplyr)
 
 # Load site data ----------------------------------------------------------
 
-setwd('~/Google_Drive/R/penguin_watch_model/Data/')
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Data/')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Data/')
+}
+
 
 cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
 

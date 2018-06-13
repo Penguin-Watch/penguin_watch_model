@@ -23,7 +23,14 @@ rm(list = ls())
 # DIR ---------------------------------------------------------------------
 
 #laptop
-setwd('~/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Manual_QC_data_files/')
+
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Research/Projects/Penguin_watch/PW_surv_model_data/Manual_QC_data_files/')
+} else {
+  setwd('~/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Manual_QC_data_files/')
+}
+
 
 
 # Load packages -----------------------------------------------------------
@@ -45,9 +52,14 @@ for (i in 1:length(files))
 }
 
 
-head(full_df)
 # write to csv ------------------------------------------------------------
 
-setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
+if (Sys.info()[[1]] == 'Windows')
+{
+  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Data/PW_data/')
+} else {
+  setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
+}
+
 
 write.csv(full_df, file = 'PW_data_June_12_2018.csv', row.names = FALSE)
