@@ -42,7 +42,6 @@ dir <- c('../Data', '../Data', '../Data', '../Results')
 
 #devtools::install_github('caseyyoungflesh/jagsRun')
 
-library(abind)
 library(dplyr)
 library(jagsRun)
 
@@ -54,8 +53,8 @@ setwd(dir[1])
 
 #make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
 #unused nests should be marked with all NAs
-#PW_data <- read.csv('Markrecap_data_15.05.18.csv', stringsAsFactors = FALSE)
-PW_data <- read.csv('CY_test_May_21_2018.csv', stringsAsFactors = FALSE)
+
+PW_data <- read.csv('PW_data_June_12_2018.csv', stringsAsFactors = FALSE)
 
 boots <- which(PW_data$site == 'BOOT')
 PW_data$site[boots] <- 'PCHA'
@@ -63,8 +62,8 @@ PW_data$site[boots] <- 'PCHA'
 un_sites_p <- unique(PW_data$site)
 
 #remove colonies to make dataset smaller (faster model run)
-to_rm <- c('AITC')
-un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
+#to_rm <- c('AITC')
+#un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
 
 un_sites <- un_sites_p
 
@@ -73,7 +72,7 @@ un_sites <- un_sites_p
 yrs <- c()
 for (k in 1:length(un_sites))
 {
-  #k <- 2
+  #k <- 1
   temp <- filter(PW_data, site == un_sites[k])
   un_yrs <- unique(temp$season_year)
   
@@ -106,7 +105,7 @@ DAYS_BUFF_FIRST_CHICK <- 0
 DAYS_AFTER <- 29 - DAYS_BUFF_FIRST_CHICK
 
 #number of time steps (rows) in response data
-n_ts <- DAYS_BEFORE + + DAYS_BUFF_FIRST_CHICK + DAYS_AFTER + 1
+n_ts <- DAYS_BEFORE + DAYS_BUFF_FIRST_CHICK + DAYS_AFTER + 1
 
 #number of nests (columns) in response data - i
 n_nests <- length(tog2)
@@ -120,22 +119,21 @@ n_sites <- length(un_sites)
 
 
 #aggregate data by day (max number of chicks for each day)
-#currently setting start and end day - could use lay date 30 days before first chick sighting
 
 #create blank array
 nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 
 #FILL RESPONSE DATA ARRAY
-#adds NA buffer to beginning and end of data (using cutoff dates)
+#adds NA buffer to beginning and end of data
 #nests with NAs are simply removed (e.g., if there are 4 nests, and nest 3 is all NAs, nest 4 becomes nest 3)
 for (k in 1:n_sites)
 {
-  #k <- 2
+  #k <- 1
   temp <- filter(PW_data, site == un_sites[k])
   
   for (j in 1:n_yrs)
   {
-    #j <- 1
+    #j <- 2
     temp2 <- filter(temp, season_year == d_yrs[j])
     
     if (NROW(temp2) > 0)
@@ -325,7 +323,7 @@ krill <- read.csv('CCAMLR_krill_entire_season.csv')
 i_KRILL <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
 for (k in 1:length(un_sites_ncc))
 {
-  #k <- 1
+  #k <- 5
   temp <- filter(krill, SITE == un_sites_ncc[k])
   
   for (j in 1:length(d_yrs))
@@ -346,14 +344,14 @@ KRILL <- matrix(t2, nrow = NROW(i_KRILL))
 # SIC covariate -----------------------------------------------------------
 
 #SIC for the previous winter
-#500km radius for June - Sep
-#COULD ALSO ADD MAX OVER LAST 5 YEARS
+#150km radius for June - Sep
+#COULD ALSO USE 500 KM
+#COULD ALSO USE MAX OVER LAST 5 YEARS
 
 
 setwd(dir[3])
 
-
-sea_ice <- read.csv('SIC_500_W.csv')
+sea_ice <- read.csv('SIC_150_W.csv')
 
 i_SIC <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
 for (k in 1:length(un_sites_ncc))
@@ -365,7 +363,7 @@ for (k in 1:length(un_sites_ncc))
   {
     #j <- 1
     temp2 <- filter(temp, YEAR == d_yrs[j])
-    i_SIC[j,k] <- temp2$WMN
+    i_SIC[j,k] <- temp2$W_MN
   }
 }
 
@@ -467,14 +465,14 @@ setwd(dir[4])
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
       
-      logit(phi[t,i,j,k]) <- mu_phi #+ gamma_phi[j] + eta_phi[k] #+ pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] + eta_phi[k] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
       #p = detection prob
       #mu_p = grand mean for all sites/years
       #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
       #nu_p = detection probability random effect for site/year
       
-      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] #+ nu_p[j,k]
+      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[j,k]
 
       } #t
       } #i
@@ -483,23 +481,23 @@ setwd(dir[4])
       
 
       #priors - covariates
-      #pi_phi ~ dnorm(0, 0.386)
-      #rho_phi ~ dnorm(0, 0.386)
+      pi_phi ~ dnorm(0, 0.386)
+      rho_phi ~ dnorm(0, 0.386)
 
       #priors - phi
       mu_phi ~ dnorm(3, 0.1)
       
-      #for (k in 1:NK)
-      #{
+      for (k in 1:NK)
+      {
       #eta_phi[k] ~ dnorm(0, tau_eta_phi)
-      #eta_phi[k] ~ dnorm(0, 0.386)    
-      #}
+      eta_phi[k] ~ dnorm(0, 0.386)    
+      }
       
-      #for (j in 1:NJ)
-      #{
+      for (j in 1:NJ)
+      {
       #gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
-      #gamma_phi[j] ~ dnorm(0, 0.386)
-      #}
+      gamma_phi[j] ~ dnorm(0, 0.386)
+      }
       
       #tau_eta_phi <- pow(sigma_eta_phi, -2)
       #sigma_eta_phi ~ dunif(0, 5)
@@ -511,15 +509,15 @@ setwd(dir[4])
       mu_p ~ dnorm(2, 0.1)
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
 
-      #for (k in 1:NK)
-      #{
-      #  for (j in 1:NJ)
-      #  {
-      #    nu_p[j,k] ~ dnorm(0, tau_nu_p)
-      #  }
-      #}
+      for (k in 1:NK)
+      {
+       for (j in 1:NJ)
+       {
+         nu_p[j,k] ~ dnorm(0, tau_nu_p)
+       }
+      }
       
-      #tau_nu_p ~ dunif(0, 25)
+      tau_nu_p ~ dunif(0, 25)
 
       
       }",fill = TRUE)
@@ -533,80 +531,80 @@ setwd(dir[4])
 
 
 Inits_1 <- list(mu_phi = 4,
-                #eta_phi = rep(0, DATA$NK),
-                #gamma_phi = rep(0, DATA$NJ),
-                #pi_phi = 0,
-                #rho_phi = 0,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NJ),
+                pi_phi = 0,
+                rho_phi = 0,
                 mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #tau_nu_p = 15,
+                tau_nu_p = 15,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(mu_phi = 4,
-                #eta_phi = rep(0, DATA$NK),
-                #gamma_phi = rep(0, DATA$NJ),
-                #pi_phi = 0,
-                #rho_phi = 0,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NJ),
+                pi_phi = 0,
+                rho_phi = 0,
                 mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #tau_nu_p = 15,
+                tau_nu_p = 15,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(mu_phi = 4,
-                #eta_phi = rep(0, DATA$NK),
-                #gamma_phi = rep(0, DATA$NJ),
-                #pi_phi = 0,
-                #rho_phi = 0,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NJ),
+                pi_phi = 0,
+                rho_phi = 0,
                 mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #tau_nu_p = 15,
+                tau_nu_p = 15,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
 Inits_4 <- list(mu_phi = 4,
-                #eta_phi = rep(0, DATA$NK),
-                #gamma_phi = rep(0, DATA$NJ),
-                #pi_phi = 0,
-                #rho_phi = 0,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NJ),
+                pi_phi = 0,
+                rho_phi = 0,
                 mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #tau_nu_p = 15,
+                tau_nu_p = 15,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
 Inits_5 <- list(mu_phi = 4,
-                #eta_phi = rep(0, DATA$NK),
-                #gamma_phi = rep(0, DATA$NJ),
-                #pi_phi = 0,
-                #rho_phi = 0,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NJ),
+                pi_phi = 0,
+                rho_phi = 0,
                 mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #tau_nu_p = 15,
+                tau_nu_p = 15,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
 Inits_6 <- list(mu_phi = 4,
-                #eta_phi = rep(0, DATA$NK),
-                #gamma_phi = rep(0, DATA$NJ),
-                #pi_phi = 0,
-                #rho_phi = 0,
+                eta_phi = rep(0, DATA$NK),
+                gamma_phi = rep(0, DATA$NJ),
+                pi_phi = 0,
+                rho_phi = 0,
                 mu_p = 2,
                 beta_p = 0.1,
                 #sigma_eta_phi = 0.78,
                 #sigma_gamma_phi = 0.84,
-                #tau_nu_p = 15,
+                tau_nu_p = 15,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
@@ -617,16 +615,16 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mu_phi',
-          #'eta_phi',
-          #'gamma_phi',
-          #'pi_phi',
-          #'rho_phi',
+          'eta_phi',
+          'gamma_phi',
+          'pi_phi',
+          'rho_phi',
           #'sigma_eta_phi',
           #'sigma_gamma_phi',
           'mu_p',
-          'beta_p'#,
-          #'nu_p',
-          #'tau_nu_p'
+          'beta_p',
+          'nu_p',
+          'tau_nu_p'
           )
 
 
@@ -643,13 +641,19 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'May_27_2018_one_site',
-               jagsDsc = 'One site, oen year; logit(phi) <- mu; logit(p) <- mu + beta*x; Short queue',
-               db_hash = 'Aggregate data by day; Corrected CY_test_May_21_2018.csv - JUST QC GEORa2013; DAYS_BUFF_FIRST_CHICK = 0',
-               n_chain = 5,
+               jagsID = 'June_12_2018_10k',
+               jagsDsc = '5 sites, 3 years
+            10k iter
+            Short queue
+            First QC data - before POLAR
+            non-hierarchical gamma, etc, hierarchical nu
+            logit(phi) <- mu + gamma + eta + pi + rho; 
+            logit(p) <- mu + beta*x + nu',
+               db_hash = 'PW_data_June_12_2018.csv',
+               n_chain = 6,
                n_adapt = 5000,
-               n_burn = 50000,
-               n_draw = 50000,
+               n_burn = 10000,
+               n_draw = 10000,
                n_thin = 20,
                EXTRA = FALSE,
                Rhat_max = 1.1,
