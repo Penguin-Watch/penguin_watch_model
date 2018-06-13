@@ -12,3 +12,42 @@
 #
 # Author: Casey Youngflesh
 #################
+
+
+
+# Clear environment -------------------------------------------------------
+
+rm(list = ls())
+
+
+# DIR ---------------------------------------------------------------------
+
+#laptop
+setwd('~/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Manual_QC_data_files/')
+
+
+# Load packages -----------------------------------------------------------
+
+library(dplyr)
+
+
+
+# load QC data ------------------------------------------------------------
+
+
+files <- list.files()[grep('.csv', list.files())]
+
+full_df <- data.frame()
+for (i in 1:length(files))
+{
+  temp <- read.csv(paste0(files[i]), stringsAsFactors = FALSE)
+  full_df <- dplyr::bind_rows(full_df, temp)
+}
+
+
+head(full_df)
+# write to csv ------------------------------------------------------------
+
+setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
+
+write.csv(full_df, file = 'PW_data_June_12_2018.csv', row.names = FALSE)
