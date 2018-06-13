@@ -1,6 +1,8 @@
 #################
 # Penguin Watch Model - 3 - Penguin model (run with PBS script; results saved to Results)
 #
+# 0-detect-params.R | recovering generating values using one detection param vs many detection params
+# 00-recover-params.R | recovering generating values using realistic data/model
 # 1-process-krill-data.R | process krill data
 # 2-process-SIC-data.R | process SIC data
 # 3-model.R | penguin model

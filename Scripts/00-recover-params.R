@@ -1,7 +1,7 @@
 #################
 # Penguin Watch Model - 0 - Recovering gen values using one detection param vs many
 #
-# 0-detect-params.R | recovering generating values using one detection param vs many detection many
+# 0-detect-params.R | recovering generating values using one detection param vs many detection params
 # 00-recover-params.R | recovering generating values using realistic data/model
 # 1-process-krill-data.R | process krill data
 # 2-process-SIC-data.R | process SIC data
