@@ -38,8 +38,8 @@ pacman::p_load(MCMCvis, boot, dplyr)
 #phi = survival prob
 #p = detection prob
 
-NAME <- 'May_19_2018_one_detect'
-NAME <- 'May_27_2018_one_site'
+NAME <- 'June_12_2018_50k'
+NAME <- 'June_13_2018_50k'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
@@ -84,8 +84,109 @@ MCMCsummary(out, params = 'sigma_nu_p')
 
 
 #plots
+MCMCplot(out)
+
 MCMCplot(out, excl = 'nu_p')
 
+
+# setwd('~/Google_Drive/R/penguin_watch_model/Figures/')
+# 
+# pdf(file = 'eta_phi.pdf', width = 7, height = 6, useDingbats = FALSE)
+# MCMCplot(out, params = 'eta_phi',
+#          horiz = FALSE,
+#          ylim = c(-4,4),
+#          labels = NULL,
+#          thick_sz = 8,
+#          thin_sz = 4,
+#          med_sz = 2.5,
+#          main = 'ETA')
+# dev.off()
+# 
+# pdf(file = 'gamma_phi.pdf', width = 7, height = 6, useDingbats = FALSE)
+# MCMCplot(out, params = 'gamma_phi',
+#          horiz = FALSE,
+#          ylim = c(-4,4),
+#          labels = NULL,
+#          thick_sz = 8,
+#          thin_sz = 4,
+#          med_sz = 2.5,
+#          main = 'GAMMA')
+# dev.off()
+# 
+# pdf(file = 'pi_rho_phi.pdf', width = 7, height = 6, useDingbats = FALSE)
+# MCMCplot(out, params = c('pi_phi', 'rho_phi'), 
+#          horiz = FALSE, 
+#          ylim = c(-4,4), 
+#          labels = NULL,
+#          thick_sz = 8,
+#          thin_sz = 4,
+#          med_sz = 2.5,
+#          main = 'PI/RHO')
+# dev.off()
+
+
+pdf(file = 'param_estimates.pdf', width = 4, height = 6, useDingbats = FALSE)
+MCMCplot(out, params = c('gamma_phi', 'eta_phi', 'pi_phi', 'rho_phi'),
+         #horiz = FALSE,
+         ylim = c(-4,4),
+         labels = NULL,
+         thick_sz = 8,
+         thin_sz = 4,
+         med_sz = 2.5,
+         main = 'param estimates')
+dev.off()
+
+
+library(reshape2)
+library(ggplot2)
+
+tt <- matrix(c(0,1,0,0,1,0,1,1,1,1,1,0), nrow = 3)
+ns_data <- melt(tt)
+colnames(ns_data) <- c('year', 'site', 'data')
+
+ggplot(data = ns_data, aes(x = year, y = site)) + 
+  geom_tile(aes(fill = cut(data, breaks = 2, labels = 0:1)), 
+            color = 'black', size = 0.5) +
+  scale_fill_manual(values = colorRampPalette(c("grey90","light green"))(2), 
+                    na.value = "#EEEEEE", name = "Data") +
+  theme_void()
+
+
+t4 <- rbinom(4, 2, 0.6)
+CI <- 1.96*sqrt(2*(mean(t4)/2)*(1 - (mean(t4)/2))/4)
+c((mean(t4)/2) - CI, (mean(t4)/2) + CI)
+
+t10 <- rbinom(10, 2, 0.6)
+(CI <- 1.96*sqrt(2*(mean(t10)/2)*(1 - (mean(t10)/2))/10))
+c((mean(t10)/2) - CI, (mean(t10)/2) + CI)
+
+t25 <- rbinom(25, 2, 0.6)
+(CI <- 1.96*sqrt(2*(mean(t25)/2)*(1 - (mean(t25)/2))/25))
+c((mean(t25)/2) - CI, (mean(t25)/2) + CI)
+
+t50 <- rbinom(50, 2, 0.6)
+(CI <- 1.96*sqrt(2*(mean(t50)/2)*(1 - (mean(t50)/2))/50))
+c((mean(t50)/2) - CI, (mean(t50)/2) + CI)
+
+t75 <- rbinom(75, 2, 0.6)
+(CI <- 1.96*sqrt(2*(mean(t75)/2)*(1 - (mean(t75)/2))/75))
+c((mean(t75)/2) - CI, (mean(t75)/2) + CI)
+
+t100 <- rbinom(100, 2, 0.6)
+(CI <- 1.96*sqrt(2*(mean(t100)/2)*(1 - (mean(t100)/2))/100))
+c((mean(t100)/2) - CI, (mean(t100)/2) + CI)
+
+t500 <- rbinom(500, 2, 0.6)
+(CI <- 1.96*sqrt(2*(mean(t500)/2)*(1 - (mean(t500)/2))/500))
+c((mean(t500)/2) - CI, (mean(t500)/2) + CI)
+
+t1000 <- rbinom(1000, 2, 0.6)
+(CI <- 1.96*sqrt(2*(mean(t1000)/2)*(1 - (mean(t1000)/2))/1000))
+c((mean(t1000)/2) - CI, (mean(t1000)/2) + CI)
+
+
+data$y
+data$NI
 
 
 # diagnose model errors -------------------------------------------------
@@ -125,8 +226,8 @@ tf <- function(PR)
 }
 
 
-#' mu_phi ~ dnorm(0, 0.01)   
-PR <- rnorm(15000, 3, 1/sqrt(0.01))
+#' mu_phi ~ dnorm(3, 0.1)   
+PR <- rnorm(15000, 3, 1/sqrt(0.1))
 tf(PR)
 MCMCtrace(out, 
           params = 'mu_phi',
@@ -175,7 +276,7 @@ MCMCtrace(out,
 #'           post_zm = FALSE)
 
 
-#' mu_p ~ dnorm(0, 0.1)
+#' mu_p ~ dnorm(2, 0.1)
 PR <- rnorm(15000, 2, 1/sqrt(0.1))
 tf(PR)
 MCMCtrace(out, 
@@ -244,6 +345,13 @@ eta_phi <- MCMCpstr(out, params = 'eta_phi', func = median)[[1]]
 #year effect
 gamma_phi <- MCMCpstr(out, params = 'gamma_phi', func = median)[[1]]
 
+#grand intercept - survival
+ch_mu_phi <- MCMCchains(out, params = 'mu_phi')[[1]]
+#site effect
+ch_eta_phi <- MCMCpstr(out, params = 'eta_phi', type = 'chains')[[1]]
+#year effect
+ch_gamma_phi <- MCMCpstr(out, params = 'gamma_phi', type = 'chains')[[1]]
+
 
 #grand intercept - detection
 mu_p <- MCMCpstr(out, params = 'mu_p', func = median)[[1]]
@@ -258,16 +366,35 @@ nu_p <- MCMCpstr(out, params = 'nu_p', func = median)[[1]]
 #surv <- data.frame(SITE = , YEAR = , NEST = )
 
 #survival
-#for (k in 1:NK)
-#{
+for (k in 1:data$NK)
+{
 #k <- 2
-#  for (j in 1:NJ)
-#  {
-#j <- 1
-#surv <- inv.logit(mu_phi + eta_phi[k] + gamma_phi[j])
-#  }
-#}
+  for (j in 1:data$NJ)
+  {
+    #j <- 1
+    surv <- inv.logit(mu_phi + eta_phi[k] + gamma_phi[j])
+  }
+}
 
+
+#survival - uncertainty
+for (k in 1:data$NK)
+{
+  #k <- 2
+  for (j in 1:data$NJ)
+  {
+    #j <- 1
+    surv <- inv.logit(ch_mu_phi + ch_eta_phi[k,] + ch_gamma_phi[j])
+    hist(surv, main = paste0('k=', k, ' j=', j), xlim = c(0.9, 1))
+  }
+}
+
+
+#covariates
+pi <- MCMCchains(out, params = 'pi_phi')
+hist(exp(pi))
+rho <- MCMCchains(out, params = 'rho_phi')
+hist(exp(rho))
 
 
 #detection
