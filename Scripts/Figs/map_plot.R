@@ -101,6 +101,9 @@ for (i in 1:length(cam_sites))
 # }
 
 
+# cams_Aug_22_2018 <- read.csv('test.csv')
+# SLL <- cams_Aug_22_2018[,1:2]
+# colnames(SLL) <- c('LAT', 'LON')
 
 
 #remove name column
