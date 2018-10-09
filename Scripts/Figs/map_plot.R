@@ -506,13 +506,13 @@ if (Sys.info()[[1]] == 'Windows')
 }
 
 
-pdf(file = 'krill_ts.pdf', width = 7, height = 6, useDingbats = FALSE)
+#pdf(file = 'krill_ts.pdf', width = 7, height = 6, useDingbats = FALSE)
 ggplot(k_lat, aes(YEAR, T_KRILL, group = SITE, color = idx)) +
   geom_line(size = 1.2) + 
   theme_bw() +
   scale_color_gradient(low = 'grey', high = 'black') + 
   ggtitle('KRILL - 150 km buffer - grey = high lat; black = low lat')
-dev.off()
+#dev.off()
 
 # #mean changes in krill over time
 # yrs <- 2012:2016
@@ -587,13 +587,13 @@ if (Sys.info()[[1]] == 'Windows')
   setwd('~/Google_Drive/R/penguin_watch_model/Figures')
 }
 
-pdf(file = 'sic_ts.pdf', width = 7, height = 6, useDingbats = FALSE)
+#pdf(file = 'sic_ts.pdf', width = 7, height = 6, useDingbats = FALSE)
 ggplot(SIC_lat, aes(YEAR, W_MN, group = SITE, color = idx)) +
   geom_line(size = 1.2) +
   theme_bw() + 
   scale_color_gradient(low = 'grey', high = 'black') + 
   ggtitle('SIC - 150 km buffer - grey = high lat; black = low lat')
-dev.off()
+#dev.off()
 
 
 # create map plots ------------------------------------------------------------
@@ -610,10 +610,10 @@ cols <- gg_color_hue(length(SSMU_names), ALPHA = 1)
 
 
 #base plot
-# #AP shapefile
+# # #AP shapefile
 # plot(AP)
-# plot(mn_ay)
-# plot(AP, add = TRUE)
+# #plot(mn_ay)
+# #plot(AP, add = TRUE)
 # 
 # #plot CCAMLR SSMUs
 # for (i in 1:length(SSMU_names))
