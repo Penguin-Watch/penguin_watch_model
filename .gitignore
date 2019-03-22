@@ -7,3 +7,8 @@
 /Results
 /Figures
 out*
+/Scripts/2-process-SIC-data/Buffers/
+/Scripts/2-process-SIC-data/LandMask/
+/Scripts/2-process-SIC-data/Locations/
+/Scripts/2-process-SIC-data/PassiveMicrowaveSIC/
+/Scripts/2-process-SIC-data/SiteLevelSIC/
