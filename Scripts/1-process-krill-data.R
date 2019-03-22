@@ -57,22 +57,25 @@ library(ggplot2)
 setwd(paste0(dir, '/Data'))
 
 cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
-ASI <- read.csv('ASI_sites_expanded.csv')
 
+#read in lat/lon
+SLL <- read.csv('site_ll.csv')
 
-SLL <- data.frame()
-for (i in 1:length(cam_sites))
-{
-  #i <- 4
-  idx <- ASI$Site.code %in% cam_sites[i]
-  lat <- ASI$Lat[idx]
-  lon <- ASI$Lon[idx]
-  temp <- data.frame(SITE = cam_sites[i], 
-                     NAME = ASI$Hotspot.Name[idx],
-                     LAT = lat, 
-                     LON = lon)
-  SLL <- rbind(SLL, temp)
-}
+# #lat/lon from ASi
+# ASI <- read.csv('ASI_sites_expanded.csv')
+# SLL <- data.frame()
+# for (i in 1:length(cam_sites))
+# {
+#   #i <- 1
+#   idx <- ASI$Site.code %in% cam_sites[i]
+#   lat <- ASI$Lat[idx]
+#   lon <- ASI$Lon[idx]
+#   temp <- data.frame(SITE = cam_sites[i], 
+#                      NAME = ASI$Hotspot.Name[idx],
+#                      LAT = lat, 
+#                      LON = lon)
+#   SLL <- rbind(SLL, temp)
+# }
 
 #BOOT is now PCHA in MAPPPD database
 #LOCK is PORT in MAPPPD database
@@ -93,10 +96,10 @@ AP_p <- rgdal::readOGR('GADM_peninsula.shp')
 AP <- sp::spTransform(AP_p, CRS(proj4string(Ant)))
 
 #CCAMLR zones
-setwd('../asd-shapefile-WGS84/')
-mz <- rgdal::readOGR('asd-shapefile-WGS84.shp')
-CCAMLR_zones <- sp::spTransform(mz, CRS(proj4string(Ant)))
-sub_481 <- CCAMLR_zones[which(CCAMLR_zones@data$Name == 'Subarea 48.1'),]
+# setwd('../asd-shapefile-WGS84/')
+# mz <- rgdal::readOGR('asd-shapefile-WGS84.shp')
+# CCAMLR_zones <- sp::spTransform(mz, CRS(proj4string(Ant)))
+# sub_481 <- CCAMLR_zones[which(CCAMLR_zones@data$Name == 'Subarea 48.1'),]
 
 #small scale management units (SSMU)
 setwd('../ssmu-shapefile-WGS84/')
@@ -525,7 +528,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
 krill_weighted_25 <- weight_krill_fun(BUFFER_SIZE = 25)
 krill_weighted_150 <- weight_krill_fun(BUFFER_SIZE = 150)
 
-
+dplyr::filter(krill_weighted_150, YEAR == 2017)
 #CHECK NA vals
 #krill_weighted_150[which(is.na(krill_weighted_150$WEIGHTED_KRILL)),]
 
