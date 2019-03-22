@@ -1,7 +1,9 @@
+#MODIFIED FROM MAPPPD REPO - written by Chris Che-Castaldo (https://github.com/CCheCastaldo)
+
 # MAGIC HACK: without this, a recent Homebrew update broke GDAL!
-GDAL_LIBRARY_PATH = "/usr/local/lib/libgdal.dylib"
-import ctypes
-ctypes.CDLL(GDAL_LIBRARY_PATH)
+#GDAL_LIBRARY_PATH = "/usr/local/lib/libgdal.dylib"
+#import ctypes
+#ctypes.CDLL(GDAL_LIBRARY_PATH)
 
 from rasterstats import zonal_stats
 import glob
@@ -94,7 +96,7 @@ if __name__ == "__main__":
     # Get order of site_ids in shapefile
     for shapefile in buffer_files:
         r = parse_buffer_radius(shapefile)
-        output = os.path.join(output_path,"ADPE_SIC_{}.csv".format(r))
+        output = os.path.join(output_path,"SITE_SIC_{}.csv".format(r))
         print("Processing radius {}km to {}".format(r,output))
         with fiona.open(shapefile) as sites:
             shapefile_order = [site['properties']['site_id'] for site in sites]

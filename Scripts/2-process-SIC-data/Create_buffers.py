@@ -1,7 +1,9 @@
+#MODIFIED FROM MAPPPD REPO - written by Chris Che-Castaldo (https://github.com/CCheCastaldo)
+
 # MAGIC HACK: without this, a recent Homebrew update broke GDAL!
-GDAL_LIBRARY_PATH = "/usr/local/lib/libgdal.dylib"
-import ctypes
-ctypes.CDLL(GDAL_LIBRARY_PATH)
+#GDAL_LIBRARY_PATH = "/usr/local/lib/libgdal.dylib"
+#import ctypes
+#ctypes.CDLL(GDAL_LIBRARY_PATH)
 
 import fiona
 from fiona import collection
