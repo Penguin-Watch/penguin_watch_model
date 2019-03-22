@@ -31,26 +31,20 @@ rm(list = ls())
 
 
 
+# top level dir -----------------------------------------------------------
+
+dir <- '~/Google_Drive/R/penguin_watch_model/'
+
+
 # Load packages -----------------------------------------------------------
 
-if('pacman' %in% rownames(installed.packages()) == FALSE)
-{
-  install.packages('pacman')
-}
-
-pacman::p_load(dplyr)
+library(dplyr)
 
 
 
 # Load site data ----------------------------------------------------------
 
-if (Sys.info()[[1]] == 'Windows')
-{
-  setwd('C:/Users/Lynch Lab 7/Google_Drive/R/penguin_watch_model/Data/')
-} else {
-  setwd('~/Google_Drive/R/penguin_watch_model/Data/')
-}
-
+setwd(paste0(dir, 'Data/'))
 
 cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
 
@@ -63,7 +57,6 @@ cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
 setwd('SIC_data/RAW')
 
 #year for OUT is PW year (e.g., year 2000 in OUT is 1999/2000 breeding season)
-
 
 #NEED TO RUN MAPPPD CODE FOR 50KM
 
@@ -164,7 +157,7 @@ if (length(which(SIC_500_W$SITE == 'PCHA')) > 0)
 
 #150km radius for June - Sep
 
-
+setwd('../RAW')
 data_150 <- read.csv('ALLSITES_SIC_150_MEAN.csv')
 
 SIC_150_W <- data.frame()
@@ -225,23 +218,32 @@ if (length(which(SIC_150_W$SITE == 'PCHA')) > 0)
 #Justification (From Che-Castaldo et al. 2017 Nat Comms): We chose covariates hypothesized to influence Adélie breeding success that were available for all sites and years included in this study. Krill abundance relies on winter sea ice conditions, with krill populations requiring at least one year of heavy winter sea ice every 4-5 years to replenish standing stocks2. Based on this, we defined peak winter sea ice concentration (wsic) in the Adélie model as the maximum monthly concentration (June through September) across the previous 5 winters in a 500 km radius around each Adélie site. This covariate was standardized and has a mean and standard deviation of 81 and 12, respectively.
 
 
+#LOCK is PORT in MAPPPD
+#BOOT is PCHA is MAPPP
+
+cam_sites2 <- cam_sites
+
+cam_sites2[which(cam_sites == 'PCHA')] <- 'BOOT'
+cam_sites2[which(cam_sites == 'PORT')] <- 'LOCK'
+
+setwd('../RAW')
 SIC_500_MAX <- data.frame()
 for (i in 1:length(cam_sites))
 {
-  #i <- 1
+  #i <- 4
   #input from SIC_500_W uses PW year
-  temp_SIC <- filter(SIC_500_W, SITE == cam_sites[i])
+  temp_SIC <- dplyr::filter(SIC_500_W, SITE == cam_sites2[i])
   
   T_OUT <- data.frame()
   for (j in 1984:2017)
   {
-    #j <- 1984
+    #j <- 2017
     #5 years prior to 1984 PW season
-    t2_SIC <- filter(temp_SIC, YEAR >= j - 4, YEAR <= j)
+    t2_SIC <- dplyr::filter(temp_SIC, YEAR >= j - 4, YEAR <= j)
     mx_SIC<- max(t2_SIC$W_MN)
     
     temp2 <- data.frame(YEAR = j,
-                        SITE = cam_sites[i],
+                        SITE = cam_sites2[i],
                         MAX_SIC = mx_SIC)
     
     T_OUT <- rbind(T_OUT, temp2)
