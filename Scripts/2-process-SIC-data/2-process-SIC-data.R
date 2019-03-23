@@ -100,7 +100,7 @@ setwd('SIC_data/RAW')
 #500km radius for June - Sep
 
 setwd('../RAW')
-data_500 <- read.csv('ALLSITES_SIC_500_MEAN.csv')
+data_500 <- read.csv('SITE_SIC_500.csv')
 
 SIC_500_W <- data.frame()
 for (i in 1:length(cam_sites))
@@ -158,7 +158,7 @@ if (length(which(SIC_500_W$SITE == 'PCHA')) > 0)
 #150km radius for June - Sep
 
 setwd('../RAW')
-data_150 <- read.csv('ALLSITES_SIC_150_MEAN.csv')
+data_150 <- read.csv('SITE_SIC_150.csv')
 
 SIC_150_W <- data.frame()
 for (i in 1:length(cam_sites))

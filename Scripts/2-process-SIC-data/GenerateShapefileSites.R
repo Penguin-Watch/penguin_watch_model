@@ -15,7 +15,7 @@ pacman::p_load(rgdal, sp, gdata)
 
 work1 <- read.csv('../../Data/site_ll.csv', stringsAsFactors = FALSE, na.strings = NA)
 
-coordinates(work1) <- ~latitude + longitude
+coordinates(work1) <- ~longitude + latitude
 
 work1.geo <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")  # geographical, datum WGS84
 
