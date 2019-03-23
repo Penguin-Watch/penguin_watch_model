@@ -81,7 +81,7 @@ SLL <- read.csv('site_ll.csv')
 #LOCK is PORT in MAPPPD database
 
 #remove name column
-p_SLL <- cbind(SLL$LON, SLL$LAT)
+p_SLL <- cbind(SLL$longitude, SLL$latitude)
 
 #points are in 4326 (uses lat/lon)
 col_points <- sp::SpatialPoints(p_SLL, proj4string = CRS('+init=epsg:4326'))
