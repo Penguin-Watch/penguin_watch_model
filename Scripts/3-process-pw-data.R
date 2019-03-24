@@ -36,7 +36,10 @@ library(dplyr)
 # load QC data ------------------------------------------------------------
 
 
-files <- list.files()[grep('.csv', list.files())]
+files_p <- list.files()[grep('.csv', list.files())]
+#don't yet have 2018 krill data
+to.rm <- grep('2018', files)
+files <- files_p[-to.rm]
 
 full_df <- data.frame()
 for (i in 1:length(files))
