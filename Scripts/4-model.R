@@ -27,13 +27,13 @@ rm(list = ls())
 
 
 #laptop
-# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
-#          '../Krill_data/CCAMLR/Processed_CCAMLR/',
-#          '../../../SIC_data/Processed/',
-#          '~/Google_Drive/R/penguin_watch_model/Results/')
+dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
+         '../Krill_data/CCAMLR/Processed_CCAMLR/',
+         '../../../SIC_data/Processed/',
+         '~/Google_Drive/R/penguin_watch_model/Results/')
 
 #HPC
-dir <- c('../Data', '../Data', '../Data', '../Results')
+#dir <- c('../Data', '../Data', '../Data', '../Results')
 
 
 
@@ -54,7 +54,7 @@ setwd(dir[1])
 #make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
 #unused nests should be marked with all NAs
 
-PW_data <- read.csv('PW_data_June_12_2018.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-03-23.csv', stringsAsFactors = FALSE)
 
 #remove specified colonies
 un_sites_p <- unique(PW_data$site)
@@ -68,7 +68,7 @@ yrs <- c()
 for (k in 1:length(un_sites))
 {
   #k <- 1
-  temp <- filter(PW_data, site == un_sites[k])
+  temp <- dplyr::filter(PW_data, site == un_sites[k])
   un_yrs <- unique(temp$season_year)
   
   yrs <- c(yrs, un_yrs)
@@ -123,13 +123,13 @@ nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 #nests with NAs are simply removed (e.g., if there are 4 nests, and nest 3 is all NAs, nest 4 becomes nest 3)
 for (k in 1:n_sites)
 {
-  #k <- 1
-  temp <- filter(PW_data, site == un_sites[k])
+  #k <- 5
+  temp <- dplyr::filter(PW_data, site == un_sites[k])
   
   for (j in 1:n_yrs)
   {
-    #j <- 2
-    temp2 <- filter(temp, season_year == d_yrs[j])
+    #j <- 1
+    temp2 <- dplyr::filter(temp, season_year == d_yrs[j])
     
     if (NROW(temp2) > 0)
     {
@@ -164,7 +164,8 @@ for (k in 1:n_sites)
       # LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
       
       #which dates are within the designated period
-      valid_dates <- which(temp_agg$datetime >= min(date_rng) + DAYS_BUFF_FIRST_CHICK & temp_agg$datetime <= LAST)
+      valid_dates <- which(temp_agg$datetime >= min(date_rng) + 
+                             DAYS_BUFF_FIRST_CHICK & temp_agg$datetime <= LAST)
       sel_dates <- temp_agg$datetime[valid_dates]
       
       if (min(sel_dates) > FIRST)
@@ -194,8 +195,13 @@ for (k in 1:n_sites)
       n_vals <- rbind(na_first, vals[valid_dates, ], na_last)
       
       #determines if there are any nests with NA values for the entire column (removed during the QC step)
-      #first time step with value at nest 1
-      ft <- n_vals[min(which(!is.na(n_vals[,1]))),]
+      #first time step with value at nest 1 (unless all NA, then move to next nest)
+      counter <- 1
+      while (sum(!is.na(n_vals[,counter])) < 1)
+      {
+        counter <- counter + 1
+      }
+      ft <- n_vals[min(which(!is.na(n_vals[,counter]))),]
       #last nest with value at this time step
       lnv <- max(which(!is.na(ft)))
       #are there any NA vals in this row?
@@ -213,6 +219,7 @@ for (k in 1:n_sites)
     }
   }
 }
+
 
 # create real_nests matrix ------------------------------------------------
 
@@ -318,13 +325,13 @@ krill <- read.csv('CCAMLR_krill_entire_season.csv')
 i_KRILL <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
 for (k in 1:length(un_sites_ncc))
 {
-  #k <- 5
-  temp <- filter(krill, SITE == un_sites_ncc[k])
+  #k <- 1
+  temp <- dplyr::filter(krill, SITE == un_sites_ncc[k])
   
   for (j in 1:length(d_yrs))
   {
-    #j <- 1
-    temp2 <- filter(temp, YEAR == d_yrs[j])
+    #j <- 5
+    temp2 <- dplyr::filter(temp, YEAR == d_yrs[j])
     i_KRILL[j,k] <- temp2$T_KRILL
   }
 }
@@ -636,19 +643,19 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'June_13_2018_50k',
-               jagsDsc = '4 sites, 3 years
-            50k iter
+               jagsID = 'PW_20k_2019-03-24',
+               jagsDsc = '10 sites, 4 years
+            20k iter
             Long queue
-            First QC data - before POLAR
+            Second QC data - before POLAR
             non-hierarchical gamma, etc, hierarchical nu
             logit(phi) <- mu + gamma + eta + pi + rho; 
             logit(p) <- mu + beta*x + nu',
-               db_hash = 'PW_data_June_12_2018.csv',
+               db_hash = 'PW_data_2019-03-23.csv',
                n_chain = 6,
                n_adapt = 5000,
-               n_burn = 50000,
-               n_draw = 50000,
+               n_burn = 20000,
+               n_draw = 20000,
                n_thin = 20,
                EXTRA = FALSE,
                Rhat_max = 1.1,
