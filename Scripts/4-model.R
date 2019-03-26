@@ -397,11 +397,24 @@ DATA <- list(
   SIC = SIC) #standardized SIC for previous winter
 
 
+
 #checks:
 # nests_array[1:50, 1:10, 2, 1]
 # z_array[1:10, 1:11, 2, 1]
 # DATA$NI[2,1]
 
+
+#data availability:
+# sites <- unique(PW_data$site)
+# for (i in 1:length(sites))
+# {
+#   #i <- 1
+#   temp <- dplyr::filter(PW_data, site == sites[i])
+#   yrs <- unique(temp$season_year)
+#   print(paste0('site: ', sites[i]))
+#   print(paste0(yrs))
+# }
+ 
 
 
 setwd(dir[4])
