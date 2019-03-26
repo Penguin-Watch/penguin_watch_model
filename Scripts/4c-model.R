@@ -496,16 +496,18 @@ setwd(dir[4])
       #pi_eps = effect of SIC on site/year surv
       #rho_eps = effect of KRILL on site/year surv
       
-      for (j in 1:J)
+      for (j in 1:NJ)
       {
-      for (k in 1:K)
+      for (k in 1:NK)
       {
       eps_phi[j,k] ~ dnorm(mu_eps_phi[j,k], tau_eps_phi)
       mu_eps_phi[j,k] = alpha_eps + pi_eps * SIC[j,k] + rho_eps * KRILL[j,k]
       }
       }
       
-
+      #sigma eps_phi
+      tau_eps_phi <- pow(sigma_eps_phi, -2) 
+      sigma_eps_phi ~ dunif(0, 5)
 
       #priors - intercept for covariate effect on site/year surv
       alpha_eps ~ dnorm(0, 0.386)
@@ -530,7 +532,8 @@ setwd(dir[4])
        }
       }
       
-      tau_nu_p ~ dunif(0, 25)
+      tau_nu_p <- pow(sigma_nu_p, -2) 
+      sigma_nu_p ~ dunif(0, 5)
 
       
       }",fill = TRUE)
@@ -545,79 +548,67 @@ setwd(dir[4])
 
 Inits_1 <- list(mu_phi = 4,
                 alpha_eps = 0,
-                eps_phi = rep(0, DATA$NK),
+                eps_phi = matrix(0, nrow = DATA$NJ, ncol = DATA$NK),
                 pi_eps = 0,
                 rho_eps = 0,
                 mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eta_phi = 0.78,
-                #sigma_gamma_phi = 0.84,
-                tau_nu_p = 15,
+                sigma_nu_p = 1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 1)
 
 Inits_2 <- list(mu_phi = 4,
                 alpha_eps = 0,
-                eps_phi = rep(0, DATA$NK),
+                eps_phi = matrix(0, nrow = DATA$NJ, ncol = DATA$NK),
                 pi_eps = 0,
                 rho_eps = 0,
                 mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eta_phi = 0.78,
-                #sigma_gamma_phi = 0.84,
-                tau_nu_p = 15,
+                sigma_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 2)
 
 Inits_3 <- list(mu_phi = 4,
                 alpha_eps = 0,
-                eps_phi = rep(0, DATA$NK),
+                eps_phi = matrix(0, nrow = DATA$NJ, ncol = DATA$NK),
                 pi_eps = 0,
                 rho_eps = 0,
                 mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eta_phi = 0.78,
-                #sigma_gamma_phi = 0.84,
-                tau_nu_p = 15,
+                sigma_nu_p = 1,
                 .RNG.name = "base::Marsaglia-Multicarry",
                 .RNG.seed = 3)
 
 Inits_4 <- list(mu_phi = 4,
                 alpha_eps = 0,
-                eps_phi = rep(0, DATA$NK),
+                eps_phi = matrix(0, nrow = DATA$NJ, ncol = DATA$NK),
                 pi_eps = 0,
                 rho_eps = 0,
                 mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eta_phi = 0.78,
-                #sigma_gamma_phi = 0.84,
-                tau_nu_p = 15,
+                sigma_nu_p = 1,
                 .RNG.name = "base::Mersenne-Twister",
                 .RNG.seed = 4)
 
 Inits_5 <- list(mu_phi = 4,
                 alpha_eps = 0,
-                eps_phi = rep(0, DATA$NK),
+                eps_phi = matrix(0, nrow = DATA$NJ, ncol = DATA$NK),
                 pi_eps = 0,
                 rho_eps = 0,
                 mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eta_phi = 0.78,
-                #sigma_gamma_phi = 0.84,
-                tau_nu_p = 15,
+                sigma_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
 Inits_6 <- list(mu_phi = 4,
                 alpha_eps = 0,
-                eps_phi = rep(0, DATA$NK),
+                eps_phi = matrix(0, nrow = DATA$NJ, ncol = DATA$NK),
                 pi_eps = 0,
                 rho_eps = 0,
                 mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eta_phi = 0.78,
-                #sigma_gamma_phi = 0.84,
-                tau_nu_p = 15,
+                sigma_nu_p = 1,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
@@ -632,18 +623,17 @@ Pars <- c('mu_phi',
           'alpha_eps',
           'pi_eps',
           'rho_eps',
-          #'sigma_eta_phi',
-          #'sigma_gamma_phi',
           'mu_p',
           'beta_p',
           'nu_p',
-          'tau_nu_p'
+          'sigma_nu_p',
+          'sigma_eps_phi'
           )
 
 
 # Run model ---------------------------------------------------------------
 
-#make sure model compiles
+# #make sure model compiles
 # jagsRun(jagsData = DATA,
 #         jagsModel = 'pwatch_surv.jags',
 #         jagsInits = F_Inits,
