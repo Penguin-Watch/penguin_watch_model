@@ -467,7 +467,7 @@ setwd(dir[4])
       #pi_phi = effect of SIC on survival
       #rho_phi = effect of KRILL on survival
       
-      logit(phi[t,i,j,k]) <- mu_phi + gamma_phi[j] + eta_phi[k] + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi + pi_phi * SIC[j,k] + rho_phi * KRILL[j,k]
 
       #p = detection prob
       #mu_p = grand mean for all sites/years
@@ -489,17 +489,6 @@ setwd(dir[4])
       #priors - phi
       mu_phi ~ dnorm(3, 0.1)
       
-      for (k in 1:NK)
-      {
-      #eta_phi[k] ~ dnorm(0, tau_eta_phi)
-      eta_phi[k] ~ dnorm(0, 0.386)    
-      }
-      
-      for (j in 1:NJ)
-      {
-      #gamma_phi[j] ~ dnorm(0, tau_gamma_phi)
-      gamma_phi[j] ~ dnorm(0, 0.386)
-      }
       
       #tau_eta_phi <- pow(sigma_eta_phi, -2)
       #sigma_eta_phi ~ dunif(0, 5)
@@ -533,8 +522,8 @@ setwd(dir[4])
 
 
 Inits_1 <- list(mu_phi = 4,
-                eta_phi = rep(0, DATA$NK),
-                gamma_phi = rep(0, DATA$NJ),
+                #eta_phi = rep(0, DATA$NK),
+                #gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
                 mu_p = 2,
@@ -546,8 +535,8 @@ Inits_1 <- list(mu_phi = 4,
                 .RNG.seed = 1)
 
 Inits_2 <- list(mu_phi = 4,
-                eta_phi = rep(0, DATA$NK),
-                gamma_phi = rep(0, DATA$NJ),
+                #eta_phi = rep(0, DATA$NK),
+                #gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
                 mu_p = 2,
@@ -559,8 +548,8 @@ Inits_2 <- list(mu_phi = 4,
                 .RNG.seed = 2)
 
 Inits_3 <- list(mu_phi = 4,
-                eta_phi = rep(0, DATA$NK),
-                gamma_phi = rep(0, DATA$NJ),
+                #eta_phi = rep(0, DATA$NK),
+                #gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
                 mu_p = 2,
@@ -572,8 +561,8 @@ Inits_3 <- list(mu_phi = 4,
                 .RNG.seed = 3)
 
 Inits_4 <- list(mu_phi = 4,
-                eta_phi = rep(0, DATA$NK),
-                gamma_phi = rep(0, DATA$NJ),
+                #eta_phi = rep(0, DATA$NK),
+                #gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
                 mu_p = 2,
@@ -585,8 +574,8 @@ Inits_4 <- list(mu_phi = 4,
                 .RNG.seed = 4)
 
 Inits_5 <- list(mu_phi = 4,
-                eta_phi = rep(0, DATA$NK),
-                gamma_phi = rep(0, DATA$NJ),
+                #eta_phi = rep(0, DATA$NK),
+                #gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
                 mu_p = 2,
@@ -598,8 +587,8 @@ Inits_5 <- list(mu_phi = 4,
                 .RNG.seed = 5)
 
 Inits_6 <- list(mu_phi = 4,
-                eta_phi = rep(0, DATA$NK),
-                gamma_phi = rep(0, DATA$NJ),
+                #eta_phi = rep(0, DATA$NK),
+                #gamma_phi = rep(0, DATA$NJ),
                 pi_phi = 0,
                 rho_phi = 0,
                 mu_p = 2,
@@ -617,8 +606,8 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mu_phi',
-          'eta_phi',
-          'gamma_phi',
+          #'eta_phi',
+          #'gamma_phi',
           'pi_phi',
           'rho_phi',
           #'sigma_eta_phi',
@@ -647,9 +636,9 @@ jagsRun(jagsData = DATA,
                jagsDsc = '10 sites, 4 years
             20k iter
             Long queue
-            Second QC data
+            No site/year effects
             non-hierarchical gamma, etc, hierarchical nu
-            logit(phi) <- mu + gamma + eta + pi + rho; 
+            logit(phi) <- mu + pi + rho; 
             logit(p) <- mu + beta*x + nu',
                db_hash = 'PW_data_2019-03-23.csv',
                n_chain = 6,
