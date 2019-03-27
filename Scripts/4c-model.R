@@ -484,7 +484,7 @@ setwd(dir[4])
       #beta_phi = slope for increasing detection over time (older chicks have higher detection p)
       #nu_p = detection probability random effect for site/year
       
-      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[j,k]
+      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[k]
 
       } #t
       } #i
@@ -507,7 +507,7 @@ setwd(dir[4])
       
       #sigma eps_phi
       tau_eps_phi <- pow(sigma_eps_phi, -2) 
-      sigma_eps_phi ~ dunif(0, 5)
+      sigma_eps_phi ~ dunif(0, 2)
 
       #priors - intercept for covariate effect on site/year surv
       alpha_eps ~ dnorm(0, 0.386)
@@ -524,17 +524,21 @@ setwd(dir[4])
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
 
 
+      # for (k in 1:NK)
+      # {
+      #  for (j in 1:NJ)
+      #  {
+      #    nu_p[j,k] ~ dnorm(0, tau_nu_p)
+      #  }
+      # }
+      
       for (k in 1:NK)
       {
-       for (j in 1:NJ)
-       {
-         nu_p[j,k] ~ dnorm(0, tau_nu_p)
-       }
+        nu_p[k] ~ dnorm(0, tau_nu_p)
       }
-      
-      tau_nu_p <- pow(sigma_nu_p, -2) 
-      sigma_nu_p ~ dunif(0, 5)
 
+      tau_nu_p <- pow(sigma_nu_p, -2) 
+      sigma_nu_p ~ dunif(0, 3)
       
       }",fill = TRUE)
 
@@ -644,20 +648,20 @@ jagsRun(jagsData = DATA,
                jagsModel = 'pwatch_surv.jags',
                jagsInits = F_Inits,
                params = Pars,
-               jagsID = 'PW_50k_2019-03-26_eps',
+               jagsID = 'PW_50k_2019-03-27_eps',
                jagsDsc = '10 sites, 4 years (19 site/years)
             50k iter
             Long queue
             Second QC data
-            non-hierarchical gamma, etc, hierarchical nu
+            nu_p vary by site only
             logit(phi) <- mu + eps;
             eps ~ alpha + pi + rho; 
             logit(p) <- mu + beta*x + nu',
                db_hash = 'PW_data_2019-03-23.csv',
                n_chain = 6,
                n_adapt = 5000,
-               n_burn = 50000,
-               n_draw = 50000,
+               n_burn = 100000,
+               n_draw = 100000,
                n_thin = 20,
                EXTRA = FALSE,
                Rhat_max = 1.1,
