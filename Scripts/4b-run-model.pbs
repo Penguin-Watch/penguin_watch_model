@@ -2,9 +2,9 @@
 
 #PBS -l nodes=1:ppn=28,walltime=48:00:00
 #PBS -q long
-#PBS -N PW_run_50k
+#PBS -N PW_run_60k
 #PBS -j oe
-#PBS -o out_50k.txt
+#PBS -o out_60k.txt
 
 module load shared
 module load R/3.4.4
