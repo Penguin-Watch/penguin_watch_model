@@ -507,32 +507,21 @@ setwd(dir[4])
       for (t in 1:NT)
       {
       
-      logit(phi[t,i,j]) <- mu_phi + eps_phi[j]
-      logit(p[t,i,j]) <- mu_p + beta_p*x[t] + nu_p[j]
+      logit(phi[t,i,j]) <- mu_phi[j]
+      logit(p[t,i,j]) <- mu_p[j] + beta_p*x[t]
       
       } #t
       } #i
       } #j
       
-      #priors - phi
-      mu_phi ~ dnorm(3, 0.1)
-      
-      #priors - p
-      mu_p ~ dnorm(2, 0.1)
+      #priors - p and phi
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
 
       for (j in 1:NJ)
       {
-      eps_phi[j] ~ dnorm(0, tau_eps_phi)
-      nu_p[j] ~ dnorm(0, tau_nu_p)
+      mu_phi[j] ~ dnorm(3, 0.1)
+      mu_p[j] ~ dnorm(2, 0.1)
       }
-
-      tau_eps_phi <- pow(sigma_eps_phi, -2) 
-      sigma_eps_phi ~ dunif(0, 3)
-
-      tau_nu_p <- pow(sigma_nu_p, -2) 
-      sigma_nu_p ~ dunif(0, 3)
-
 
       }",fill = TRUE)
 
@@ -544,66 +533,66 @@ setwd(dir[4])
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mu_phi = 4,
-                mu_p = 2,
+Inits_1 <- list(mu_phi = rep(4, DATA$NJ),
+                mu_p = rep(2, DATA$NJ),
                 beta_p = 0.1,
-                sigma_nu_p = 1,
-                sigma_eps_phi = 1,
+                #sigma_eps_phi = 1,
+                #sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Mersenne-Twister", 
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = 4,
-                mu_p = 2,
+Inits_2 <- list(mu_phi = rep(4, DATA$NJ),
+                mu_p = rep(2, DATA$NJ),
                 beta_p = 0.1,
-                sigma_nu_p = 1,
-                sigma_eps_phi = 1,
+                #sigma_eps_phi = 1,
+                #sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Wichmann-Hill", 
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = 4,
-                mu_p = 2,
+Inits_3 <- list(mu_phi = rep(4, DATA$NJ),
+                mu_p = rep(2, DATA$NJ),
                 beta_p = 0.1,
-                sigma_nu_p = 1,
-                sigma_eps_phi = 1,
+                #sigma_eps_phi = 1,
+                #sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Marsaglia-Multicarry", 
                 .RNG.seed = 3)
 
-Inits_4 <- list(mu_phi = 4,
-                mu_p = 2,
+Inits_4 <- list(mu_phi = rep(4, DATA$NJ),
+                mu_p = rep(2, DATA$NJ),
                 beta_p = 0.1,
-                sigma_nu_p = 1,
-                sigma_eps_phi = 1,
+                #sigma_eps_phi = 1,
+                #sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Mersenne-Twister", 
                 .RNG.seed = 4)
 
-Inits_5 <- list(mu_phi = 4,
-                mu_p = 2,
+Inits_5 <- list(mu_phi = rep(4, DATA$NJ),
+                mu_p = rep(2, DATA$NJ),
                 beta_p = 0.1,
-                sigma_nu_p = 1,
-                sigma_eps_phi = 1,
+                #sigma_eps_phi = 1,
+                #sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
-Inits_6 <- list(mu_phi = 4,
-                mu_p = 2,
+Inits_6 <- list(mu_phi = rep(4, DATA$NJ),
+                mu_p = rep(2, DATA$NJ),
                 beta_p = 0.1,
-                sigma_nu_p = 1,
-                sigma_eps_phi = 1,
+                #sigma_eps_phi = 1,
+                #sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
@@ -618,11 +607,12 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)#, Inits_4, Inits_5, Inits_6)
 
 Pars <- c('mu_phi',
           'mu_p',
-          'beta_p',
-          'eps_phi',
-          'nu_p',
-          'sigma_nu_p',
-          'sigma_eps_phi'
+          'beta_p'#,
+          #'eps_phi',
+          #'sigma_eps_phi',
+          #'t_phi'
+          # 'sigma_nu_p',
+          # 'nu_p',
           # 'alpha_eps',
           # 'pi_eps',
           # 'rho_eps',
@@ -642,15 +632,15 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_20k_2019-04-04_LOCK',
+        jagsID = 'PW_50k_2019-04-04_LOCK2',
         jagsDsc = '1 site, 3 years
         logit(phi) <- mu_phi + eps_phi_j; 
-        logit(p) <- mu_p + beta*x[t] + nu_p_j',
+        logit(p) <- mu_p_j + beta*x[t]',
         db_hash = 'PW_data_2019-03-23.csv',
         n_chain = 3,
         n_adapt = 5000,
-        n_burn = 20000,
-        n_draw = 20000,
+        n_burn = 50000,
+        n_draw = 50000,
         n_thin = 20,
         EXTRA = FALSE,
         Rhat_max = 1.1,
