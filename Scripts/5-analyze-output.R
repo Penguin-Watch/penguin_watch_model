@@ -38,8 +38,9 @@ pacman::p_load(MCMCvis, boot, dplyr)
 #phi = survival prob
 #p = detection prob
 
-NAME <- 'June_12_2018_50k'
-NAME <- 'June_13_2018_50k'
+NAME <- 'PW_50k_2019-03-26_eps'
+NAME <- 'PW_50k_2019-03-24'
+#NAME <- 'June_13_2018_50k'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
@@ -47,7 +48,7 @@ out <- readRDS(paste0(NAME, '.rds'))
 data <- readRDS('jagsData.rds')
 
 
-  # Summarize ---------------------------------------------------------------
+# Summarize ---------------------------------------------------------------
 
 MCMCsummary(out, round = 4, n.eff = TRUE)
 MCMCtrace(out,
@@ -84,9 +85,215 @@ MCMCsummary(out, params = 'sigma_nu_p')
 
 
 #plots
-MCMCplot(out)
+MCMCplot(out, params = c('mu_phi', 'sigma_eps_phi',
+                         'alpha_eps', 'pi_eps', 'rho_eps'))
+MCMCplot(out, params = c('eps_phi'))
+MCMCplot(out2, params = c('mu_phi', 'eta_phi', 'gamma_phi'))
 
-MCMCplot(out, excl = 'nu_p')
+MCMCplot(out, params = 'nu_p')
+MCMCplot(out, params = 'sigma_nu_p')
+MCMCplot(out, params = c('beta_p', 'mu_p'))
+
+
+
+eps_phi_mn
+
+eps_phi_mn <- MCMCvis::MCMCpstr(out, params = 'eps_phi')[[1]]
+eps_phi_LCI <- MCMCvis::MCMCpstr(out, 
+                                params = 'eps_phi',
+                                func = function(x) quantile(x, probs = 0.025))[[1]]
+eps_phi_UCI <- MCMCvis::MCMCpstr(out, 
+                                 params = 'eps_phi',
+                                 func = function(x) quantile(x, probs = 0.975))[[1]]
+
+eps_phi_UCI <- MCMCvis::MCMCpstr(out, 
+                                 params = 'eps_phi',
+                                 func = function(x) quantile(x, probs = 0.975))[[1]]
+
+
+fit1 <- readRDS('PW_20k_2019-04-04_LOCK.rds')
+fit2 <- readRDS('PW_50k_2019-04-04_LOCK2.rds')
+fit3 <- readRDS('PW_60k_2019-04-04_LOCKNEKO.rds')
+fit4 <- readRDS('PW_60k_2019-04-05_LOCKNEKO_cov.rds')
+data4 <- readRDS('jagsData.rds')
+
+mu_phi1 <- MCMCvis::MCMCchains(fit1, params = 'mu_phi')[,1]
+eps_phi1 <- MCMCvis::MCMCchains(fit1, params = 'eps_phi')
+
+t_phi_LCI <- MCMCvis::MCMCpstr(fit3, params = 't_phi', 
+                           func = function(x) quantile(x, probs = 0.025))[[1]]
+t_phi_UCI <- MCMCvis::MCMCpstr(fit3, params = 't_phi', 
+                           func = function(x) quantile(x, probs = 0.975))[[1]]
+
+t_phi_UCI - t_phi_LCI
+e_phi_LCI <- MCMCvis::MCMCpstr(fit3, params = 'eps_phi', 
+                               func = function(x) quantile(x, probs = 0.025))[[1]]
+e_phi_UCI <- MCMCvis::MCMCpstr(fit3, params = 'eps_phi', 
+                               func = function(x) quantile(x, probs = 0.975))[[1]]
+
+e_phi_UCI - e_phi_LCI
+
+MCMCvis::MCMCplot(fit3, params = 't_phi')
+MCMCvis::MCMCplot(fit3, params = 'eps_phi')
+
+
+mp1_1 <- mu_phi1 + eps_phi1[,1]
+mp2_1 <- mu_phi1 + eps_phi1[,2]
+mp3_1 <- mu_phi1 + eps_phi1[,3]
+
+mp_2 <- MCMCvis::MCMCchains(fit2, params = 'mu_phi')
+quantile(mp1_1, probs = c(0.975)) - quantile(mp1_1, probs = c(0.025))
+quantile(mp2_1, probs = c(0.975)) - quantile(mp2_1, probs = c(0.025))
+quantile(mp3_1, probs = c(0.975)) - quantile(mp3_1, probs = c(0.025))
+apply(mp_2, 2, function(x) quantile(x, probs = 0.975)) - apply(mp_2, 2, function(x) quantile(x, probs = 0.025))
+
+
+
+mu_p1 <- MCMCvis::MCMCchains(fit1, params = 'mu_p')[,1]
+nu_p1 <- MCMCvis::MCMCchains(fit1, params = 'nu_p')
+
+np1_1 <- mu_p1 + nu_p1[,1]
+np2_1 <- mu_p1 + nu_p1[,2]
+np3_1 <- mu_p1 + nu_p1[,3]
+
+mp_2 <- MCMCvis::MCMCchains(fit2, params = 'mu_p')
+quantile(np1_1, probs = c(0.975)) - quantile(np1_1, probs = c(0.025))
+quantile(np2_1, probs = c(0.975)) - quantile(np2_1, probs = c(0.025))
+quantile(np3_1, probs = c(0.975)) - quantile(np3_1, probs = c(0.025))
+apply(mp_2, 2, function(x) quantile(x, probs = 0.975)) - apply(mp_2, 2, function(x) quantile(x, probs = 0.025))
+
+
+
+
+# plot krill/sic BS relationship ------------------------------------------
+
+mu_phi <- MCMCvis::MCMCpstr(fit4, params = 'mu_phi')[[1]]
+mu_phi_LCI <- MCMCvis::MCMCpstr(fit4, params = 'mu_phi', 
+                                func = function(x) quantile(x, probs = c(0.025)))[[1]]
+mu_phi_UCI <- MCMCvis::MCMCpstr(fit4, params = 'mu_phi', 
+                                func = function(x) quantile(x, probs = c(0.975)))[[1]]
+
+
+#model fit to plot
+alpha_ch <- MCMCvis::MCMCchains(fit4, params = 'alpha_theta')[,1]
+pi_ch <- MCMCvis::MCMCchains(fit4, params = 'pi_theta')[,1]
+rho_ch <- MCMCvis::MCMCchains(fit4, params = 'rho_theta')[,1]
+
+sim_KRILL <- seq(min(data4$KRILL)-1, max(data4$KRILL)+1, length = 100)
+sim_SIC <- seq(min(data4$SIC)-1, max(data4$SIC)+1, length = 100)
+
+mf_KRILL <- matrix(nrow = length(alpha_ch), ncol = 100)
+mf_SIC <- matrix(nrow = length(alpha_ch), ncol = 100)
+for (i in 1:length(sim_KRILL))
+{
+  mf_KRILL[,i] <- alpha_ch + rho_ch * sim_KRILL[i] + pi_ch * mean(sim_SIC)
+  mf_SIC[,i] <- alpha_ch + pi_ch * sim_SIC[i] + rho_ch * mean(sim_KRILL)
+}
+
+med_mf_KRILL <- apply(mf_KRILL, 2, median)
+LCI_mf_KRILL <- apply(mf_KRILL, 2, function(x) quantile(x, probs = 0.025))
+UCI_mf_KRILL <- apply(mf_KRILL, 2, function(x) quantile(x, probs = 0.975))
+
+FIT_PLOT <- data.frame(MN_FIT = med_mf_KRILL, 
+                       MN_X = sim_KRILL,
+                       LCI_FIT = LCI_mf_KRILL,
+                       UCI_FIT = UCI_mf_KRILL)
+
+DATA_PLOT <- data.frame(MN_phi = as.vector(mu_phi), 
+                       LCI_phi = as.vector(mu_phi_LCI),
+                       UCI_phi = as.vector(mu_phi_UCI),
+                       KRILL = as.vector(data4$KRILL),
+                       SIC = as.vector(data4$SIC))
+
+ggplot(data = DATA_PLOT, aes(KRILL, MN_phi), color = 'black', alpha = 0.6) +
+  geom_ribbon(data = FIT_PLOT, 
+              aes(x = MN_X, ymin = LCI_FIT, ymax = UCI_FIT),
+              fill = 'grey', alpha = 0.7,
+              inherit.aes = FALSE) +
+  geom_line(data = FIT_PLOT, aes(MN_X, MN_FIT), color = 'red',
+            alpha = 0.9,
+            inherit.aes = FALSE,
+            size = 1.4) +
+  geom_errorbar(data = DATA_PLOT, 
+                aes(ymin = LCI_phi, ymax = UCI_phi), width = 0.3,
+                color = 'black', alpha = 0.2) +
+  geom_point(data = DATA_PLOT, aes(KRILL, MN_phi), color = 'black',
+             inherit.aes = FALSE, size = 3, alpha = 0.7) +
+  theme_bw() +
+  xlab('Krill catch') +
+  ylab('survival rate') +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 18),
+    axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
+    axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
+    axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
+
+
+med_mf_SIC <- apply(mf_SIC, 2, median)
+LCI_mf_SIC <- apply(mf_SIC, 2, function(x) quantile(x, probs = 0.025))
+UCI_mf_SIC <- apply(mf_SIC, 2, function(x) quantile(x, probs = 0.975))
+
+FIT_PLOT <- data.frame(MN_FIT = med_mf_SIC, 
+                       MN_X = sim_SIC,
+                       LCI_FIT = LCI_mf_SIC,
+                       UCI_FIT = UCI_mf_SIC)
+
+ggplot(data = DATA_PLOT, aes(SIC, MN_phi), color = 'black', alpha = 0.6) +
+  geom_ribbon(data = FIT_PLOT, 
+              aes(x = MN_X, ymin = LCI_FIT, ymax = UCI_FIT),
+              fill = 'grey', alpha = 0.7,
+              inherit.aes = FALSE) +
+  geom_line(data = FIT_PLOT, aes(MN_X, MN_FIT), color = 'red',
+            alpha = 0.9,
+            inherit.aes = FALSE,
+            size = 1.4) +
+  geom_errorbar(data = DATA_PLOT, 
+                aes(ymin = LCI_phi, ymax = UCI_phi), width = 0.3,
+                color = 'black', alpha = 0.2) +
+  geom_point(data = DATA_PLOT, aes(SIC, MN_phi), color = 'black',
+             inherit.aes = FALSE, size = 3, alpha = 0.7) +
+  theme_bw() +
+  xlab('SIC') +
+  ylab('survival rate') +
+  theme(
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 18),
+    axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
+    axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
+    axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
+
+
+
+# plotly 3D plot ----------------------------------------------------------
+
+
+mf_KR_SIC <- matrix(nrow =  length(sim_KRILL), ncol = length(sim_SIC))
+d_pts <- data.frame(MP = as.vector(mu_phi),
+                    KR = as.vector(data4$KRILL),
+                    S = as.vector(data4$SIC))
+for (i in 1:length(sim_KRILL))
+{
+  for (j in 1:length(sim_SIC))
+  {
+    mf_KR_SIC[i,j] <- mean(alpha_ch) + 
+      mean(rho_ch) * sim_KRILL[i] + 
+      mean(pi_ch) * sim_SIC[j]
+  }
+}
+
+
+library(plotly)
+plot_ly(x = sim_KRILL,
+        y = sim_SIC,
+        z = mf_KR_SIC, type = "surface") %>% 
+  add_trace(data = d_pts, x = d_pts$KR, y = d_pts$S, z = d_pts$MP, 
+            mode = "markers", type = "scatter3d", 
+            marker = list(size = 5, color = "red", symbol = 104))
+
+
+
+
 
 
 # setwd('~/Google_Drive/R/penguin_watch_model/Figures/')
