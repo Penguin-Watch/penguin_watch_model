@@ -386,13 +386,14 @@ SIC <- matrix(t2, nrow = NROW(i_SIC))
 #dim4 [k] = sites (un_sites)
 
 
-#JUST LOCK (all years)
-site_id <- which(un_sites %in% c('LOCK', 'NEKO'))
+#Filter sites (3 years)
+site_id <- which(un_sites %in% c('LOCK', 'NEKO', 'GEOR'))
 yr_id <- which(d_yrs %in% c(2013, 2014, 2015))
 nna <- nests_array[,,yr_id, site_id]
 rn <- real_nests[yr_id, site_id]
 za <- z_array[,,yr_id, site_id]
-
+kr <- i_KRILL[yr_id, site_id]
+sic <- i_SIC[yr_id, site_id]
 
 DATA <- list(
   y = nna, #response
@@ -401,7 +402,9 @@ DATA <- list(
   NI = rn, #number of nests j,k [year, site]
   NT = dim(nna)[1], #number of time steps
   z = za, #known points of bird being alive
-  x = scale(as.numeric(1:dim(nna)[1]), scale = FALSE)[,1])
+  x = scale(as.numeric(1:dim(nna)[1]), scale = FALSE)[,1],
+  KRILL = kr,
+  SIC = sic)
 
 
 #checks:
@@ -514,7 +517,7 @@ setwd(dir[4])
       for (t in 1:NT)
       {
       
-      logit(phi[t,i,j,k]) <- mu_phi + eps_phi[j,k]
+      logit(phi[t,i,j,k]) <- mu_phi[j,k]
       logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[j,k]
       
       } #t
@@ -524,23 +527,27 @@ setwd(dir[4])
       
       #priors - p and phi
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
-      mu_phi ~ dnorm(3, 0.1)
       mu_p ~ dnorm(2, 0.1)
-
+      
+      #priors - intercept and slopes
+      alpha_theta ~ dnorm(0, 0.386)
+      pi_theta ~ dnorm(0, 0.386)
+      rho_theta ~ dnorm(0, 0.386)
+      
       for (k in 1:NK)
       {
       for (j in 1:NJ)
       {
-      eps_phi[j,k] ~ dnorm(0, tau_eps_phi)
-      nu_p[j,k] ~ dnorm(0, tau_nu_p)
+      mu_phi[j,k] ~ dnorm(theta_phi[j,k], tau_mu_phi)
+      theta_phi[j,k] = alpha_theta + pi_theta * SIC[j,k] + rho_theta * KRILL[j,k]
 
-      t_phi[j,k] <- mu_phi + eps_phi[j,k]
+      nu_p[j,k] ~ dnorm(0, tau_nu_p)
       t_p[j,k] <- mu_p + nu_p[j,k]
       }
       }
 
-      tau_eps_phi <- pow(sigma_eps_phi, -2) 
-      sigma_eps_phi ~ dunif(0, 3)
+      tau_mu_phi <- pow(sigma_mu_phi, -2) 
+      sigma_mu_phi ~ dunif(0, 3)
       tau_nu_p <- pow(sigma_nu_p, -2) 
       sigma_nu_p ~ dunif(0, 3)
 
@@ -554,69 +561,69 @@ setwd(dir[4])
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mu_phi = 4,
+Inits_1 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
                 mu_p = 2,
                 beta_p = 0.1,
-                sigma_eps_phi = 1,
+                sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                # alpha_eps = 0,
-                # pi_eps = 0,
-                # rho_eps = 0,
+                alpha_theta = 0,
+                pi_theta = 0,
+                rho_theta = 0,
                 .RNG.name = "base::Mersenne-Twister", 
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = 4,
+Inits_2 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
                 mu_p = 2,
                 beta_p = 0.1,
-                sigma_eps_phi = 1,
+                sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                # alpha_eps = 0,
-                # pi_eps = 0,
-                # rho_eps = 0,
+                alpha_theta = 0,
+                pi_theta = 0,
+                rho_theta = 0,
                 .RNG.name = "base::Wichmann-Hill", 
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = 4,
+Inits_3 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
                 mu_p = 2,
                 beta_p = 0.1,
-                sigma_eps_phi = 1,
+                sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                # alpha_eps = 0,
-                # pi_eps = 0,
-                # rho_eps = 0,
+                alpha_theta = 0,
+                pi_theta = 0,
+                rho_theta = 0,
                 .RNG.name = "base::Marsaglia-Multicarry", 
                 .RNG.seed = 3)
 
-Inits_4 <- list(mu_phi = 4,
+Inits_4 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
                 mu_p = 2,
                 beta_p = 0.1,
-                sigma_eps_phi = 1,
+                sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                # alpha_eps = 0,
-                # pi_eps = 0,
-                # rho_eps = 0,
+                alpha_theta = 0,
+                pi_theta = 0,
+                rho_theta = 0,
                 .RNG.name = "base::Mersenne-Twister", 
                 .RNG.seed = 4)
 
-Inits_5 <- list(mu_phi = 4,
+Inits_5 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
                 mu_p = 2,
                 beta_p = 0.1,
-                sigma_eps_phi = 1,
+                sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                # alpha_eps = 0,
-                # pi_eps = 0,
-                # rho_eps = 0,
+                alpha_theta = 0,
+                pi_theta = 0,
+                rho_theta = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
-Inits_6 <- list(mu_phi = 4,
+Inits_6 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
                 mu_p = 2,
                 beta_p = 0.1,
-                sigma_eps_phi = 1,
+                sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                # alpha_eps = 0,
-                # pi_eps = 0,
-                # rho_eps = 0,
+                alpha_theta = 0,
+                pi_theta = 0,
+                rho_theta = 0,
                 .RNG.name = "base::Wichmann-Hill", 
                 .RNG.seed = 6)
 
@@ -629,15 +636,13 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)#, Inits_4, Inits_5, Inits_6)
 Pars <- c('mu_phi',
           'mu_p',
           'beta_p',
-          'eps_phi',
-          'sigma_eps_phi',
-          't_phi',
+          'sigma_mu_phi',
           't_p',
           'sigma_nu_p',
-          'nu_p'
-          # 'alpha_eps',
-          # 'pi_eps',
-          # 'rho_eps',
+          'nu_p',
+          'alpha_theta',
+          'pi_theta',
+          'rho_theta'
           )
 
 
@@ -654,9 +659,10 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-04_LOCKNEKO',
-        jagsDsc = '2 site, 3 years
-        logit(phi) <- mu_phi + eps_phi_j; 
+        jagsID = 'PW_60k_2019-04-05_LOCKNEKOGEOR_cov',
+        jagsDsc = '3 sites, 3 years, cov
+        logit(phi) <- mu_phi_j_k;
+        mu_phi_j_k ~ alpha + beta1 * krill + beta2 * sic
         logit(p) <- mu_p + beta*x[t] + nu_p_j',
         db_hash = 'PW_data_2019-03-23.csv',
         n_chain = 3,
