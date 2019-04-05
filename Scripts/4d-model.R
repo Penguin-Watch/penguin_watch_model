@@ -387,7 +387,7 @@ SIC <- matrix(t2, nrow = NROW(i_SIC))
 
 
 #JUST LOCK (all years)
-site_id <- which(un_sites == 'LOCK')
+site_id <- which(un_sites %in% c('LOCK', 'NEKO'))
 yr_id <- which(d_yrs %in% c(2013, 2014, 2015))
 nna <- nests_array[,,yr_id, site_id]
 rn <- real_nests[yr_id, site_id]
@@ -396,9 +396,9 @@ za <- z_array[,,yr_id, site_id]
 
 DATA <- list(
   y = nna, #response
-  #NK = dim(nests_array)[4], #number of sites
+  NK = dim(nna)[4], #number of sites
   NJ = dim(nna)[3], #number of years covered for all sites
-  NI = rn, #number of nests
+  NI = rn, #number of nests j,k [year, site]
   NT = dim(nna)[1], #number of time steps
   z = za, #known points of bird being alive
   x = scale(as.numeric(1:dim(nna)[1]), scale = FALSE)[,1])
@@ -470,10 +470,14 @@ setwd(dir[4])
       
       model {
       
+      #site
+      for (k in 1:NK)
+      {
+      #year
       for (j in 1:NJ)
       {
       #nests
-      for (i in 1:NI[j])
+      for (i in 1:NI[j,k])
       {
       #both chicks alive at time step 1 (z[1,i,j] = 2)
       
@@ -481,47 +485,64 @@ setwd(dir[4])
       for (t in 2:NT)
       {
       #state model
-      z[t,i,j] ~ dbinom(p_alive[t,i,j], z[t-1,i,j])
-      p_alive[t,i,j] <- ifelse(z[t-1,i,j] < 2, 
-      phi[t,i,j] * z[t-1,i,j],
-      phi[t,i,j])
+      z[t,i,j,k] ~ dbinom(p_alive[t,i,j,k], z[t-1,i,j,k])
+      p_alive[t,i,j,k] <- ifelse(z[t-1,i,j,k] < 2, 
+      phi[t,i,j,k] * z[t-1,i,j,k],
+      phi[t,i,j,k])
       
       #observation model
-      y[t,i,j] ~ dbinom(p_sight[t,i,j], z[t,i,j])
-      p_sight[t,i,j] <- ifelse(z[t,i,j] < 2,
-      p[t,i,j] * z[t,i,j],
-      p[t,i,j])
+      y[t,i,j,k] ~ dbinom(p_sight[t,i,j,k], z[t,i,j,k])
+      p_sight[t,i,j,k] <- ifelse(z[t,i,j,k] < 2,
+      p[t,i,j,k] * z[t,i,j,k],
+      p[t,i,j,k])
       
+      }
       }
       }
       }
       
       #transforms
+      for (k in 1:NK)
+      {
       #year
       for (j in 1:NJ)
       {
       #nests      
-      for (i in 1:NI[j])
+      for (i in 1:NI[j,k])
       {
       #time
       for (t in 1:NT)
       {
       
-      logit(phi[t,i,j]) <- mu_phi[j]
-      logit(p[t,i,j]) <- mu_p[j] + beta_p*x[t]
+      logit(phi[t,i,j,k]) <- mu_phi + eps_phi[j,k]
+      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[j,k]
       
       } #t
       } #i
       } #j
+      } #k
       
       #priors - p and phi
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
+      mu_phi ~ dnorm(3, 0.1)
+      mu_p ~ dnorm(2, 0.1)
 
+      for (k in 1:NK)
+      {
       for (j in 1:NJ)
       {
-      mu_phi[j] ~ dnorm(3, 0.1)
-      mu_p[j] ~ dnorm(2, 0.1)
+      eps_phi[j,k] ~ dnorm(0, tau_eps_phi)
+      nu_p[j,k] ~ dnorm(0, tau_nu_p)
+
+      t_phi[j,k] <- mu_phi + eps_phi[j,k]
+      t_p[j,k] <- mu_p + nu_p[j,k]
       }
+      }
+
+      tau_eps_phi <- pow(sigma_eps_phi, -2) 
+      sigma_eps_phi ~ dunif(0, 3)
+      tau_nu_p <- pow(sigma_nu_p, -2) 
+      sigma_nu_p ~ dunif(0, 3)
 
       }",fill = TRUE)
 
@@ -533,66 +554,66 @@ setwd(dir[4])
 # Starting values ---------------------------------------------------------
 
 
-Inits_1 <- list(mu_phi = rep(4, DATA$NJ),
-                mu_p = rep(2, DATA$NJ),
+Inits_1 <- list(mu_phi = 4,
+                mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eps_phi = 1,
-                #sigma_nu_p = 1,
+                sigma_eps_phi = 1,
+                sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Mersenne-Twister", 
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = rep(4, DATA$NJ),
-                mu_p = rep(2, DATA$NJ),
+Inits_2 <- list(mu_phi = 4,
+                mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eps_phi = 1,
-                #sigma_nu_p = 1,
+                sigma_eps_phi = 1,
+                sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Wichmann-Hill", 
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = rep(4, DATA$NJ),
-                mu_p = rep(2, DATA$NJ),
+Inits_3 <- list(mu_phi = 4,
+                mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eps_phi = 1,
-                #sigma_nu_p = 1,
+                sigma_eps_phi = 1,
+                sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Marsaglia-Multicarry", 
                 .RNG.seed = 3)
 
-Inits_4 <- list(mu_phi = rep(4, DATA$NJ),
-                mu_p = rep(2, DATA$NJ),
+Inits_4 <- list(mu_phi = 4,
+                mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eps_phi = 1,
-                #sigma_nu_p = 1,
+                sigma_eps_phi = 1,
+                sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Mersenne-Twister", 
                 .RNG.seed = 4)
 
-Inits_5 <- list(mu_phi = rep(4, DATA$NJ),
-                mu_p = rep(2, DATA$NJ),
+Inits_5 <- list(mu_phi = 4,
+                mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eps_phi = 1,
-                #sigma_nu_p = 1,
+                sigma_eps_phi = 1,
+                sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
-Inits_6 <- list(mu_phi = rep(4, DATA$NJ),
-                mu_p = rep(2, DATA$NJ),
+Inits_6 <- list(mu_phi = 4,
+                mu_p = 2,
                 beta_p = 0.1,
-                #sigma_eps_phi = 1,
-                #sigma_nu_p = 1,
+                sigma_eps_phi = 1,
+                sigma_nu_p = 1,
                 # alpha_eps = 0,
                 # pi_eps = 0,
                 # rho_eps = 0,
@@ -607,12 +628,13 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)#, Inits_4, Inits_5, Inits_6)
 
 Pars <- c('mu_phi',
           'mu_p',
-          'beta_p'#,
-          #'eps_phi',
-          #'sigma_eps_phi',
-          #'t_phi'
-          # 'sigma_nu_p',
-          # 'nu_p',
+          'beta_p',
+          'eps_phi',
+          'sigma_eps_phi',
+          't_phi',
+          't_p',
+          'sigma_nu_p',
+          'nu_p'
           # 'alpha_eps',
           # 'pi_eps',
           # 'rho_eps',
@@ -632,15 +654,15 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_50k_2019-04-04_LOCK2',
-        jagsDsc = '1 site, 3 years
+        jagsID = 'PW_60k_2019-04-04_LOCKNEKO',
+        jagsDsc = '2 site, 3 years
         logit(phi) <- mu_phi + eps_phi_j; 
-        logit(p) <- mu_p_j + beta*x[t]',
+        logit(p) <- mu_p + beta*x[t] + nu_p_j',
         db_hash = 'PW_data_2019-03-23.csv',
         n_chain = 3,
         n_adapt = 5000,
-        n_burn = 50000,
-        n_draw = 50000,
+        n_burn = 60000,
+        n_draw = 60000,
         n_thin = 20,
         EXTRA = FALSE,
         Rhat_max = 1.1,
