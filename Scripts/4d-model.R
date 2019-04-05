@@ -33,7 +33,7 @@ rm(list = ls())
 #          '~/Google_Drive/R/penguin_watch_model/Results/')
 
 #HPC
-dir <- c('../Data', '../Data', '../Data', '../Results')
+#dir <- c('../Data', '../Data', '../Data', '../Results')
 
 
 
@@ -44,7 +44,6 @@ dir <- c('../Data', '../Data', '../Data', '../Results')
 
 library(dplyr)
 library(jagsRun)
-
 
 
 # determine PW dates to use -----------------------------------------------
@@ -387,7 +386,7 @@ SIC <- matrix(t2, nrow = NROW(i_SIC))
 
 
 #Filter sites (3 years)
-site_id <- which(un_sites %in% c('LOCK', 'NEKO', 'GEOR'))
+site_id <- which(un_sites %in% c('LOCK', 'NEKO', 'GEOR', 'CUVE'))
 yr_id <- which(d_yrs %in% c(2013, 2014, 2015))
 nna <- nests_array[,,yr_id, site_id]
 rn <- real_nests[yr_id, site_id]
@@ -659,8 +658,8 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-05_LOCKNEKOGEOR_cov',
-        jagsDsc = '3 sites, 3 years, cov
+        jagsID = 'PW_60k_2019-04-05_4sites_cov',
+        jagsDsc = '4 sites, 3 years (one missing), cov
         logit(phi) <- mu_phi_j_k;
         mu_phi_j_k ~ alpha + beta1 * krill + beta2 * sic
         logit(p) <- mu_p + beta*x[t] + nu_p_j',
