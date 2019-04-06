@@ -56,7 +56,7 @@ setwd(dir[1])
 PW_data <- read.csv('PW_data_2019-03-23.csv', stringsAsFactors = FALSE)
 
 #remove specified colonies
-un_sites_p <- unique(PW_data$site)
+un_sites_p <- sort(unique(PW_data$site))
 to_rm <- c('AITC')
 un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
 #un_sites <- un_sites_p
@@ -120,11 +120,14 @@ nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 #FILL RESPONSE DATA ARRAY
 #adds NA buffer to beginning and end of data
 #nests with NAs are simply removed (e.g., if there are 4 nests, and nest 3 is all NAs, nest 4 becomes nest 3)
+
+yrs_array <- array(NA, dim = c(n_yrs, n_sites))
 for (k in 1:n_sites)
 {
   #k <- 5
   temp <- dplyr::filter(PW_data, site == un_sites[k])
   
+  j_idx <- 1
   for (j in 1:n_yrs)
   {
     #j <- 1
@@ -214,7 +217,9 @@ for (k in 1:n_sites)
       }
       
       #appropriate date range and appropriate columns for nests
-      nests_array[,,j,k] <- f_n_vals
+      nests_array[,,j_idx,k] <- f_n_vals
+      yrs_array[j_idx,k] <- d_yrs[j]
+      j_idx <- j_idx + 1
     }
   }
 }
@@ -327,11 +332,17 @@ for (k in 1:length(un_sites_ncc))
   #k <- 1
   temp <- dplyr::filter(krill, SITE == un_sites_ncc[k])
   
+  j_idx <- 1
   for (j in 1:length(d_yrs))
   {
-    #j <- 5
-    temp2 <- dplyr::filter(temp, YEAR == d_yrs[j])
-    i_KRILL[j,k] <- temp2$T_KRILL
+    #j <- 1
+    if (!is.na(yrs_array[j,k]))
+    {
+      temp2 <- dplyr::filter(temp, YEAR == d_yrs[j])
+      
+      i_KRILL[j_idx,k] <- temp2$T_KRILL
+      j_idx <- j_idx + 1
+    }
   }
 }
 
@@ -360,11 +371,16 @@ for (k in 1:length(un_sites_ncc))
   #k <- 1
   temp <- filter(sea_ice, SITE == un_sites_ncc[k])
   
+  j_idx <- 1
   for (j in 1:length(d_yrs))
   {
     #j <- 1
-    temp2 <- filter(temp, YEAR == d_yrs[j])
-    i_SIC[j,k] <- temp2$W_MN
+    if (!is.na(yrs_array[j,k]))
+    {
+      temp2 <- filter(temp, YEAR == d_yrs[j])
+      i_SIC[j_idx,k] <- temp2$W_MN
+      j_idx <- j_idx + 1
+    }
   }
 }
 
@@ -385,25 +401,27 @@ SIC <- matrix(t2, nrow = NROW(i_SIC))
 #dim4 [k] = sites (un_sites)
 
 
-#Filter sites (3 years)
-site_id <- which(un_sites %in% c('LOCK', 'NEKO', 'GEOR', 'CUVE'))
-yr_id <- which(d_yrs %in% c(2013, 2014, 2015))
-nna <- nests_array[,,yr_id, site_id]
-rn <- real_nests[yr_id, site_id]
-za <- z_array[,,yr_id, site_id]
-kr <- i_KRILL[yr_id, site_id]
-sic <- i_SIC[yr_id, site_id]
+#number of years for each site
+NJ <- rep(NA, NCOL(yrs_array))
+for (i in 1:length(NJ))
+{
+  #i <- 1
+  NJ[i] <- max(which(!is.na(yrs_array[,i])))
+}
+
 
 DATA <- list(
-  y = nna, #response
-  NK = dim(nna)[4], #number of sites
-  NJ = dim(nna)[3], #number of years covered for all sites
-  NI = rn, #number of nests j,k [year, site]
-  NT = dim(nna)[1], #number of time steps
-  z = za, #known points of bird being alive
-  x = scale(as.numeric(1:dim(nna)[1]), scale = FALSE)[,1],
-  KRILL = kr,
-  SIC = sic)
+  y = nests_array, #response
+  NK = dim(nests_array)[4], #number of sites
+  NJ = NJ, #number of years covered for each site
+  NI = real_nests, #number of nests j,k [year, site]
+  NT = dim(nests_array)[1], #number of time steps
+  z = z_array, #known points of bird being alive
+  x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE)[,1],
+  KRILL = KRILL,
+  SIC = SIC,
+  unsites = un_sites,
+  yrs_array = yrs_array)
 
 
 #checks:
@@ -411,53 +429,31 @@ DATA <- list(
 # z_array[1:10, 1:11, 2, 1]
 # DATA$NI[2,1]
 
-#data availability - which phi to track
-d_array <- array(NA, dim = c(n_nests, n_yrs, n_sites))
-d2_array <- array(NA, dim = c(n_yrs, n_sites))
-d_avail <- data.frame()
-for (i in 1:length(un_sites))
-{
-  #i <- 1
-  #years
-  for (j in 1:dim(nests_array)[3])
-  {
-    #j <- 1
-    temp <- dplyr::filter(PW_data, site == un_sites[i],
-                          season_year == d_yrs[j])
-    if (NROW(temp) > 0)
-    {
-      d2_array[j,i] <- 1
-    }
-    
-    tna <- apply(nests_array[,,j,i], 2, function(x) sum(!is.na(x)))
-    nv_nests <- sum(tna > 0)
-    
-    tt <- data.frame(site = un_sites[i], 
-                     season_year = d_yrs[j],
-                     num_nests = nv_nests)
-    
-    d_avail <- rbind(d_avail, tt)
-    
-    if (nv_nests > 0)
-    {
-      d_array[1:nv_nests, j, i] <- 1
-    }
-  }
-}
-
-#number of site/years of data
-num_ss <- length(which(d_avail$num_nests > 0))
-
-#site/year indices with data
-sy_ind <- which(!is.na(d2_array), arr.ind = TRUE)
-
-#site/year/nest indices with data
-syn_ind <- which(!is.na(d_array), arr.ind = TRUE)
-
-#just NEKO 2014 and 2015 - days 30 to 60
-#nests_array[time, nests, year, site]
-#NEKO_2014 = [30:60, 1:21, 2, 10]
-#NEKO_2015 = [30:60, 1:24, 3, 10]
+# #data availability
+# d_avail <- data.frame()
+# for (i in 1:length(un_sites))
+# {
+#   #i <- 1
+#   #years
+#   for (j in 1:dim(nests_array)[3])
+#   {
+#     #j <- 1
+#     temp <- dplyr::filter(PW_data, site == un_sites[i],
+#                           season_year == yrs_array[i,j])
+#     
+#     tna <- apply(nests_array[,,j,i], 2, function(x) sum(!is.na(x)))
+#     nv_nests <- sum(tna > 0)
+#     
+#     tt <- data.frame(site = un_sites[i], 
+#                      season_year = d_yrs[j],
+#                      num_nests = nv_nests)
+#     
+#     d_avail <- rbind(d_avail, tt)
+#   }
+# }
+# 
+# #number of site/years of data
+# num_ss <- length(which(d_avail$num_nests > 0))
 
 
 
@@ -476,13 +472,13 @@ setwd(dir[4])
       for (k in 1:NK)
       {
       #year
-      for (j in 1:NJ)
+      for (j in 1:NJ[k])
       {
-      #nests
+      #nests - if there are data for that year, site
       for (i in 1:NI[j,k])
       {
       #both chicks alive at time step 1 (z[1,i,j] = 2)
-      
+
       #time step
       for (t in 2:NT)
       {
@@ -498,18 +494,18 @@ setwd(dir[4])
       p[t,i,j,k] * z[t,i,j,k],
       p[t,i,j,k])
       
-      }
-      }
-      }
-      }
+      } #t
+      } #i
+      } #j
+      } #k
       
       #transforms
       for (k in 1:NK)
       {
       #year
-      for (j in 1:NJ)
+      for (j in 1:NJ[k])
       {
-      #nests      
+      #nests - if there are data for that year, site
       for (i in 1:NI[j,k])
       {
       #time
@@ -535,15 +531,15 @@ setwd(dir[4])
       
       for (k in 1:NK)
       {
-      for (j in 1:NJ)
+      for (j in 1:NJ[k])
       {
       mu_phi[j,k] ~ dnorm(theta_phi[j,k], tau_mu_phi)
       theta_phi[j,k] = alpha_theta + pi_theta * SIC[j,k] + rho_theta * KRILL[j,k]
 
       nu_p[j,k] ~ dnorm(0, tau_nu_p)
-      t_p[j,k] <- mu_p + nu_p[j,k]
-      }
-      }
+      #t_p[j,k] <- mu_p + nu_p[j,k]
+      } #j
+      } #k
 
       tau_mu_phi <- pow(sigma_mu_phi, -2) 
       sigma_mu_phi ~ dunif(0, 3)
@@ -559,8 +555,10 @@ setwd(dir[4])
 
 # Starting values ---------------------------------------------------------
 
+mp_array <- yrs_array
+mp_array[which(!is.na(mp_array), arr.ind = TRUE)] <- 4
 
-Inits_1 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
+Inits_1 <- list(mu_phi = mp_array,
                 mu_p = 2,
                 beta_p = 0.1,
                 sigma_mu_phi = 1,
@@ -571,7 +569,7 @@ Inits_1 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4])
                 .RNG.name = "base::Mersenne-Twister", 
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
+Inits_2 <- list(mu_phi = mp_array,
                 mu_p = 2,
                 beta_p = 0.1,
                 sigma_mu_phi = 1,
@@ -582,7 +580,7 @@ Inits_2 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4])
                 .RNG.name = "base::Wichmann-Hill", 
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
+Inits_3 <- list(mu_phi = mp_array,
                 mu_p = 2,
                 beta_p = 0.1,
                 sigma_mu_phi = 1,
@@ -593,38 +591,38 @@ Inits_3 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4])
                 .RNG.name = "base::Marsaglia-Multicarry", 
                 .RNG.seed = 3)
 
-Inits_4 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
-                mu_p = 2,
-                beta_p = 0.1,
-                sigma_mu_phi = 1,
-                sigma_nu_p = 1,
-                alpha_theta = 0,
-                pi_theta = 0,
-                rho_theta = 0,
-                .RNG.name = "base::Mersenne-Twister", 
-                .RNG.seed = 4)
-
-Inits_5 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
-                mu_p = 2,
-                beta_p = 0.1,
-                sigma_mu_phi = 1,
-                sigma_nu_p = 1,
-                alpha_theta = 0,
-                pi_theta = 0,
-                rho_theta = 0,
-                .RNG.name = "base::Wichmann-Hill",
-                .RNG.seed = 5)
-
-Inits_6 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
-                mu_p = 2,
-                beta_p = 0.1,
-                sigma_mu_phi = 1,
-                sigma_nu_p = 1,
-                alpha_theta = 0,
-                pi_theta = 0,
-                rho_theta = 0,
-                .RNG.name = "base::Wichmann-Hill", 
-                .RNG.seed = 6)
+# Inits_4 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
+#                 mu_p = 2,
+#                 beta_p = 0.1,
+#                 sigma_mu_phi = 1,
+#                 sigma_nu_p = 1,
+#                 alpha_theta = 0,
+#                 pi_theta = 0,
+#                 rho_theta = 0,
+#                 .RNG.name = "base::Mersenne-Twister", 
+#                 .RNG.seed = 4)
+# 
+# Inits_5 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
+#                 mu_p = 2,
+#                 beta_p = 0.1,
+#                 sigma_mu_phi = 1,
+#                 sigma_nu_p = 1,
+#                 alpha_theta = 0,
+#                 pi_theta = 0,
+#                 rho_theta = 0,
+#                 .RNG.name = "base::Wichmann-Hill",
+#                 .RNG.seed = 5)
+# 
+# Inits_6 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
+#                 mu_p = 2,
+#                 beta_p = 0.1,
+#                 sigma_mu_phi = 1,
+#                 sigma_nu_p = 1,
+#                 alpha_theta = 0,
+#                 pi_theta = 0,
+#                 rho_theta = 0,
+#                 .RNG.name = "base::Wichmann-Hill", 
+#                 .RNG.seed = 6)
 
 F_Inits <- list(Inits_1, Inits_2, Inits_3)#, Inits_4, Inits_5, Inits_6)
 
@@ -658,8 +656,8 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-05_4sites_cov',
-        jagsDsc = '4 sites, 3 years (one missing), cov
+        jagsID = 'PW_60k_2019-04-05_full_no_missing_cov',
+        jagsDsc = 'all sites/years (no missing), cov
         logit(phi) <- mu_phi_j_k;
         mu_phi_j_k ~ alpha + beta1 * krill + beta2 * sic
         logit(p) <- mu_p + beta*x[t] + nu_p_j',
