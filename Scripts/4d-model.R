@@ -53,7 +53,8 @@ setwd(dir[1])
 #make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
 #unused nests should be marked with all NAs
 
-PW_data <- read.csv('PW_data_2019-03-23.csv', stringsAsFactors = FALSE)
+#PW_data <- read.csv('PW_data_2019-03-23.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
 
 #remove specified colonies
 un_sites_p <- sort(unique(PW_data$site))
@@ -320,36 +321,36 @@ z_array[ones] <- NA
 #dim1 [j] = years (d_yrs)
 #dim2 [k] = sites (un_sites)
 
-un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
-
-setwd(dir[2])
-
-krill <- read.csv('CCAMLR_krill_entire_season.csv')
-
-i_KRILL <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
-for (k in 1:length(un_sites_ncc))
-{
-  #k <- 1
-  temp <- dplyr::filter(krill, SITE == un_sites_ncc[k])
-  
-  j_idx <- 1
-  for (j in 1:length(d_yrs))
-  {
-    #j <- 1
-    if (!is.na(yrs_array[j,k]))
-    {
-      temp2 <- dplyr::filter(temp, YEAR == d_yrs[j])
-      
-      i_KRILL[j_idx,k] <- temp2$T_KRILL
-      j_idx <- j_idx + 1
-    }
-  }
-}
-
-#standardize krill catch
-t1 <- as.vector(i_KRILL)
-t2 <- scale(t1)[,1]
-KRILL <- matrix(t2, nrow = NROW(i_KRILL))
+# un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
+# 
+# setwd(dir[2])
+# 
+# krill <- read.csv('CCAMLR_krill_entire_season.csv')
+# 
+# i_KRILL <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
+# for (k in 1:length(un_sites_ncc))
+# {
+#   #k <- 1
+#   temp <- dplyr::filter(krill, SITE == un_sites_ncc[k])
+#   
+#   j_idx <- 1
+#   for (j in 1:length(d_yrs))
+#   {
+#     #j <- 1
+#     if (!is.na(yrs_array[j,k]))
+#     {
+#       temp2 <- dplyr::filter(temp, YEAR == d_yrs[j])
+#       
+#       i_KRILL[j_idx,k] <- temp2$T_KRILL
+#       j_idx <- j_idx + 1
+#     }
+#   }
+# }
+# 
+# #standardize krill catch
+# t1 <- as.vector(i_KRILL)
+# t2 <- scale(t1)[,1]
+# KRILL <- matrix(t2, nrow = NROW(i_KRILL))
 
 
 
@@ -361,34 +362,34 @@ KRILL <- matrix(t2, nrow = NROW(i_KRILL))
 #COULD ALSO USE MAX OVER LAST 5 YEARS
 
 
-setwd(dir[3])
-
-sea_ice <- read.csv('SIC_150_W.csv')
-
-i_SIC <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
-for (k in 1:length(un_sites_ncc))
-{
-  #k <- 1
-  temp <- filter(sea_ice, SITE == un_sites_ncc[k])
-  
-  j_idx <- 1
-  for (j in 1:length(d_yrs))
-  {
-    #j <- 1
-    if (!is.na(yrs_array[j,k]))
-    {
-      temp2 <- filter(temp, YEAR == d_yrs[j])
-      i_SIC[j_idx,k] <- temp2$W_MN
-      j_idx <- j_idx + 1
-    }
-  }
-}
-
-
-#standardize krill catch
-t1 <- as.vector(i_SIC)
-t2 <- scale(t1)[,1]
-SIC <- matrix(t2, nrow = NROW(i_SIC))
+# setwd(dir[3])
+# 
+# sea_ice <- read.csv('SIC_150_W.csv')
+# 
+# i_SIC <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
+# for (k in 1:length(un_sites_ncc))
+# {
+#   #k <- 1
+#   temp <- filter(sea_ice, SITE == un_sites_ncc[k])
+#   
+#   j_idx <- 1
+#   for (j in 1:length(d_yrs))
+#   {
+#     #j <- 1
+#     if (!is.na(yrs_array[j,k]))
+#     {
+#       temp2 <- filter(temp, YEAR == d_yrs[j])
+#       i_SIC[j_idx,k] <- temp2$W_MN
+#       j_idx <- j_idx + 1
+#     }
+#   }
+# }
+# 
+# 
+# #standardize krill catch
+# t1 <- as.vector(i_SIC)
+# t2 <- scale(t1)[,1]
+# SIC <- matrix(t2, nrow = NROW(i_SIC))
 
 
 
@@ -418,8 +419,8 @@ DATA <- list(
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
   x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE)[,1],
-  KRILL = KRILL,
-  SIC = SIC,
+  #KRILL = KRILL,
+  #SIC = SIC,
   unsites = un_sites,
   yrs_array = yrs_array)
 
@@ -533,13 +534,16 @@ setwd(dir[4])
       {
       for (j in 1:NJ[k])
       {
-      mu_phi[j,k] ~ dnorm(theta_phi[j,k], tau_mu_phi)
-      theta_phi[j,k] = alpha_theta + pi_theta * SIC[j,k] + rho_theta * KRILL[j,k]
+      # mu_phi[j,k] ~ dnorm(theta_phi[j,k], tau_mu_phi)
+      # theta_phi[j,k] = alpha_theta + pi_theta * SIC[j,k] + rho_theta * KRILL[j,k]
+      mu_phi[j,k] ~ dnorm(theta_phi, tau_mu_phi)
 
       nu_p[j,k] ~ dnorm(0, tau_nu_p)
-      #t_p[j,k] <- mu_p + nu_p[j,k]
+      t_p[j,k] <- mu_p + nu_p[j,k]
       } #j
       } #k
+
+      theta_phi ~ dnorm(4, 0.25)
 
       tau_mu_phi <- pow(sigma_mu_phi, -2) 
       sigma_mu_phi ~ dunif(0, 3)
@@ -558,36 +562,39 @@ setwd(dir[4])
 mp_array <- yrs_array
 mp_array[which(!is.na(mp_array), arr.ind = TRUE)] <- 4
 
-Inits_1 <- list(mu_phi = mp_array,
+Inits_1 <- list(#mu_phi = mp_array,
                 mu_p = 2,
                 beta_p = 0.1,
                 sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                alpha_theta = 0,
-                pi_theta = 0,
-                rho_theta = 0,
+                theta_phi = 4,
+                # alpha_theta = 0,
+                # pi_theta = 0,
+                # rho_theta = 0,
                 .RNG.name = "base::Mersenne-Twister", 
                 .RNG.seed = 1)
 
-Inits_2 <- list(mu_phi = mp_array,
+Inits_2 <- list(#mu_phi = mp_array,
                 mu_p = 2,
                 beta_p = 0.1,
                 sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                alpha_theta = 0,
-                pi_theta = 0,
-                rho_theta = 0,
+                theta_phi = 4,
+                # alpha_theta = 0,
+                # pi_theta = 0,
+                # rho_theta = 0,
                 .RNG.name = "base::Wichmann-Hill", 
                 .RNG.seed = 2)
 
-Inits_3 <- list(mu_phi = mp_array,
+Inits_3 <- list(#mu_phi = mp_array,
                 mu_p = 2,
                 beta_p = 0.1,
                 sigma_mu_phi = 1,
                 sigma_nu_p = 1,
-                alpha_theta = 0,
-                pi_theta = 0,
-                rho_theta = 0,
+                theta_phi = 4,
+                # alpha_theta = 0,
+                # pi_theta = 0,
+                # rho_theta = 0,
                 .RNG.name = "base::Marsaglia-Multicarry", 
                 .RNG.seed = 3)
 
@@ -637,9 +644,10 @@ Pars <- c('mu_phi',
           't_p',
           'sigma_nu_p',
           'nu_p',
-          'alpha_theta',
-          'pi_theta',
-          'rho_theta'
+          'theta_phi'
+          # 'alpha_theta',
+          # 'pi_theta',
+          # 'rho_theta'
           )
 
 
@@ -656,12 +664,12 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-05_full_no_missing_cov',
-        jagsDsc = 'all sites/years (no missing), cov
+        jagsID = 'PW_60k_2019-04-05_full_no_missing_ALL',
+        jagsDsc = 'all sites/years (no missing)
         logit(phi) <- mu_phi_j_k;
-        mu_phi_j_k ~ alpha + beta1 * krill + beta2 * sic
+        mu_phi_j_k ~ normal()
         logit(p) <- mu_p + beta*x[t] + nu_p_j',
-        db_hash = 'PW_data_2019-03-23.csv',
+        db_hash = 'PW_data_2019-04-06.csv',
         n_chain = 3,
         n_adapt = 5000,
         n_burn = 60000,
