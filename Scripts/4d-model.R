@@ -523,17 +523,18 @@ setwd(dir[4])
       } #k
       
       #derived qty - number of chicks alive at each time step for site
-      for (k in 1:NK)
-      {
+      #JUST SITE 12
+      #for (k in 1:NK)
+      #{
       #year
-      for (j in 1:NJ[k])
+      for (j in 1:NJ[12])
       {
       for (t in 1:NT)
       {
-      z_out[t,j,k] <- sum(z[t,,j,k])
+      z_out[t,j] <- sum(z[t,1:NI[j,12],j,12])
       }
       }
-      }
+      #}
 
 
 
@@ -685,7 +686,7 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-05_full_no_missing_ALL',
+        jagsID = 'PW_60k_2019-04-07_FULL_test_z_out',
         jagsDsc = 'all sites/years (no missing)
         logit(phi) <- mu_phi_j_k;
         mu_phi_j_k ~ normal()
