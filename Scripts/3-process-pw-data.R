@@ -38,8 +38,9 @@ library(dplyr)
 
 files_p <- list.files()[grep('.csv', list.files())]
 #don't yet have 2018 krill data
-to.rm <- grep('2018', files)
-files <- files_p[-to.rm]
+#to.rm <- grep('2018', files)
+#files <- files_p[-to.rm]
+files <- files_p
 
 full_df <- data.frame()
 for (i in 1:length(files))
@@ -54,4 +55,4 @@ for (i in 1:length(files))
 
 setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
 
-write.csv(full_df, file = 'PW_data_2019-03-23.csv', row.names = FALSE)
+write.csv(full_df, file = 'PW_data_2019-04-06.csv', row.names = FALSE)
