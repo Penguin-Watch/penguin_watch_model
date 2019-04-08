@@ -425,36 +425,36 @@ DATA <- list(
   yrs_array = yrs_array)
 
 
-#checks:
-# nests_array[1:50, 1:10, 2, 1]
-# z_array[1:10, 1:11, 2, 1]
-# DATA$NI[2,1]
 
-# #data availability
-# d_avail <- data.frame()
-# for (i in 1:length(un_sites))
-# {
-#   #i <- 1
-#   #years
-#   for (j in 1:dim(nests_array)[3])
-#   {
-#     #j <- 1
-#     temp <- dplyr::filter(PW_data, site == un_sites[i],
-#                           season_year == yrs_array[i,j])
-#     
-#     tna <- apply(nests_array[,,j,i], 2, function(x) sum(!is.na(x)))
-#     nv_nests <- sum(tna > 0)
-#     
-#     tt <- data.frame(site = un_sites[i], 
-#                      season_year = d_yrs[j],
-#                      num_nests = nv_nests)
-#     
-#     d_avail <- rbind(d_avail, tt)
-#   }
-# }
-# 
-# #number of site/years of data
-# num_ss <- length(which(d_avail$num_nests > 0))
+#data availability
+d_avail <- data.frame()
+for (i in 1:length(un_sites))
+{
+  #i <- 1
+  #years
+  for (j in 1:dim(nests_array)[3])
+  {
+    #j <- 1
+    temp <- dplyr::filter(PW_data, site == un_sites[i],
+                          season_year == yrs_array[j,i])
+
+    if (NROW(temp) > 0)
+    {
+      tna <- apply(nests_array[,,j,i], 2, function(x) sum(!is.na(x)))
+      nv_nests <- sum(tna > 0)
+    } else {
+      nv_nests <- 0
+    }
+      tt <- data.frame(site = un_sites[i],
+                       season_year = d_yrs[j],
+                       num_nests = nv_nests)
+
+    d_avail <- rbind(d_avail, tt)
+  }
+}
+
+#number of site/years of data
+num_ss <- length(which(d_avail$num_nests > 0))
 
 
 
@@ -500,6 +500,7 @@ setwd(dir[4])
       } #j
       } #k
       
+
       #transforms
       for (k in 1:NK)
       {
@@ -521,14 +522,29 @@ setwd(dir[4])
       } #j
       } #k
       
+      #derived qty - number of chicks alive at each time step for site
+      for (k in 1:NK)
+      {
+      #year
+      for (j in 1:NJ[k])
+      {
+      for (t in 1:NT)
+      {
+      z_out[t,j,k] <- sum(z[t,,j,k])
+      }
+      }
+      }
+
+
+
       #priors - p and phi
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
       mu_p ~ dnorm(2, 0.1)
       
       #priors - intercept and slopes
-      alpha_theta ~ dnorm(0, 0.386)
-      pi_theta ~ dnorm(0, 0.386)
-      rho_theta ~ dnorm(0, 0.386)
+      # alpha_theta ~ dnorm(0, 0.386)
+      # pi_theta ~ dnorm(0, 0.386)
+      # rho_theta ~ dnorm(0, 0.386)
       
       for (k in 1:NK)
       {
@@ -538,6 +554,9 @@ setwd(dir[4])
       # theta_phi[j,k] = alpha_theta + pi_theta * SIC[j,k] + rho_theta * KRILL[j,k]
       mu_phi[j,k] ~ dnorm(theta_phi, tau_mu_phi)
 
+      #breeding success transform
+      mu_phi_bs[j,k] <- (ilogit(mu_phi[j,k]) ^ 60) * 2
+      
       nu_p[j,k] ~ dnorm(0, tau_nu_p)
       t_p[j,k] <- mu_p + nu_p[j,k]
       } #j
@@ -638,13 +657,15 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3)#, Inits_4, Inits_5, Inits_6)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mu_phi',
+          'mu_phi_bs',
           'mu_p',
           'beta_p',
           'sigma_mu_phi',
           't_p',
           'sigma_nu_p',
           'nu_p',
-          'theta_phi'
+          'theta_phi',
+          'z_out'
           # 'alpha_theta',
           # 'pi_theta',
           # 'rho_theta'
