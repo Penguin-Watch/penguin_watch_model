@@ -10,6 +10,10 @@
 #can control number of days starting data from first chick sighting with DAYS_BUFF_FIRST_CHICK
 
 
+#include data starting at first chick sighting, ending at creche point. No NA needed for night.
+#can control number of days starting data from first chick sighting with DAYS_BUFF_FIRST_CHICK
+
+
 # Clear environment -------------------------------------------------------
 
 
@@ -20,13 +24,13 @@ rm(list = ls())
 
 
 #laptop
-# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
-#          '../Krill_data/CCAMLR/Processed_CCAMLR/',
-#          '../../../SIC_data/Processed/',
-#          '~/Google_Drive/R/penguin_watch_model/Results/')
+dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
+         '../Krill_data/CCAMLR/Processed_CCAMLR/',
+         '../../../SIC_data/Processed/',
+         '~/Google_Drive/R/penguin_watch_model/Results/')
 
 #HPC
-dir <- c('../Data', '../Data', '../Data', '../Results')
+#dir <- c('../Data', '../Data', '../Data', '../Results')
 
 
 
@@ -39,7 +43,6 @@ library(dplyr)
 library(jagsRun)
 
 
-
 # determine PW dates to use -----------------------------------------------
 
 setwd(dir[1])
@@ -47,10 +50,11 @@ setwd(dir[1])
 #make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
 #unused nests should be marked with all NAs
 
-PW_data <- read.csv('PW_data_2019-03-23.csv', stringsAsFactors = FALSE)
+#PW_data <- read.csv('PW_data_2019-03-23.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
 
 #remove specified colonies
-un_sites_p <- unique(PW_data$site)
+un_sites_p <- sort(unique(PW_data$site))
 to_rm <- c('AITC')
 un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
 #un_sites <- un_sites_p
@@ -114,11 +118,14 @@ nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 #FILL RESPONSE DATA ARRAY
 #adds NA buffer to beginning and end of data
 #nests with NAs are simply removed (e.g., if there are 4 nests, and nest 3 is all NAs, nest 4 becomes nest 3)
+
+yrs_array <- array(NA, dim = c(n_yrs, n_sites))
 for (k in 1:n_sites)
 {
   #k <- 5
   temp <- dplyr::filter(PW_data, site == un_sites[k])
   
+  j_idx <- 1
   for (j in 1:n_yrs)
   {
     #j <- 1
@@ -208,7 +215,9 @@ for (k in 1:n_sites)
       }
       
       #appropriate date range and appropriate columns for nests
-      nests_array[,,j,k] <- f_n_vals
+      nests_array[,,j_idx,k] <- f_n_vals
+      yrs_array[j_idx,k] <- d_yrs[j]
+      j_idx <- j_idx + 1
     }
   }
 }
@@ -299,77 +308,6 @@ z_array[zeros] <- NA
 z_array[ones] <- NA
 
 
-
-
-# Krill covariate ---------------------------------------------------------------
-
-#total krill caught over the previous winter and current breeding season
-#150km radius for March - Feb
-
-#dim1 [j] = years (d_yrs)
-#dim2 [k] = sites (un_sites)
-
-un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
-
-setwd(dir[2])
-
-krill <- read.csv('CCAMLR_krill_entire_season.csv')
-
-i_KRILL <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
-for (k in 1:length(un_sites_ncc))
-{
-  #k <- 1
-  temp <- dplyr::filter(krill, SITE == un_sites_ncc[k])
-  
-  for (j in 1:length(d_yrs))
-  {
-    #j <- 5
-    temp2 <- dplyr::filter(temp, YEAR == d_yrs[j])
-    i_KRILL[j,k] <- temp2$T_KRILL
-  }
-}
-
-#standardize krill catch
-t1 <- as.vector(i_KRILL)
-t2 <- scale(t1)[,1]
-KRILL <- matrix(t2, nrow = NROW(i_KRILL))
-
-
-
-# SIC covariate -----------------------------------------------------------
-
-#SIC for the previous winter
-#150km radius for June - Sep
-#COULD ALSO USE 500 KM
-#COULD ALSO USE MAX OVER LAST 5 YEARS
-
-
-setwd(dir[3])
-
-sea_ice <- read.csv('SIC_150_W.csv')
-
-i_SIC <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
-for (k in 1:length(un_sites_ncc))
-{
-  #k <- 1
-  temp <- filter(sea_ice, SITE == un_sites_ncc[k])
-  
-  for (j in 1:length(d_yrs))
-  {
-    #j <- 1
-    temp2 <- filter(temp, YEAR == d_yrs[j])
-    i_SIC[j,k] <- temp2$W_MN
-  }
-}
-
-
-#standardize krill catch
-t1 <- as.vector(i_SIC)
-t2 <- scale(t1)[,1]
-SIC <- matrix(t2, nrow = NROW(i_SIC))
-
-
-
 # Create Data for JAGS ---------------------------------------------------------
 
 #nests_array:
@@ -379,80 +317,33 @@ SIC <- matrix(t2, nrow = NROW(i_SIC))
 #dim4 [k] = sites (un_sites)
 
 
-#JUST LOCK (all years)
-site_id <- which(un_sites %in% c('LOCK', 'NEKO'))
-yr_id <- which(d_yrs %in% c(2013, 2014, 2015))
-nna <- nests_array[,,yr_id, site_id]
-rn <- real_nests[yr_id, site_id]
-za <- z_array[,,yr_id, site_id]
-kr <- i_KRILL[yr_id, site_id]
-sic <- i_SIC[yr_id, site_id]
-
-DATA <- list(
-  y = nna, #response
-  NK = dim(nna)[4], #number of sites
-  NJ = dim(nna)[3], #number of years covered for all sites
-  NI = rn, #number of nests j,k [year, site]
-  NT = dim(nna)[1], #number of time steps
-  z = za, #known points of bird being alive
-  x = scale(as.numeric(1:dim(nna)[1]), scale = FALSE)[,1],
-  KRILL = kr,
-  SIC = sic)
-
-
-#checks:
-# nests_array[1:50, 1:10, 2, 1]
-# z_array[1:10, 1:11, 2, 1]
-# DATA$NI[2,1]
-
-#data availability - which phi to track
-d_array <- array(NA, dim = c(n_nests, n_yrs, n_sites))
-d2_array <- array(NA, dim = c(n_yrs, n_sites))
-d_avail <- data.frame()
-for (i in 1:length(un_sites))
+#number of years for each site
+NJ <- rep(NA, NCOL(yrs_array))
+for (i in 1:length(NJ))
 {
   #i <- 1
-  #years
-  for (j in 1:dim(nests_array)[3])
-  {
-    #j <- 1
-    temp <- dplyr::filter(PW_data, site == un_sites[i],
-                          season_year == d_yrs[j])
-    if (NROW(temp) > 0)
-    {
-      d2_array[j,i] <- 1
-    }
-    
-    tna <- apply(nests_array[,,j,i], 2, function(x) sum(!is.na(x)))
-    nv_nests <- sum(tna > 0)
-    
-    tt <- data.frame(site = un_sites[i], 
-                     season_year = d_yrs[j],
-                     num_nests = nv_nests)
-    
-    d_avail <- rbind(d_avail, tt)
-    
-    if (nv_nests > 0)
-    {
-      d_array[1:nv_nests, j, i] <- 1
-    }
-  }
+  NJ[i] <- max(which(!is.na(yrs_array[,i])))
 }
 
-#number of site/years of data
-num_ss <- length(which(d_avail$num_nests > 0))
 
-#site/year indices with data
-sy_ind <- which(!is.na(d2_array), arr.ind = TRUE)
 
-#site/year/nest indices with data
-syn_ind <- which(!is.na(d_array), arr.ind = TRUE)
+#just LOCK, just one year
+s_ind <- which(un_sites == 'LOCK')
+n_array <- nests_array[,,2,s_ind]
+n_NJ <- NJ[s_ind]
+n_real_nests <- real_nests[2,s_ind]
+n_z_array <- z_array[,,2,s_ind]
 
-#just NEKO 2014 and 2015 - days 30 to 60
-#nests_array[time, nests, year, site]
-#NEKO_2014 = [30:60, 1:21, 2, 10]
-#NEKO_2015 = [30:60, 1:24, 3, 10]
-
+DATA <- list(
+  y = n_array, #response
+  NK = 1, #dim(n_array)[4], #number of sites
+  NJ = n_NJ, #number of years covered for each site
+  NI = n_real_nests, #number of nests j,k [year, site]
+  NT = dim(n_array)[1], #number of time steps
+  z = n_z_array, #known points of bird being alive
+  x = scale(as.numeric(1:dim(n_array)[1]), scale = FALSE)[,1],
+  unsites = un_sites,
+  yrs_array = yrs_array)
 
 
 setwd(dir[4])
@@ -467,7 +358,7 @@ setwd(dir[4])
       model {
       
       #nests
-      for (i in 1:NI[j,k])
+      for (i in 1:NI)
       {
       #both chicks alive at time step 1 (z[1,i,j] = 2)
       
@@ -491,20 +382,24 @@ setwd(dir[4])
       
       #transforms
       #nests      
-      for (i in 1:NI[j,k])
+      for (i in 1:NI)
       {
       #time
       for (t in 1:NT)
       {
-      
-      mu_phi[t] ~ dnorm(3, 0.1)
-      
+    
       logit(phi[t,i]) <- mu_phi[t]
       logit(p[t,i]) <- mu_p + beta_p*x[t]
       
       } #t
       } #i
-      
+    
+      for (t in 1:NT)
+      {
+      mu_phi[t] ~ dnorm(3, 0.1)
+      }
+
+  
       #priors - p and phi
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
       mu_p ~ dnorm(2, 0.1)
@@ -596,11 +491,11 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_30k_2019-04-05_LOCK_tv',
+        jagsID = 'PW_30k_2019-04-05_LOCK_time_v',
         jagsDsc = '1 sites, 1 years, timing
         logit(phi) <- mu_phi_t;
         logit(p) <- mu_p + beta*x[t]',
-        db_hash = 'PW_data_2019-03-23.csv',
+        db_hash = 'PW_data_2019-04-06.csv',
         n_chain = 3,
         n_adapt = 5000,
         n_burn = 30000,
