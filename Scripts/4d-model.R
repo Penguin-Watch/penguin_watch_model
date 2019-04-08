@@ -33,7 +33,7 @@ rm(list = ls())
 #          '~/Google_Drive/R/penguin_watch_model/Results/')
 
 #HPC
-#dir <- c('../Data', '../Data', '../Data', '../Results')
+dir <- c('../Data', '../Data', '../Data', '../Results')
 
 
 
