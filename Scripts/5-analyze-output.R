@@ -48,146 +48,115 @@ out <- readRDS(paste0(NAME, '.rds'))
 data <- readRDS('jagsData.rds')
 
 
-# Summarize ---------------------------------------------------------------
-
-MCMCsummary(out, round = 4, n.eff = TRUE)
-MCMCtrace(out,
-          ind = TRUE)
-
-inv.logit(MCMCsummary(out, params = 'mu_phi')[4])
-
-
-
-MCMCsummary(out, excl = 'nu_p', round = 2, n.eff = TRUE)
-
-#grand intercept - surv
-MCMCsummary(out, params = 'mu_phi', round = 2)
-#slope within a season
-MCMCsummary(out, params = 'beta_phi', digits = 5)
-#site effect
-MCMCsummary(out, params = 'eta_phi')
-MCMCsummary(out, params = 'sigma_eta_phi')
-#year effect
-MCMCsummary(out, params = 'gamma_phi')
-MCMCsummary(out, params = 'sigma_gamma_phi')
-#covariates
-MCMCsummary(out, params = 'pi_phi')
-MCMCsummary(out, params = 'rho_phi')
-
-
-#grand intercept - detect
-MCMCsummary(out, params = 'mu_p')
-#slope within a season
-MCMCsummary(out, params = 'beta_p')
-#nest detection
-MCMCsummary(out, params = 'nu_p')
-MCMCsummary(out, params = 'sigma_nu_p')
-
-
-#plots
-MCMCplot(out, params = c('mu_phi', 'sigma_eps_phi',
-                         'alpha_eps', 'pi_eps', 'rho_eps'))
-MCMCplot(out, params = c('eps_phi'))
-MCMCplot(out2, params = c('mu_phi', 'eta_phi', 'gamma_phi'))
-
-MCMCplot(out, params = 'nu_p')
-MCMCplot(out, params = 'sigma_nu_p')
-MCMCplot(out, params = c('beta_p', 'mu_p'))
-
-
-
-eps_phi_mn
-
-eps_phi_mn <- MCMCvis::MCMCpstr(out, params = 'eps_phi')[[1]]
-eps_phi_LCI <- MCMCvis::MCMCpstr(out, 
-                                params = 'eps_phi',
-                                func = function(x) quantile(x, probs = 0.025))[[1]]
-eps_phi_UCI <- MCMCvis::MCMCpstr(out, 
-                                 params = 'eps_phi',
-                                 func = function(x) quantile(x, probs = 0.975))[[1]]
-
-eps_phi_UCI <- MCMCvis::MCMCpstr(out, 
-                                 params = 'eps_phi',
-                                 func = function(x) quantile(x, probs = 0.975))[[1]]
-
+# Load data ---------------------------------------------------------------
 
 fit1 <- readRDS('PW_20k_2019-04-04_LOCK.rds')
 fit2 <- readRDS('PW_50k_2019-04-04_LOCK2.rds')
 fit3 <- readRDS('PW_60k_2019-04-04_LOCKNEKO.rds')
 fit4 <- readRDS('PW_60k_2019-04-05_LOCKNEKO_cov.rds')
-data4 <- readRDS('jagsData.rds')
+fit5 <- readRDS('PW_60k_2019-04-05_LOCKNEKOGEOR_cov.rds')
+fit5 <- readRDS('PW_60k_2019-04-05_full_no_missing_ALL.rds')
+data5 <- readRDS('jagsData.rds')
 
 mu_phi1 <- MCMCvis::MCMCchains(fit1, params = 'mu_phi')[,1]
-eps_phi1 <- MCMCvis::MCMCchains(fit1, params = 'eps_phi')
-
-t_phi_LCI <- MCMCvis::MCMCpstr(fit3, params = 't_phi', 
-                           func = function(x) quantile(x, probs = 0.025))[[1]]
-t_phi_UCI <- MCMCvis::MCMCpstr(fit3, params = 't_phi', 
-                           func = function(x) quantile(x, probs = 0.975))[[1]]
-
-t_phi_UCI - t_phi_LCI
-e_phi_LCI <- MCMCvis::MCMCpstr(fit3, params = 'eps_phi', 
-                               func = function(x) quantile(x, probs = 0.025))[[1]]
-e_phi_UCI <- MCMCvis::MCMCpstr(fit3, params = 'eps_phi', 
-                               func = function(x) quantile(x, probs = 0.975))[[1]]
-
-e_phi_UCI - e_phi_LCI
-
-MCMCvis::MCMCplot(fit3, params = 't_phi')
-MCMCvis::MCMCplot(fit3, params = 'eps_phi')
-
-
-mp1_1 <- mu_phi1 + eps_phi1[,1]
-mp2_1 <- mu_phi1 + eps_phi1[,2]
-mp3_1 <- mu_phi1 + eps_phi1[,3]
-
-mp_2 <- MCMCvis::MCMCchains(fit2, params = 'mu_phi')
-quantile(mp1_1, probs = c(0.975)) - quantile(mp1_1, probs = c(0.025))
-quantile(mp2_1, probs = c(0.975)) - quantile(mp2_1, probs = c(0.025))
-quantile(mp3_1, probs = c(0.975)) - quantile(mp3_1, probs = c(0.025))
-apply(mp_2, 2, function(x) quantile(x, probs = 0.975)) - apply(mp_2, 2, function(x) quantile(x, probs = 0.025))
 
 
 
-mu_p1 <- MCMCvis::MCMCchains(fit1, params = 'mu_p')[,1]
-nu_p1 <- MCMCvis::MCMCchains(fit1, params = 'nu_p')
-
-np1_1 <- mu_p1 + nu_p1[,1]
-np2_1 <- mu_p1 + nu_p1[,2]
-np3_1 <- mu_p1 + nu_p1[,3]
-
-mp_2 <- MCMCvis::MCMCchains(fit2, params = 'mu_p')
-quantile(np1_1, probs = c(0.975)) - quantile(np1_1, probs = c(0.025))
-quantile(np2_1, probs = c(0.975)) - quantile(np2_1, probs = c(0.025))
-quantile(np3_1, probs = c(0.975)) - quantile(np3_1, probs = c(0.025))
-apply(mp_2, 2, function(x) quantile(x, probs = 0.975)) - apply(mp_2, 2, function(x) quantile(x, probs = 0.025))
+# plot BS ------------------------------------------
 
 
 
 
-# plot krill/sic BS relationship ------------------------------------------
-
-mu_phi <- MCMCvis::MCMCpstr(fit4, params = 'mu_phi')[[1]]
-mu_phi_LCI <- MCMCvis::MCMCpstr(fit4, params = 'mu_phi', 
+mu_phi <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi')[[1]]
+mu_phi_LCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi', 
                                 func = function(x) quantile(x, probs = c(0.025)))[[1]]
-mu_phi_UCI <- MCMCvis::MCMCpstr(fit4, params = 'mu_phi', 
+mu_phi_UCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi', 
                                 func = function(x) quantile(x, probs = c(0.975)))[[1]]
 
 
-#model fit to plot
-alpha_ch <- MCMCvis::MCMCchains(fit4, params = 'alpha_theta')[,1]
-pi_ch <- MCMCvis::MCMCchains(fit4, params = 'pi_theta')[,1]
-rho_ch <- MCMCvis::MCMCchains(fit4, params = 'rho_theta')[,1]
+mu_phi_ch <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi', type = 'chains')[[1]]
 
-sim_KRILL <- seq(min(data4$KRILL)-1, max(data4$KRILL)+1, length = 100)
-sim_SIC <- seq(min(data4$SIC)-1, max(data4$SIC)+1, length = 100)
+#mean
+mu_phi_bs <- array(NA, dim = dim(mu_phi))
+mu_phi_LCI_bs <- array(NA, dim = dim(mu_phi))
+mu_phi_UCI_bs <- array(NA, dim = dim(mu_phi))
+for (i in 1:NCOL(mu_phi_ch))
+{
+  #i <- 1
+  for (j in 1:NROW(mu_phi_ch))
+  {
+    #j <- 1
+    t_bs <- (boot::inv.logit(mu_phi_ch[j,i,]) ^ 60) * 2
+    mu_phi_bs[j,i] <- mean(t_bs, na.rm = TRUE)
+    mu_phi_LCI_bs[j,i] <- quantile(t_bs, probs = 0.025, na.rm = TRUE)
+    mu_phi_UCI_bs[j,i] <- quantile(t_bs, probs = 0.975, na.rm = TRUE)
+  }
+}
+
+
+setwd('~/Google_Drive/R/penguin_watch_model/Data/')
+SLL <- read.csv('site_ll.csv')
+
+setwd('Krill_data/CCAMLR/Processed_CCAMLR/')
+krill <- read.csv('CCAMLR_krill_entire_season.csv')
+
+setwd('../../../SIC_data/Processed')
+sea_ice <- read.csv('SIC_150_W.csv')
+sea_ice2 <- sea_ice[,c(1,2,7)]
+
+mrg <- data.frame(SITE = rep(data5$unsites, each = 4),
+                  YEAR = as.vector(data5$yrs_array[-5,]), 
+                  mn_mu_phi = as.vector(mu_phi_bs),
+                  LCI_mu_phi = as.vector(mu_phi_LCI_bs),
+                  UCI_mu_phi = as.vector(mu_phi_UCI_bs))
+
+
+mrg2 <- dplyr::left_join(mrg, krill, by = c('SITE', 'YEAR'))
+mrg3 <- dplyr::left_join(mrg2, sea_ice2, by = c('SITE', 'YEAR'))
+mrg4 <- dplyr::left_join(mrg3, SLL, by = c('SITE' = 'site_id'))
+
+to.rm <- which(is.na(mrg4$YEAR))
+mrg5 <- mrg4[-to.rm,]
+
+
+library(ggplot2)
+ggplot(mrg5, aes(YEAR, mn_mu_phi, color = SITE)) +
+  geom_point(size = 3, position = position_dodge(width = 0.7)) +
+  geom_errorbar(data = mrg5, 
+                aes(ymin = LCI_mu_phi, ymax = UCI_mu_phi, 
+                    color = SITE), width = 1.1, 
+                position = position_dodge(width = 0.7)) +
+  theme_bw() +
+  ylim(c(0, 2)) +
+  ylab('Breeding Success') +
+  xlab('Year')
+
+
+
+
+
+# plot regression fit SIC/KRILL -----------------------------------------------------
+
+plot(mrg5$T_KRILL, mrg5$mn_mu_phi)
+plot(mrg5$W_MN, mrg5$mn_mu_phi)
+plot(mrg5$latitude, mrg5$mn_mu_phi)
+
+
+alpha_ch <- MCMCvis::MCMCchains(fit5, params = 'alpha_theta')[,1]
+pi_ch <- MCMCvis::MCMCchains(fit5, params = 'pi_theta')[,1]
+rho_ch <- MCMCvis::MCMCchains(fit5, params = 'rho_theta')[,1]
+
+sim_KRILL <- seq(min(data5$KRILL, na.rm = TRUE)-1, 
+                 max(data5$KRILL, na.rm = TRUE)+1, length = 100)
+sim_SIC <- seq(min(data5$SIC, na.rm = TRUE)-1, 
+               max(data5$SIC, na.rm = TRUE)+1, length = 100)
 
 mf_KRILL <- matrix(nrow = length(alpha_ch), ncol = 100)
 mf_SIC <- matrix(nrow = length(alpha_ch), ncol = 100)
 for (i in 1:length(sim_KRILL))
 {
-  mf_KRILL[,i] <- alpha_ch + rho_ch * sim_KRILL[i] + pi_ch * mean(sim_SIC)
-  mf_SIC[,i] <- alpha_ch + pi_ch * sim_SIC[i] + rho_ch * mean(sim_KRILL)
+  mf_KRILL[,i] <- alpha_ch + rho_ch * sim_KRILL[i] #+ pi_ch * mean(sim_SIC) #mean of cov is 0
+  mf_SIC[,i] <- alpha_ch + pi_ch * sim_SIC[i] #+ rho_ch * mean(sim_KRILL) #mean of cov is 0
 }
 
 med_mf_KRILL <- apply(mf_KRILL, 2, median)
@@ -202,8 +171,8 @@ FIT_PLOT <- data.frame(MN_FIT = med_mf_KRILL,
 DATA_PLOT <- data.frame(MN_phi = as.vector(mu_phi), 
                        LCI_phi = as.vector(mu_phi_LCI),
                        UCI_phi = as.vector(mu_phi_UCI),
-                       KRILL = as.vector(data4$KRILL),
-                       SIC = as.vector(data4$SIC))
+                       KRILL = as.vector(data5$KRILL),
+                       SIC = as.vector(data5$SIC))
 
 ggplot(data = DATA_PLOT, aes(KRILL, MN_phi), color = 'black', alpha = 0.6) +
   geom_ribbon(data = FIT_PLOT, 
@@ -267,11 +236,12 @@ ggplot(data = DATA_PLOT, aes(SIC, MN_phi), color = 'black', alpha = 0.6) +
 
 # plotly 3D plot ----------------------------------------------------------
 
+#from here: https://stackoverflow.com/questions/36049595/mixing-surface-and-scatterplot-in-a-single-3d-plot
 
 mf_KR_SIC <- matrix(nrow =  length(sim_KRILL), ncol = length(sim_SIC))
 d_pts <- data.frame(MP = as.vector(mu_phi),
-                    KR = as.vector(data4$KRILL),
-                    S = as.vector(data4$SIC))
+                    KR = as.vector(data5$KRILL),
+                    S = as.vector(data5$SIC))
 for (i in 1:length(sim_KRILL))
 {
   for (j in 1:length(sim_SIC))
@@ -294,6 +264,20 @@ plot_ly(x = sim_KRILL,
 
 
 
+# time varying models -----------------------------------------------------
+
+fit <- readRDS('PW_30k_2019-04-05_LOCK_time_v.rds')
+MCMCvis::MCMCplot(fit, params = 'mu_phi')
+
+
+
+
+
+
+
+
+
+# posterior estimates -----------------------------------------------------
 
 
 # setwd('~/Google_Drive/R/penguin_watch_model/Figures/')
