@@ -692,7 +692,7 @@ jagsRun(jagsData = DATA,
         mu_phi_j_k ~ normal()
         logit(p) <- mu_p + beta*x[t] + nu_p_j',
         db_hash = 'PW_data_2019-04-06.csv',
-        n_chain = 3,
+        n_chain = 4,
         n_adapt = 5000,
         n_burn = 60000,
         n_draw = 60000,
