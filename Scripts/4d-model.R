@@ -617,17 +617,18 @@ Inits_3 <- list(#mu_phi = mp_array,
                 .RNG.name = "base::Marsaglia-Multicarry", 
                 .RNG.seed = 3)
 
-# Inits_4 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
-#                 mu_p = 2,
-#                 beta_p = 0.1,
-#                 sigma_mu_phi = 1,
-#                 sigma_nu_p = 1,
-#                 alpha_theta = 0,
-#                 pi_theta = 0,
-#                 rho_theta = 0,
-#                 .RNG.name = "base::Mersenne-Twister", 
-#                 .RNG.seed = 4)
-# 
+Inits_4 <- list(#mu_phi = mp_array, 
+                mu_p = 2,
+                beta_p = 0.1,
+                sigma_mu_phi = 1,
+                sigma_nu_p = 1,
+                theta_phi = 4,
+                # alpha_theta = 0,
+                # pi_theta = 0,
+                # rho_theta = 0,
+                .RNG.name = "base::Marsaglia-Multicarry", 
+                .RNG.seed = 4)
+ 
 # Inits_5 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
 #                 mu_p = 2,
 #                 beta_p = 0.1,
@@ -650,7 +651,7 @@ Inits_3 <- list(#mu_phi = mp_array,
 #                 .RNG.name = "base::Wichmann-Hill", 
 #                 .RNG.seed = 6)
 
-F_Inits <- list(Inits_1, Inits_2, Inits_3)#, Inits_4, Inits_5, Inits_6)
+F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4)#, Inits_5, Inits_6)
 
 
 
