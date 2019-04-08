@@ -537,7 +537,6 @@ setwd(dir[4])
       #}
 
 
-
       #priors - p and phi
       beta_p ~ dnorm(0.1, 10) T(0, 0.5)
       mu_p ~ dnorm(2, 0.1)
@@ -688,6 +687,7 @@ jagsRun(jagsData = DATA,
         params = Pars,
         jagsID = 'PW_60k_2019-04-07_FULL_test_z_out',
         jagsDsc = 'all sites/years (no missing)
+        track z_out (ste level ch num - time varying) for just site 12
         logit(phi) <- mu_phi_j_k;
         mu_phi_j_k ~ normal()
         logit(p) <- mu_p + beta*x[t] + nu_p_j',
