@@ -526,7 +526,8 @@ setwd(dir[4])
       } #j
       } #k
       
-      #derived qty - number of chicks alive at each time step for site
+      #derived qty - number of chicks alive at each time step for site/year
+      #derived qty - detection prob at each time step for site/year
       for (k in 1:NK)
       {
       #year
@@ -535,6 +536,7 @@ setwd(dir[4])
       for (t in 1:NT)
       {
       z_out[t,j,k] <- sum(z[t,1:NI[j,k],j,k])
+      p_out[t,j,k] <- mu_p + beta_p*x[t] + nu_p[j,k]
       }
       }
       }
@@ -669,7 +671,8 @@ Pars <- c('mu_phi',
           'sigma_nu_p',
           'nu_p',
           'theta_phi',
-          'z_out'
+          'z_out',
+          'p_out'
           # 'alpha_theta',
           # 'pi_theta',
           # 'rho_theta'
@@ -689,17 +692,18 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-08_FULL_z_out',
+        jagsID = 'PW_60k_2019-04-09_FULL_z_out_p_out',
         jagsDsc = 'all sites/years (no missing)
-        track z_out (ste level ch num - time varying) for all sites
+        track z_out (site level ch num - time varying) for all sites
+        track p_out (site level detection - time varying) for all sites
         logit(phi) <- mu_phi_j_k;
         mu_phi_j_k ~ normal()
         logit(p) <- mu_p + beta*x[t] + nu_p_j',
         db_hash = 'PW_data_2019-04-06.csv',
         n_chain = 4,
         n_adapt = 5000,
-        n_burn = 60000,
-        n_draw = 60000,
+        n_burn = 100000,
+        n_draw = 100000,
         n_thin = 20,
         EXTRA = FALSE,
         Rhat_max = 1.1,
