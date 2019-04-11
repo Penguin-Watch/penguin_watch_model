@@ -56,42 +56,26 @@ fit3 <- readRDS('PW_60k_2019-04-04_LOCKNEKO.rds')
 fit4 <- readRDS('PW_60k_2019-04-05_LOCKNEKO_cov.rds')
 fit5 <- readRDS('PW_60k_2019-04-05_LOCKNEKOGEOR_cov.rds')
 fit5 <- readRDS('PW_60k_2019-04-05_full_no_missing_ALL.rds')
+fit5 <- readRDS('PW_60k_2019-04-09_FULL_z_out_p_out.rds')
 data5 <- readRDS('jagsData.rds')
-
-mu_phi1 <- MCMCvis::MCMCchains(fit1, params = 'mu_phi')[,1]
 
 
 
 # plot BS ------------------------------------------
 
-
-
-
+#mu_phi
 mu_phi <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi')[[1]]
 mu_phi_LCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi', 
                                 func = function(x) quantile(x, probs = c(0.025)))[[1]]
 mu_phi_UCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi', 
                                 func = function(x) quantile(x, probs = c(0.975)))[[1]]
 
-
-mu_phi_ch <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi', type = 'chains')[[1]]
-
-#mean
-mu_phi_bs <- array(NA, dim = dim(mu_phi))
-mu_phi_LCI_bs <- array(NA, dim = dim(mu_phi))
-mu_phi_UCI_bs <- array(NA, dim = dim(mu_phi))
-for (i in 1:NCOL(mu_phi_ch))
-{
-  #i <- 1
-  for (j in 1:NROW(mu_phi_ch))
-  {
-    #j <- 1
-    t_bs <- (boot::inv.logit(mu_phi_ch[j,i,]) ^ 60) * 2
-    mu_phi_bs[j,i] <- mean(t_bs, na.rm = TRUE)
-    mu_phi_LCI_bs[j,i] <- quantile(t_bs, probs = 0.025, na.rm = TRUE)
-    mu_phi_UCI_bs[j,i] <- quantile(t_bs, probs = 0.975, na.rm = TRUE)
-  }
-}
+#mu_phi_bs
+mu_phi_bs <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi_bs')[[1]]
+mu_phi_bs_LCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi_bs', 
+                                func = function(x) quantile(x, probs = c(0.025)))[[1]]
+mu_phi_bs_UCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi_bs', 
+                                func = function(x) quantile(x, probs = c(0.975)))[[1]]
 
 
 setwd('~/Google_Drive/R/penguin_watch_model/Data/')
@@ -107,8 +91,8 @@ sea_ice2 <- sea_ice[,c(1,2,7)]
 mrg <- data.frame(SITE = rep(data5$unsites, each = 4),
                   YEAR = as.vector(data5$yrs_array[-5,]), 
                   mn_mu_phi = as.vector(mu_phi_bs),
-                  LCI_mu_phi = as.vector(mu_phi_LCI_bs),
-                  UCI_mu_phi = as.vector(mu_phi_UCI_bs))
+                  LCI_mu_phi = as.vector(mu_phi_bs_LCI),
+                  UCI_mu_phi = as.vector(mu_phi_bs_UCI))
 
 
 mrg2 <- dplyr::left_join(mrg, krill, by = c('SITE', 'YEAR'))
@@ -264,15 +248,63 @@ plot_ly(x = sim_KRILL,
 
 
 
-# time varying models -----------------------------------------------------
+# time varying plots -----------------------------------------------------
 
-fit <- readRDS('PW_30k_2019-04-05_LOCK_time_v.rds')
-MCMCvis::MCMCplot(fit, params = 'mu_phi')
+z_out_mn <- MCMCvis::MCMCpstr(fit5, params = 'z_out')[[1]]
+z_out_LCI <- MCMCvis::MCMCpstr(fit5, params = 'z_out', 
+                               func = function(x) quantile(x, probs = 0.025))[[1]]
+z_out_UCI <- MCMCvis::MCMCpstr(fit5, params = 'z_out',
+                               func = function(x) quantile(x, probs = 0.975))[[1]]
+
+p_out_mn <- boot::inv.logit(MCMCvis::MCMCpstr(fit5, params = 'p_out')[[1]])
+p_out_LCI <- boot::inv.logit(MCMCvis::MCMCpstr(fit5, params = 'p_out', 
+                               func = function(x) quantile(x, probs = 0.025))[[1]])
+p_out_UCI <- boot::inv.logit(MCMCvis::MCMCpstr(fit5, params = 'p_out',
+                               func = function(x) quantile(x, probs = 0.975))[[1]])
 
 
-
-
-
+for (i in 1:12)
+{
+  #j <- 1
+  for (j in 1:4)
+  {
+    #i <- 1
+    if (sum(!is.na(z_out_mn[,j,i])))
+    {
+      SITE <- data5$unsites[i]
+      YEAR <- data5$yrs_array[j,i]
+      min_z_out <- min(z_out_LCI[,j,i])
+      rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
+      PLT_DF <- data.frame(time = 1:60, 
+                           z_out_mn = z_out_mn[,j,i],
+                           z_out_LCI = z_out_LCI[,j,i],
+                           z_out_UCI = z_out_UCI[,j,i],
+                           p_out_mn = p_out_mn[,j,i], 
+                           p_out_LCI = p_out_LCI[,j,i],
+                           p_out_UCI = p_out_UCI[,j,i],
+                           p_out_mn_sc = p_out_mn[,j,i] * rng_z_out + min_z_out,
+                           p_out_LCI_sc = p_out_LCI[,j,i] * rng_z_out + min_z_out,
+                           p_out_UCI_sc = p_out_UCI[,j,i] * rng_z_out + min_z_out)
+      
+      p <- ggplot(PLT_DF, aes(x = time)) + 
+        geom_ribbon(aes(ymin = z_out_LCI, ymax = z_out_UCI),
+                  fill = 'blue', alpha = 0.2) +
+        geom_line(aes(y = z_out_mn), col = 'blue') +
+        geom_ribbon(aes(ymin = p_out_LCI_sc, ymax = p_out_UCI_sc),
+                    fill = 'red', alpha = 0.2) +
+        geom_line(aes(y = p_out_mn_sc),
+                  col = 'red') +
+        theme_bw() +
+        scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out, 
+                                               name = 'Detection probability')) +
+        ylab('Number of chicks') +
+        xlab('Day from expected lay') +
+        ggtitle(paste0(SITE, ' - ', YEAR))
+      
+      print(p)
+    }
+  }
+}
 
 
 
