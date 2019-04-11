@@ -519,7 +519,8 @@ setwd(dir[4])
       {
       
       logit(phi[t,i,j,k]) <- mu_phi[j,k]
-      logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[j,k]
+      #logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[j,k]
+      logit(p[t,i,j,k]) <- mu_p + nu_p[j,k] + eps[t,j,k]
       
       } #t
       } #i
@@ -535,15 +536,17 @@ setwd(dir[4])
       {
       for (t in 1:NT)
       {
+      eps[t,j,k] ~ dnorm(0, 0.386)
       z_out[t,j,k] <- sum(z[t,1:NI[j,k],j,k])
-      p_out[t,j,k] <- mu_p + beta_p*x[t] + nu_p[j,k]
+      #p_out[t,j,k] <- ilogit(mu_p + beta_p*x[t] + nu_p[j,k])
+      #p_out[t,j,k] <- ilogit(mu_p + nu_p[j,k] + eps[t,j,k])
       }
       }
       }
       
       
       #priors - p and phi
-      beta_p ~ dnorm(0.1, 10) T(0, 0.5)
+      #beta_p ~ dnorm(0.1, 10) T(0, 0.5)
       mu_p ~ dnorm(2, 0.1)
       
       #priors - intercept and slopes
@@ -665,14 +668,15 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4)#, Inits_5, Inits_6)
 Pars <- c('mu_phi',
           'mu_phi_bs',
           'mu_p',
-          'beta_p',
+          #'beta_p',
           'sigma_mu_phi',
           't_p',
           'sigma_nu_p',
           'nu_p',
           'theta_phi',
           'z_out',
-          'p_out'
+          'p_out',
+          'eps'
           # 'alpha_theta',
           # 'pi_theta',
           # 'rho_theta'
@@ -692,13 +696,13 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-09_FULL_z_out_p_out',
+        jagsID = 'PW_60k_2019-04-11_FULL_z_out_p_out_eps',
         jagsDsc = 'all sites/years (no missing)
         track z_out (site level ch num - time varying) for all sites
         track p_out (site level detection - time varying) for all sites
         logit(phi) <- mu_phi_j_k;
         mu_phi_j_k ~ normal()
-        logit(p) <- mu_p + beta*x[t] + nu_p_j',
+        logit(p) <- mu_p + nu_p_j + eps',
         db_hash = 'PW_data_2019-04-06.csv',
         n_chain = 4,
         n_adapt = 5000,
