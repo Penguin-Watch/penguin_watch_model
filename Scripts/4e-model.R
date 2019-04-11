@@ -696,7 +696,7 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-11_FULL_z_out_p_out_eps',
+        jagsID = 'PW_100k_2019-04-11_FULL_z_out_p_out_eps',
         jagsDsc = 'all sites/years (no missing)
         track z_out (site level ch num - time varying) for all sites
         track p_out (site level detection - time varying) for all sites
