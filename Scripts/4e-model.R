@@ -127,6 +127,7 @@ nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 #nests with NAs are simply removed (e.g., if there are 4 nests, and nest 3 is all NAs, nest 4 becomes nest 3)
 
 yrs_array <- array(NA, dim = c(n_yrs, n_sites))
+date_array <- array(NA, dim = c(n_ts, n_yrs, n_sites))
 for (k in 1:n_sites)
 {
   #k <- 5
@@ -200,6 +201,10 @@ for (k in 1:n_sites)
       #add buffers to front and back (if needed)
       vals <- as.matrix(temp_agg[, -1])
       n_vals <- rbind(na_first, vals[valid_dates, ], na_last)
+      
+      #feed dates into matrix (saved as int)
+      #back transform using: as.Date(date_array[,j,k], origin = '1970-01-01')
+      date_array[,j,k] <- seq(FIRST, LAST, by = 'days')
       
       #determines if there are any nests with NA values for the entire column (removed during the QC step)
       #first time step with value at nest 1 (unless all NA, then move to next nest)
@@ -280,8 +285,11 @@ for (k in 1:dim(nests_array)[4])
 # create z_array ----------------------------------------------------------
 
 #z_array - array of known true values
-
 z_array <- nests_array
+#c_array - array of min number of chicks each site/year at each time step
+c_array <- array(NA, dim = c(dim(nests_array)[1], 
+                             dim(nests_array)[3],
+                             dim(nests_array)[4]))
 
 for (k in 1:dim(nests_array)[4])
 {
@@ -293,6 +301,7 @@ for (k in 1:dim(nests_array)[4])
     {
       for (i in 1:real_nests[j,k])
       {
+        #i <- 1
         #two chicks in first position (alive at time step one)
         z_array[1,i,j,k] <- 2
         
@@ -303,7 +312,20 @@ for (k in 1:dim(nests_array)[4])
           #fill 2 for all between first val and last sight of 2
           z_array[1:n2,i,j,k] <- 2
         }
+        #fill in zeros for actual counts - ones will be removed from z_array outside loop
+        if (sum(z_array[,i,j,k] == 1, na.rm = TRUE) > 1)
+        {
+          #last 2, plus 1 (first non 2)
+          l2 <- max(which(z_array[,i,j,k] == 2)) + 1
+          #last 1
+          l1 <- max(which(z_array[,i,j,k] == 1))
+          
+          #fill 2 for all between first val and last sight of 2
+          z_array[l2:l1,i,j,k] <- 1
+        }
       }
+      #min number of chicks at each time step
+      c_array[,j,k] <- apply(z_array[,,j,k], 1, function(x) sum(x, na.rm = TRUE))
     }
   }
 }
@@ -426,7 +448,9 @@ DATA <- list(
   #KRILL = KRILL,
   #SIC = SIC,
   unsites = un_sites,
-  yrs_array = yrs_array)
+  yrs_array = yrs_array,
+  c_array = c_array,
+  date_array = date_array) #minimum # of chicks at each time step for each step/year
 
 
 
@@ -467,7 +491,7 @@ setwd(dir[4])
 # Model -------------------------------------------------------------------
 
 {
-  sink("pwatch_surv.jags")
+  sink("pwatch_surv_4e.jags")
   
   cat("
       
@@ -519,7 +543,7 @@ setwd(dir[4])
       {
       
       logit(phi[t,i,j,k]) <- mu_phi[j,k]
-      logit(p[t,i,j,k]) <- mu_p + nu_p[i,j,k] + beta_p[i,j,k]*x[t]
+      logit(p[t,i,j,k]) <- mu_p + nu_p[i,j,k] + beta_p[j,k]*x[t]
       
       } #t
       } #i
@@ -558,10 +582,11 @@ setwd(dir[4])
       #breeding success transform
       mu_phi_bs[j,k] <- (ilogit(mu_phi[j,k]) ^ 60) * 2
       
+      beta_p[j,k] ~ dnorm(mu_beta_p, tau_beta_p)
+      
       for (i in 1:NI[j,k])
       {
       nu_p[i,j,k] ~ dnorm(0, tau_nu_p)
-      beta_p[i,j,k] ~ dnorm(mu_beta_p, tau_beta_p)
       } #i
       } #j
       } #k
@@ -691,22 +716,21 @@ Pars <- c('mu_phi',
 
 #make sure model compiles
 # jagsRun(jagsData = DATA,
-#         jagsModel = 'pwatch_surv.jags',
+#         jagsModel = 'pwatch_surv_4e.jags',
 #         jagsInits = F_Inits,
 #         DEBUG = TRUE)
 
-
 jagsRun(jagsData = DATA, 
-        jagsModel = 'pwatch_surv.jags',
+        jagsModel = 'pwatch_surv_4e.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-11_FULL_z_out_p_out_vary_beta',
+        jagsID = 'PW_60k_2019-04-12_FULL_beta[j,k]',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
         logit(phi) <- mu_phi[j,k];
         mu_phi_j_k ~ normal()
-        logit(p) <- mu_p + nu_p[i,j,k] + beta_p[i,j,k]',
+        logit(p) <- mu_p + nu_p[i,j,k] + beta_p[j,k]',
         db_hash = 'PW_data_2019-04-06.csv',
         n_chain = 4,
         n_adapt = 5000,
