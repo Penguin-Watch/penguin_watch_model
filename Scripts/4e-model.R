@@ -519,8 +519,7 @@ setwd(dir[4])
       {
       
       logit(phi[t,i,j,k]) <- mu_phi[j,k]
-      #logit(p[t,i,j,k]) <- mu_p + beta_p*x[t] + nu_p[j,k]
-      logit(p[t,i,j,k]) <- mu_p + nu_p[j,k] + eps[t,j,k]
+      logit(p[t,i,j,k]) <- mu_p + nu_p[i,j,k] + beta_p[i,j,k]*x[t]
       
       } #t
       } #i
@@ -536,18 +535,14 @@ setwd(dir[4])
       {
       for (t in 1:NT)
       {
-      eps[t,j,k] ~ dnorm(0, 0.386)
       z_out[t,j,k] <- sum(z[t,1:NI[j,k],j,k])
-      #p_out[t,j,k] <- ilogit(mu_p + beta_p*x[t] + nu_p[j,k])
-      #p_out[t,j,k] <- ilogit(mu_p + nu_p[j,k] + eps[t,j,k])
+      p_out[t,j,k] <- mean(p[t,1:NI[j,k],j,k])
       }
       }
       }
-      
       
       #priors - p and phi
-      #beta_p ~ dnorm(0.1, 10) T(0, 0.5)
-      mu_p ~ dnorm(2, 0.1)
+      mu_p ~ dnorm(0, 0.1)
       
       #priors - intercept and slopes
       # alpha_theta ~ dnorm(0, 0.386)
@@ -558,20 +553,24 @@ setwd(dir[4])
       {
       for (j in 1:NJ[k])
       {
-      # mu_phi[j,k] ~ dnorm(theta_phi[j,k], tau_mu_phi)
-      # theta_phi[j,k] = alpha_theta + pi_theta * SIC[j,k] + rho_theta * KRILL[j,k]
       mu_phi[j,k] ~ dnorm(theta_phi, tau_mu_phi)
       
       #breeding success transform
       mu_phi_bs[j,k] <- (ilogit(mu_phi[j,k]) ^ 60) * 2
       
-      nu_p[j,k] ~ dnorm(0, tau_nu_p)
-      t_p[j,k] <- mu_p + nu_p[j,k]
+      for (i in 1:NI[j,k])
+      {
+      nu_p[i,j,k] ~ dnorm(0, tau_nu_p)
+      beta_p[i,j,k] ~ dnorm(mu_beta_p, tau_beta_p)
+      } #i
       } #j
       } #k
       
+      mu_beta_p ~ dnorm(0.1, 10) T(0, 0.5)
+      tau_beta_p <- pow(sigma_beta_p, -2)
+      sigma_beta_p ~ dunif(0, 2)
+
       theta_phi ~ dnorm(4, 0.25)
-      
       tau_mu_phi <- pow(sigma_mu_phi, -2) 
       sigma_mu_phi ~ dunif(0, 3)
       tau_nu_p <- pow(sigma_nu_p, -2) 
@@ -589,9 +588,11 @@ setwd(dir[4])
 mp_array <- yrs_array
 mp_array[which(!is.na(mp_array), arr.ind = TRUE)] <- 4
 
+
 Inits_1 <- list(#mu_phi = mp_array,
-  mu_p = 2,
-  beta_p = 0.1,
+  mu_p = 0,
+  mu_beta_p = 0.1,
+  sigma_beta_p = 1,
   sigma_mu_phi = 1,
   sigma_nu_p = 1,
   theta_phi = 4,
@@ -602,8 +603,9 @@ Inits_1 <- list(#mu_phi = mp_array,
   .RNG.seed = 1)
 
 Inits_2 <- list(#mu_phi = mp_array,
-  mu_p = 2,
-  beta_p = 0.1,
+  mu_p = 0,
+  mu_beta_p = 0.1,
+  sigma_beta_p = 1,
   sigma_mu_phi = 1,
   sigma_nu_p = 1,
   theta_phi = 4,
@@ -614,8 +616,9 @@ Inits_2 <- list(#mu_phi = mp_array,
   .RNG.seed = 2)
 
 Inits_3 <- list(#mu_phi = mp_array,
-  mu_p = 2,
-  beta_p = 0.1,
+  mu_p = 0,
+  mu_beta_p = 0.1,
+  sigma_beta_p = 1,
   sigma_mu_phi = 1,
   sigma_nu_p = 1,
   theta_phi = 4,
@@ -626,8 +629,9 @@ Inits_3 <- list(#mu_phi = mp_array,
   .RNG.seed = 3)
 
 Inits_4 <- list(#mu_phi = mp_array, 
-  mu_p = 2,
-  beta_p = 0.1,
+  mu_p = 0,
+  mu_beta_p = 0.1,
+  sigma_beta_p = 1,
   sigma_mu_phi = 1,
   sigma_nu_p = 1,
   theta_phi = 4,
@@ -668,15 +672,15 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4)#, Inits_5, Inits_6)
 Pars <- c('mu_phi',
           'mu_phi_bs',
           'mu_p',
-          #'beta_p',
+          'beta_p',
+          'mu_beta_p',
+          'sigma_beta_p',
+          'theta_phi',
           'sigma_mu_phi',
-          't_p',
           'sigma_nu_p',
           'nu_p',
-          'theta_phi',
           'z_out',
-          'p_out',
-          'eps'
+          'p_out'
           # 'alpha_theta',
           # 'pi_theta',
           # 'rho_theta'
@@ -696,22 +700,20 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_100k_2019-04-11_FULL_z_out_p_out_eps',
+        jagsID = 'PW_60k_2019-04-11_FULL_z_out_p_out_vary_beta',
         jagsDsc = 'all sites/years (no missing)
-        track z_out (site level ch num - time varying) for all sites
-        track p_out (site level detection - time varying) for all sites
-        logit(phi) <- mu_phi_j_k;
+        track z_out
+        track p_out
+        logit(phi) <- mu_phi[j,k];
         mu_phi_j_k ~ normal()
-        logit(p) <- mu_p + nu_p_j + eps',
+        logit(p) <- mu_p + nu_p[i,j,k] + beta_p[i,j,k]',
         db_hash = 'PW_data_2019-04-06.csv',
         n_chain = 4,
         n_adapt = 5000,
-        n_burn = 100000,
-        n_draw = 100000,
+        n_burn = 60000,
+        n_draw = 60000,
         n_thin = 20,
         EXTRA = FALSE,
         Rhat_max = 1.1,
         n_max = 100000,
         save_data = TRUE)
-
-
