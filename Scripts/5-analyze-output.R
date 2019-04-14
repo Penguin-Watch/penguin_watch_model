@@ -263,19 +263,27 @@ p_out_UCI <- boot::inv.logit(MCMCvis::MCMCpstr(fit5, params = 'p_out',
                                func = function(x) quantile(x, probs = 0.975))[[1]])
 
 
+#max number of chicks
+#data5$c_array
+#c_array[t,j,k]
+
+#as.Date(date_array[,j,k], origin = '1970-01-01')
+#data5$date_array
+#date_array[t,j,k]
+
 for (i in 1:12)
 {
-  #j <- 1
+  #i <- 4
   for (j in 1:4)
   {
-    #i <- 1
+    #j <- 1
     if (sum(!is.na(z_out_mn[,j,i])))
     {
       SITE <- data5$unsites[i]
       YEAR <- data5$yrs_array[j,i]
       min_z_out <- min(z_out_LCI[,j,i])
       rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
-      PLT_DF <- data.frame(time = 1:60, 
+      PLT_DF <- data.frame(time = 1:60,  
                            z_out_mn = z_out_mn[,j,i],
                            z_out_LCI = z_out_LCI[,j,i],
                            z_out_UCI = z_out_UCI[,j,i],
@@ -426,7 +434,7 @@ Inits_1 <- list(mu_phi = 0,
                 beta_p = 0.01,
                 nu_p = narray)
 
-xvals <- scale(1:768, scale = FALSE)[,1]
+xvals <- scale(1:60, scale = FALSE)[,1]
 
 # Error in node y[21,2,2,1] - 1
 #DATA$y[1:21,2,2,1]
@@ -435,7 +443,7 @@ xvals <- scale(1:768, scale = FALSE)[,1]
 #phi
 plot(inv.logit(5 + 0 + 0 + 0.005*xvals + 0 + 0))
 #p
-plot(inv.logit(-2 + 0.01*xvals + 0))
+plot(inv.logit(0 + 0.1*xvals))
 
 
 
