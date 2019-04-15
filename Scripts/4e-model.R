@@ -543,7 +543,7 @@ setwd(dir[4])
       {
       
       logit(phi[t,i,j,k]) <- mu_phi[j,k]
-      logit(p[t,i,j,k]) <- mu_p + nu_p[i,j,k] + beta_p[j,k]*x[t]
+      logit(p[t,i,j,k]) <- mu_p + nu_p[j,k] + beta_p[i,j,k]*x[t]
       
       } #t
       } #i
@@ -582,11 +582,11 @@ setwd(dir[4])
       #breeding success transform
       mu_phi_bs[j,k] <- (ilogit(mu_phi[j,k]) ^ 60) * 2
       
-      beta_p[j,k] ~ dnorm(mu_beta_p, tau_beta_p)
+      nu_p[j,k] ~ dnorm(0, tau_nu_p)      
       
       for (i in 1:NI[j,k])
       {
-      nu_p[i,j,k] ~ dnorm(0, tau_nu_p)
+      beta_p[i,j,k] ~ dnorm(mu_beta_p, tau_beta_p)
       } #i
       } #j
       } #k
@@ -724,13 +724,13 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv_4e.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-12_FULL_beta[j,k]',
+        jagsID = 'PW_60k_2019-04-14_FULL_nu_p[j,k]_beta[i,j,k]',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
         logit(phi) <- mu_phi[j,k];
         mu_phi_j_k ~ normal()
-        logit(p) <- mu_p + nu_p[i,j,k] + beta_p[j,k]',
+        logit(p) <- mu_p + nu_p[j,k] + beta_p[i,j,k]',
         db_hash = 'PW_data_2019-04-06.csv',
         n_chain = 4,
         n_adapt = 5000,
