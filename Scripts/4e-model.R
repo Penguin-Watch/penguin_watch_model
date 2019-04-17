@@ -204,7 +204,7 @@ for (k in 1:n_sites)
       
       #feed dates into matrix (saved as int)
       #back transform using: as.Date(date_array[,j,k], origin = '1970-01-01')
-      date_array[,j,k] <- seq(FIRST, LAST, by = 'days')
+      date_array[,j_idx,k] <- seq(FIRST, LAST, by = 'days')
       
       #determines if there are any nests with NA values for the entire column (removed during the QC step)
       #first time step with value at nest 1 (unless all NA, then move to next nest)
