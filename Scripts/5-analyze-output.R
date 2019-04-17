@@ -245,18 +245,15 @@ ggplot(mrg5, aes(YEAR, mn_mu_phi, color = SITE)) +
 
 # time varying plots -----------------------------------------------------
 
-z_out_mn <- MCMCvis::MCMCpstr(fit5, params = 'z_out')[[1]]
-z_out_LCI <- MCMCvis::MCMCpstr(fit5, params = 'z_out', 
-                               func = function(x) quantile(x, probs = 0.025))[[1]]
-z_out_UCI <- MCMCvis::MCMCpstr(fit5, params = 'z_out',
-                               func = function(x) quantile(x, probs = 0.975))[[1]]
+z_out_mn <- MCMCvis::MCMCpstr(fit5, params = 'z_out', func = mean)[[1]]
+z_out_sd <- MCMCvis::MCMCpstr(fit5, params = 'z_out', func = sd)[[1]]
+z_out_LCI <- z_out_mn - z_out_sd
+z_out_UCI <- z_out_mn + z_out_sd
 
-p_out_mn <- MCMCvis::MCMCpstr(fit5, params = 'p_out')[[1]]
-p_out_LCI <- MCMCvis::MCMCpstr(fit5, params = 'p_out', 
-                               func = function(x) quantile(x, probs = 0.025))[[1]]
-p_out_UCI <- MCMCvis::MCMCpstr(fit5, params = 'p_out',
-                               func = function(x) quantile(x, probs = 0.975))[[1]]
-
+p_out_mn <- MCMCvis::MCMCpstr(fit5, params = 'p_out', func = mean)[[1]]
+p_out_sd <- MCMCvis::MCMCpstr(fit5, params = 'p_out', func = sd)[[1]]
+p_out_LCI <- p_out_mn - p_out_sd
+p_out_UCI <- p_out_mn + p_out_sd
 
 for (i in 1:12)
 {
@@ -295,14 +292,18 @@ for (i in 1:12)
         counts[to.na] <- NA
       }
       
+      #dotted line from start of season to first chick
+      dt_seq <- seq(z_out_mn[1,j,i], z_out_mn[29,j,i], length = 30)
+      
       SITE <- data5$unsites[i]
       YEAR <- data5$yrs_array[j,i]
       min_z_out <- min(z_out_LCI[,j,i])
       rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
       PLT_DF <- data.frame(time = 1:60,  
-                           z_out_mn = z_out_mn[,j,i],
-                           z_out_LCI = z_out_LCI[,j,i],
-                           z_out_UCI = z_out_UCI[,j,i],
+                           z_out_mn = c(rep(NA, 29), z_out_mn[30:60,j,i]),
+                           z_out_LCI = c(rep(NA, 29), z_out_LCI[30:60,j,i]),
+                           z_out_UCI = c(rep(NA, 29), z_out_UCI[30:60,j,i]),
+                           z_out_dot = c(dt_seq, rep(NA, 30)),
                            p_out_mn = p_out_mn[,j,i], 
                            p_out_LCI = p_out_LCI[,j,i],
                            p_out_UCI = p_out_UCI[,j,i],
@@ -315,12 +316,13 @@ for (i in 1:12)
         geom_ribbon(aes(ymin = z_out_LCI, ymax = z_out_UCI),
                   fill = 'blue', alpha = 0.2) +
         geom_line(aes(y = z_out_mn), col = 'blue') +
+        geom_line(aes(y = z_out_dot), col = 'blue', linetype = 2) +
         geom_ribbon(aes(ymin = p_out_LCI_sc, ymax = p_out_UCI_sc),
                     fill = 'red', alpha = 0.2) +
         geom_line(aes(y = p_out_mn_sc),
                   col = 'red') +
-        geom_line(aes(y = count),
-                  col = 'green') +
+        #geom_line(aes(y = count),
+        #          col = 'green') +
         theme_bw() +
         scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out, 
                                                name = 'Detection probability')) +
