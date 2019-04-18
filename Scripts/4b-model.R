@@ -404,16 +404,21 @@ DATA <- list(
 
 #data availability - which phi to track
 d_array <- array(NA, dim = c(n_nests, n_yrs, n_sites))
+d2_array <- array(NA, dim = c(n_yrs, n_sites))
 d_avail <- data.frame()
 for (i in 1:length(un_sites))
 {
-  #i <- 11
+  #i <- 1
   #years
   for (j in 1:dim(nests_array)[3])
   {
     #j <- 1
     temp <- dplyr::filter(PW_data, site == un_sites[i],
                           season_year == d_yrs[j])
+    if (NROW(temp) > 0)
+    {
+      d2_array[j,i] <- 1
+    }
     
     tna <- apply(nests_array[,,j,i], 2, function(x) sum(!is.na(x)))
     nv_nests <- sum(tna > 0)
@@ -433,6 +438,9 @@ for (i in 1:length(un_sites))
 
 #number of site/years of data
 num_ss <- length(which(d_avail$num_nests > 0))
+
+#site/year indices with data
+sy_ind <- which(!is.na(d2_array), arr.ind = TRUE)
 
 #site/year/nest indices with data
 syn_ind <- which(!is.na(d_array), arr.ind = TRUE)
