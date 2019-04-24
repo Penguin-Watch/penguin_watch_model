@@ -54,6 +54,10 @@ setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 fit5 <- readRDS(paste0(NAME, '.rds'))
 data5 <- readRDS('jagsData.rds')
 
+setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
+PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
+
+
 
 # MCMCvis::MCMCtrace(fit5, params = 'z_out', Rhat = TRUE, n.eff = TRUE,
 #                    filename = 'z_out_trace.pdf')
@@ -264,6 +268,9 @@ p_out_sd <- MCMCvis::MCMCpstr(fit5, params = 'p_out', func = sd)[[1]]
 p_out_LCI <- p_out_mn - p_out_sd
 p_out_UCI <- p_out_mn + p_out_sd
 
+
+setwd('~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-04-12')
+
 for (i in 1:12)
 {
   #i <- 1
@@ -347,6 +354,213 @@ for (i in 1:12)
   }
 }
 
+
+
+
+# gifs --------------------------------------------------------------------
+
+#for (i in 1:12)
+#{
+  i <- 1
+  #remove years that don't have data (wasn't done in model script)
+  t_date <- data5$date_array[,,i]
+  to.rm.dt <- which(is.na(t_date[1,]))
+  if (length(to.rm.dt) > 0)
+  {
+    t_date2 <- t_date[,-to.rm.dt]
+  }
+  
+  #for (j in 1:4)
+  #{
+    j <- 1
+    
+    if (sum(!is.na(z_out_mn[,j,i])) > 0)
+    {
+      #if t_date2 doesn't have dims (all NA cols were removed)
+      if (is.null(dim(t_date2)))
+      {
+        dates <- as.Date(t_date2, origin = '1970-01-01')
+      } else {
+        dates <- as.Date(t_date2[,j], origin = '1970-01-01')
+      }
+      
+      #keep every other date value
+      n_dates <- dates[seq(1, 60, by = 5)]
+      #breaks for x axis on plot
+      n_breaks <- seq(1, 60, by = 5)
+      #min number of chicks (from counts in images and known counts later)
+      counts <- data5$c_array[,j,i] 
+      #remove 0 vals
+      to.na <- which(counts == 0)
+      if (length(to.na) > 0)
+      {
+        counts[to.na] <- NA
+      }
+      
+      
+      #dotted line from start of season to first chick
+      dt_seq <- seq(z_out_mn[1,j,i], z_out_mn[29,j,i], length = 30)
+      
+      SITE <- data5$unsites[i]
+      YEAR <- data5$yrs_array[j,i]
+      min_z_out <- min(z_out_LCI[,j,i])
+      rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
+      PLT_DF <- data.frame(time = 1:60,  
+                           z_out_mn = c(rep(NA, 29), z_out_mn[30:60,j,i]),
+                           z_out_LCI = c(rep(NA, 29), z_out_LCI[30:60,j,i]),
+                           z_out_UCI = c(rep(NA, 29), z_out_UCI[30:60,j,i]),
+                           z_out_dot = c(dt_seq, rep(NA, 30)),
+                           p_out_mn = p_out_mn[,j,i], 
+                           p_out_LCI = p_out_LCI[,j,i],
+                           p_out_UCI = p_out_UCI[,j,i],
+                           p_out_mn_sc = p_out_mn[,j,i] * rng_z_out + min_z_out,
+                           p_out_LCI_sc = p_out_LCI[,j,i] * rng_z_out + min_z_out,
+                           p_out_UCI_sc = p_out_UCI[,j,i] * rng_z_out + min_z_out,
+                           count = counts)
+      
+      
+      gdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
+                     SITE, '-', YEAR, '-2019-04-12-plot')
+      
+      #create dir for figs if doesn't exist and change to that dir
+      ifelse(!dir.exists(gdir), 
+             dir.create(gdir), 
+             FALSE)
+      
+      setwd(gdir)
+      
+      #hourly time steps
+      times <- seq(from = 31, to = 60, by = 1/24)
+      
+      #navigate to directory with camera images
+      imgdir <- paste0('/Users/caseyyoungflesh/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Full_res_images')
+      setwd(imgdir)
+      
+      #names of all image directories
+      dirs <- list.files()
+      
+      #grep for site and year
+      idx <- c(grep(SITE, dirs), grep(YEAR, dirs))
+      
+      #directory for that specific site and year - navgate to that dir
+      sydir <- dirs[idx[duplicated(idx)]]
+      setwd(sydir)
+      files <- list.files()
+      
+      #filter PW data by site and year
+      sydata <- dplyr::filter(PW_data, season_year == YEAR, site == SITE)
+      
+      #convert to comprehensible dates
+      sub_dates <- substr(sydata$datetime, start = 1, stop = 10)
+      sub_times <- substr(sydata$datetime, start = 12, stop = 19)
+      conv_dates <- as.Date(sub_dates, format = '%Y:%m:%d')
+      
+      #times for first day
+      fd_times <- as.numeric(substr(sub_times[which(conv_dates == conv_dates[1])], 
+                                    start = 1, stop = 2))
+      
+      #hour to start on (where 00:00 is hour 1)
+      start_d <- min(fd_times) + 1
+      
+      #starting image name
+      img_name_st <- sydata$imagename[1]
+      
+      #just jpg files
+      files2 <- files[grep('.JPG', files)]
+      
+      #find index first relevant image
+      img_idx <- grep(img_name_st, files2)
+      
+      #jpg files that are relevant
+      files3 <- files2[175:length(files2)]
+      
+      #each day is 10:00 - 17:00
+      hours <- 10:17
+      night <- c(18:24, 1:9)
+      #length day
+      lh <- length(as.numeric(hours))
+      #length night
+      ln <- length(night)
+      
+      #number of images before night on first day
+      nidx <- lh - which(hours == min(fd_times)) + 1
+      #files for day 1
+      day_1 <- c(files3[1:nidx], rep('~/Google_Drive/R/penguin_watch_model/Data/black.JPG', ln))
+      
+      #vector of images
+      counter <- (nidx + 1)
+      day_img <- day_1
+      for (m in 2:30)
+      {
+        day_img <- c(day_img, files3[counter:(counter + lh - 1)], 
+                     rep('~/Google_Drive/R/penguin_watch_model/Data/black.JPG', ln))
+        counter <- counter + lh - 1
+      }
+      
+      #keep only images that are represented in plot
+      final_imgs <- day_img[1:length(times)]
+      
+      #create gif of camera images using imagemagick
+
+      #make dir
+      cdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
+                     SITE, '-', YEAR, '-2019-04-12-cam')
+      
+      #create dir for figs if doesn't exist and change to that dir
+      ifelse(!dir.exists(cdir), 
+             dir.create(cdir), 
+             FALSE)
+      
+      #create vector of image names
+      im_imgs <- paste0(final_imgs, collapse = ' ')
+      DELAY <- 10
+      SIZE <- '384X316'
+      #interface with imagemagick through command line
+      system(paste0('convert -delay ', DELAY,
+                    ' -resize ',  SIZE, ' ',
+                    im_imgs, ' ',
+                    cdir, '/', sydir, '-cam.gif'))
+      
+      
+      #create fig for each hourly time step
+      for (d in start_d:length(times))
+      {
+        p <- ggplot(PLT_DF, aes(x = time)) + 
+          geom_ribbon(aes(ymin = z_out_LCI, ymax = z_out_UCI),
+                      fill = 'blue', alpha = 0.2) +
+          geom_line(aes(y = z_out_mn), col = 'blue') +
+          geom_line(aes(y = z_out_dot), col = 'blue', linetype = 2) +
+          geom_ribbon(aes(ymin = p_out_LCI_sc, ymax = p_out_UCI_sc),
+                      fill = 'red', alpha = 0.2) +
+          geom_line(aes(y = p_out_mn_sc),
+                    col = 'red') +
+          #geom_line(aes(y = count),
+          #          col = 'green') +
+          geom_vline(xintercept = times[d], color = 'green') +
+          theme_bw() +
+          scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out, 
+                                                 name = 'Detection probability')) +
+          scale_x_continuous(labels = n_dates, breaks = n_breaks) +
+          ylab('Number of chicks') +
+          xlab('') +
+          ggtitle(paste0(SITE, ' - ', YEAR)) + 
+          theme(axis.text.x = element_text(angle = 90, hjust = 1))
+        
+        #print(p)
+        ggsave(p, filename = paste0('GIF-', d, '-', SITE, '-', YEAR, '-2019-04-12.pdf'))
+      }
+      
+      setwd(gdir)
+      DELAY <- 10
+      SIZE <- '384X316'
+      #interface with imagemagick through command line
+      system(paste0('convert -delay ', DELAY,
+                    ' -resize ',  SIZE, ' ',
+                    '*.pdf ',
+                    cdir, '/', sydir, '-plot.gif'))
+    }
+  #}
+#}
 
 
 
