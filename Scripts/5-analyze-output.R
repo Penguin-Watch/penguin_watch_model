@@ -672,7 +672,7 @@ GIF_DELAY <- 10
       # rejoin frames
       system(paste0('convert -loop 0 -delay 10 a-*.gif ', 
                     sydir, '-cam-plot-combine.gif'))
-      Sys.sleep(5)
+      Sys.sleep(10)
       # remove temp files
       system(paste0('rm a*.gif b*.gif'))
       
