@@ -436,7 +436,7 @@ GIF_DELAY <- 10
       setwd(gdir)
       
       #hourly time steps (only 8 hours)
-      times <- seq(from = 31, to = 60, by = 1/8)
+      times <- seq(from = 31, to = 61, by = 1/8)
       ltimes <- length(times)
       times2 <- times[-c((ltimes - 4):ltimes)]
       
@@ -652,37 +652,43 @@ GIF_DELAY <- 10
                     ' -resize ',  SIZE, ' ',
                     plt_imgs, ' ',
                     cdir, '/', sydir, '-plot.gif'))
+      
+      
+      #combine gifs using imagemagick
+      #from here: https://stackoverflow.com/questions/30927367/imagemagick-making-2-gifs-into-side-by-side-gifs-using-im-convert
+      
+      setwd(cdir)
+      
+      # separate frames of cam gif
+      system(paste0('convert ', sydir, '-cam.gif', 
+                    ' -coalesce a-%04d.gif'))
+      # separate frames of plot gif
+      system(paste0('convert ', sydir, '-plot.gif', 
+                    ' -coalesce b-%04d.gif'))
+      Sys.sleep(5)
+      # append frames side-by-side
+      system(paste0('for f in a-*.gif; do convert $f ${f/a/b} +append $f; done'))
+      Sys.sleep(5)
+      # rejoin frames
+      system(paste0('convert -loop 0 -delay 10 a-*.gif ', 
+                    sydir, '-cam-plot-combine.gif'))
+      Sys.sleep(5)
+      # remove temp files
+      system(paste0('rm a*.gif b*.gif'))
+      
+      
+      # convert BROWc2018-cam.gif -coalesce a-%04d.gif             # separate frames of 1.gif
+      # convert BROWc2018-plot.gif -coalesce b-%04d.gif            # separate frames of 2.gif
+      # for f in a-*.gif; do convert $f ${f/a/b} +append $f; done  # append frames side-by-side
+      # convert -loop 0 -delay 10 a-*.gif cam-plot-combine.gif     # rejoin frames
+      # rm a*.gif
+      # rm b*.gif    
     }
   #}
 #}
 
 
-#combine gifs using imagemagick
-#from here: https://stackoverflow.com/questions/30927367/imagemagick-making-2-gifs-into-side-by-side-gifs-using-im-convert
 
-setwd(cdir)
-
-#sysdir
-# separate frames of cam gif
-system(paste0('convert ', 'BROWc2018-cam.gif', 
-              ' -coalesce a-%04d.gif'))
-# separate frames of plot gif
-system(paste0('convert ', 'BROWc2018-plot.gif', 
-              ' -coalesce b-%04d.gif'))
-# append frames side-by-side
-system(paste0('for f in a-*.gif; do convert $f ${f/a/b} +append $f; done'))
-# rejoin frames
-system(paste0('convert -loop 0 -delay 10 a-*.gif cam-plot-combine.gif'))
-# remove temp files
-system(paste0('rm a*.gif b*.gif'))
-
-
-# convert BROWc2018-cam.gif -coalesce a-%04d.gif             # separate frames of 1.gif
-# convert BROWc2018-plot.gif -coalesce b-%04d.gif            # separate frames of 2.gif
-# for f in a-*.gif; do convert $f ${f/a/b} +append $f; done  # append frames side-by-side
-# convert -loop 0 -delay 10 a-*.gif cam-plot-combine.gif     # rejoin frames
-# rm a*.gif
-# rm b*.gif    
 
 
 
