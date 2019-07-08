@@ -19,7 +19,7 @@
 
 **Derived quantities:**
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=Z_{t,j,k}&space;=&space;\forall&space;\left&space;t,j,k&space;\right;&space;\sum_{i}{}&space;z_{t,i,j,k}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Z_{t,j,k}&space;=&space;\forall&space;\left&space;t,j,k&space;\right;&space;\sum_{i}{}&space;z_{t,i,j,k}" title="Z_{t,j,k} = \forall \left t,j,k \right; \sum_{i}{} z_{t,i,j,k}" /></a>
+<a href="https://www.codecogs.com/eqnedit.php?latex=Z_{t,j,k}&space;=&space;\forall&space;\&space;t,j,k;&space;\sum_{i}{}&space;z_{t,i,j,k}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Z_{t,j,k}&space;=&space;\forall&space;\&space;t,j,k;&space;\sum_{i}{}&space;z_{t,i,j,k}" title="Z_{t,j,k} = \forall \ t,j,k; \sum_{i}{} z_{t,i,j,k}" /></a>
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=\overline{p_{t,j,k}}&space;=&space;\forall&space;\&space;t,j,k;&space;\frac{1}{I}&space;\sum_{i}{}&space;p_{t,i,j,k}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\overline{p_{t,j,k}}&space;=&space;\forall&space;\&space;t,j,k;&space;\frac{1}{I}&space;\sum_{i}{}&space;p_{t,i,j,k}" title="\overline{p_{t,j,k}} = \forall \ t,j,k; \frac{1}{I} \sum_{i}{} p_{t,i,j,k}" /></a>
 
