@@ -1,0 +1,52 @@
+#LATEX CODE FOR MODEL: pwatch_surv_4e.jags (PW_60k_2019-04-12-FULL_beta[j,k])
+
+
+#second term in normal is sd
+
+
+z_{t,i,j,k} \sim Binom(\phi_{t,i,j,k}, z_{t-1,i,j,k}) 
+
+y_{t,i,j,k} \sim Binom(p_{t,i,j,k}, z_{t,i,j,k})
+
+logit(\phi_{t,i,j,k}) = \mu_{\phi_{j,k}}
+
+logit(p_{t,i,j,k}) = \mu_{p} + \nu_{p_{i,j,k}} + \beta_{p_{j,k}} \times x_{t}
+
+\mu_{\phi_{j,k}} \sim N(\theta_{\phi}, \sigma_{\mu_{\phi}})
+
+\beta_{p_{j,k}} \sim N(\mu_{\beta_{p}}, \sigma_{\beta_{p}})
+
+\nu_{p_{i,j,k}} \sim N(0, \sigma_{\nu_{p}})
+
+
+#site level true state and mean detection probability for each time step
+Z_{t,j,k} = \forall \ t,j,k; \sum_{i}{} z_{t,i,j,k}
+    -AKA: Z_{t,j,k} = sum(z[t,,j,k])
+
+\overline{p_{t,j,k}} = \forall \ t,j,k; \frac{1}{I} \sum_{i}{} p_{t,i,j,k}
+    -AKA: P_{t,j,k} = mean(p[t,,j,k])
+
+
+
+#number of chicks alive at end of season (used to calculate breeding success) - SAME AS Z_{60,j,k}
+
+\gamma_{j,k} = (ilogit(\mu_{\phi_{j,k}}) ^ 60) \times 2
+
+
+
+
+z - true state
+y - observed state
+\phi - survival probability
+\p - detection probability
+\mu_{\phi} - intercept for survival prob (varies by site/year)
+\mu_{p} - intercept term for detection probability (mean detection all nests/sites/years at mean x)
+\beta - slope (change in detection over time); varies by site/year
+x - time step within season (daily)
+\nu - nest/site/year effect on detection
+Z - number of chicks (true state) for each time step/site/year (across all nests)
+\bar{p} - mean detection probability for each time step/site/year (across all nests)
+t - time step
+i - nest
+j - year
+k - site

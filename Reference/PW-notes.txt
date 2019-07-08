@@ -1,0 +1,29 @@
+
+*spatial patterns in BS - do close sights have similar BS (CUVE and GEOR)? 
+    -If not, may have to do with sight layout (precip)
+    -Get average season precip at sites and compare to BS
+    -Quantify precip events in images and look at relationship to timing of nest failure
+    -Mention re-lay after storm events at BROW
+    -plot output vs KRILL and SIC
+*compare BS to population sizes (maybe number of GEPE in area from ASI data)
+*link between timing of breeding failure (from timing model) and BS
+    -add precip events into model
+*fit model using only end of season data - no time varying detection parameter
+    -compare estimates with hand estimates
+
+
+
+TODO
+-Split by half days rather than full days
+-Make sure chicks are seen before start
+-Make sure stopping point at correct place
+-Fit model with covariates
+
+
+
+paper points (MEPS?):
+*differences in BS across space
+*timing of breeding failure - at egg stage and at precip events
+*total number of precip events to BS
+*total precip from reanalysis to BS
+*substrate differences - nesting on tussock mounds and on peat means that penguins in SG don't really get wet, even after precip events
