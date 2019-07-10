@@ -1,14 +1,5 @@
 #################
-# Penguin Watch Model - 4 - Analyze model output
-#
-# 0-detect-params.R | recovering generating values using one detection param vs many detection params
-# 00-recover-params.R | recovering generating values using realistic data/model
-# 1-process-krill-data.R | process krill data
-# 2-process-SIC-data.R | process SIC data
-# 3-process-pw-data.R | process PW Pro data
-# 4-model.R | penguin model
-# 4-run-model.pbs | pbs script to run penguin model on HPC resources
-# 5-analyze-output.R | analyze model output
+# 4 - Analyze model output
 #
 # Author: Casey Youngflesh
 #################
@@ -38,92 +29,98 @@ pacman::p_load(MCMCvis, boot, dplyr)
 #phi = survival prob
 #p = detection prob
 
-NAME <- 'PW_60k_2019-04-12_FULL_beta[j,k]' #nu_p[i,j,k] + beta_p[j,k]
-#NAME <- 'PW_60k_2019-04-14_FULL_nu_p[j,k]_beta[i,j,k]' #nu_p[j,k] + beta_p[i,j,k]
+#NAME <- 'PW_60k_2019-04-12_FULL_beta[j,k]' #nu_p[i,j,k] + beta_p[j,k]
+NAME <- 'PW_60k_2019-04-14_FULL_nu_p[j,k]_beta[i,j,k]' #nu_p[j,k] + beta_p[i,j,k]
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
-# fit1 <- readRDS('PW_20k_2019-04-04_LOCK.rds')
-# fit2 <- readRDS('PW_50k_2019-04-04_LOCK2.rds')
-# fit3 <- readRDS('PW_60k_2019-04-04_LOCKNEKO.rds')
-# fit4 <- readRDS('PW_60k_2019-04-05_LOCKNEKO_cov.rds')
-# fit5 <- readRDS('PW_60k_2019-04-05_LOCKNEKOGEOR_cov.rds')
-# fit5 <- readRDS('PW_60k_2019-04-05_full_no_missing_ALL.rds')
-# fit5 <- readRDS('PW_60k_2019-04-09_FULL_z_out_p_out.rds')
-
-fit5 <- readRDS(paste0(NAME, '.rds'))
-data5 <- readRDS('jagsData.rds')
+fit <- readRDS(paste0(NAME, '.rds'))
+data <- readRDS('jagsData.rds')
 
 setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
 PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
 
 
 
-# MCMCvis::MCMCtrace(fit5, params = 'z_out', Rhat = TRUE, n.eff = TRUE,
+# summaries ---------------------------------------------------------------
+
+sm <- MCMCvis::MCMCsummary(fit, excl = c('z_out', 'p_out'))
+max(sm[,'Rhat'])
+hist(sm[,'Rhat'])
+min(sm[,'n.eff'])
+hist(sm[,'n.eff'])
+
+
+
+# trace plots -------------------------------------------------------------
+
+setwd('~/Desktop/')
+# MCMCvis::MCMCtrace(fit, params = 'z_out', Rhat = TRUE, n.eff = TRUE,
 #                    filename = 'z_out_trace.pdf')
-# MCMCvis::MCMCtrace(fit5, params = 'nu_p', Rhat = TRUE, n.eff = TRUE,
-#                    filename = 'nu_p_trace.pdf')
-# MCMCvis::MCMCtrace(fit5, params = 'beta_p', Rhat = TRUE, n.eff = TRUE,
-#                    filename = 'beta_p_trace.pdf')
-# MCMCvis::MCMCtrace(fit5, params = 'mu_phi', Rhat = TRUE, n.eff = TRUE,
-#                    filename = 'mu_phi_trace.pdf')
+MCMCvis::MCMCtrace(fit, params = 'nu_p', Rhat = TRUE, n.eff = TRUE,
+                   filename = 'nu_p_trace.pdf')
+MCMCvis::MCMCtrace(fit, params = 'beta_p', Rhat = TRUE, n.eff = TRUE,
+                   filename = 'beta_p_trace.pdf')
+MCMCvis::MCMCtrace(fit, params = 'mu_phi', Rhat = TRUE, n.eff = TRUE,
+                   filename = 'mu_phi_trace.pdf')
 
 
 # plot BS ------------------------------------------
 
-# #mu_phi
-# mu_phi <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi')[[1]]
-# mu_phi_LCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi', 
-#                                 func = function(x) quantile(x, probs = c(0.025)))[[1]]
-# mu_phi_UCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi', 
-#                                 func = function(x) quantile(x, probs = c(0.975)))[[1]]
-# 
-# #mu_phi_bs
-# mu_phi_bs <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi_bs')[[1]]
-# mu_phi_bs_LCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi_bs', 
-#                                 func = function(x) quantile(x, probs = c(0.025)))[[1]]
-# mu_phi_bs_UCI <- MCMCvis::MCMCpstr(fit5, params = 'mu_phi_bs', 
-#                                 func = function(x) quantile(x, probs = c(0.975)))[[1]]
-# 
-# 
+#mu_phi
+mu_phi <- MCMCvis::MCMCpstr(fit, params = 'mu_phi')[[1]]
+mu_phi_LCI <- MCMCvis::MCMCpstr(fit, params = 'mu_phi',
+                                func = function(x) quantile(x, probs = c(0.025)))[[1]]
+mu_phi_UCI <- MCMCvis::MCMCpstr(fit, params = 'mu_phi',
+                                func = function(x) quantile(x, probs = c(0.975)))[[1]]
+
+#mu_phi_bs
+mu_phi_bs <- MCMCvis::MCMCpstr(fit, params = 'mu_phi_bs')[[1]]
+mu_phi_bs_LCI <- MCMCvis::MCMCpstr(fit, params = 'mu_phi_bs',
+                                func = function(x) quantile(x, probs = c(0.025)))[[1]]
+mu_phi_bs_UCI <- MCMCvis::MCMCpstr(fit, params = 'mu_phi_bs',
+                                func = function(x) quantile(x, probs = c(0.975)))[[1]]
+
+
 # setwd('~/Google_Drive/R/penguin_watch_model/Data/')
 # SLL <- read.csv('site_ll.csv')
-# 
+
 # setwd('Krill_data/CCAMLR/Processed_CCAMLR/')
 # krill <- read.csv('CCAMLR_krill_entire_season.csv')
 # 
 # setwd('../../../SIC_data/Processed')
 # sea_ice <- read.csv('SIC_150_W.csv')
 # sea_ice2 <- sea_ice[,c(1,2,7)]
-# 
-# mrg <- data.frame(SITE = rep(data5$unsites, each = 4),
-#                   YEAR = as.vector(data5$yrs_array[-5,]), 
-#                   mn_mu_phi = as.vector(mu_phi_bs),
-#                   LCI_mu_phi = as.vector(mu_phi_bs_LCI),
-#                   UCI_mu_phi = as.vector(mu_phi_bs_UCI))
-# 
-# 
+
+mrg <- data.frame(SITE = rep(data$unsites, each = 4),
+                  YEAR = as.vector(data$yrs_array[-5,]),
+                  mn_mu_phi = as.vector(mu_phi_bs),
+                  LCI_mu_phi = as.vector(mu_phi_bs_LCI),
+                  UCI_mu_phi = as.vector(mu_phi_bs_UCI))
+
+
 # mrg2 <- dplyr::left_join(mrg, krill, by = c('SITE', 'YEAR'))
 # mrg3 <- dplyr::left_join(mrg2, sea_ice2, by = c('SITE', 'YEAR'))
 # mrg4 <- dplyr::left_join(mrg3, SLL, by = c('SITE' = 'site_id'))
 # 
-# to.rm <- which(is.na(mrg4$YEAR))
-# mrg5 <- mrg4[-to.rm,]
-# 
-# 
-# library(ggplot2)
-# ggplot(mrg5, aes(YEAR, mn_mu_phi, color = SITE)) +
-#   geom_point(size = 3, position = position_dodge(width = 0.7)) +
-#   geom_errorbar(data = mrg5, 
-#                 aes(ymin = LCI_mu_phi, ymax = UCI_mu_phi, 
-#                     color = SITE), width = 1.1, 
-#                 position = position_dodge(width = 0.7)) +
-#   theme_bw() +
-#   ylim(c(0, 2)) +
-#   ylab('Breeding Success') +
-#   xlab('Year')
+
+to.rm <- which(is.na(mrg$YEAR))
+mrg2 <- mrg[-to.rm,]
 
 
+library(ggplot2)
+p <- ggplot(mrg2, aes(YEAR, mn_mu_phi, color = SITE)) + 
+  geom_point(size = 3, position = position_dodge(width = 0.7)) +
+  geom_errorbar(data = mrg2,
+                aes(ymin = LCI_mu_phi, ymax = UCI_mu_phi,
+                    color = SITE), width = 1.1,
+                position = position_dodge(width = 0.7)) +
+  theme_bw() +
+  ylim(c(0, 2)) +
+  ylab('Breeding Success') +
+  xlab('Year')
+
+ggsave('site_bs.pdf', p)
 
 
 
@@ -134,14 +131,14 @@ PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
 # plot(mrg5$latitude, mrg5$mn_mu_phi)
 # 
 # 
-# alpha_ch <- MCMCvis::MCMCchains(fit5, params = 'alpha_theta')[,1]
-# pi_ch <- MCMCvis::MCMCchains(fit5, params = 'pi_theta')[,1]
-# rho_ch <- MCMCvis::MCMCchains(fit5, params = 'rho_theta')[,1]
+# alpha_ch <- MCMCvis::MCMCchains(fit, params = 'alpha_theta')[,1]
+# pi_ch <- MCMCvis::MCMCchains(fit, params = 'pi_theta')[,1]
+# rho_ch <- MCMCvis::MCMCchains(fit, params = 'rho_theta')[,1]
 # 
-# sim_KRILL <- seq(min(data5$KRILL, na.rm = TRUE)-1, 
-#                  max(data5$KRILL, na.rm = TRUE)+1, length = 100)
-# sim_SIC <- seq(min(data5$SIC, na.rm = TRUE)-1, 
-#                max(data5$SIC, na.rm = TRUE)+1, length = 100)
+# sim_KRILL <- seq(min(data$KRILL, na.rm = TRUE)-1, 
+#                  max(data$KRILL, na.rm = TRUE)+1, length = 100)
+# sim_SIC <- seq(min(data$SIC, na.rm = TRUE)-1, 
+#                max(data$SIC, na.rm = TRUE)+1, length = 100)
 # 
 # mf_KRILL <- matrix(nrow = length(alpha_ch), ncol = 100)
 # mf_SIC <- matrix(nrow = length(alpha_ch), ncol = 100)
@@ -163,8 +160,8 @@ PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
 # DATA_PLOT <- data.frame(MN_phi = as.vector(mu_phi), 
 #                        LCI_phi = as.vector(mu_phi_LCI),
 #                        UCI_phi = as.vector(mu_phi_UCI),
-#                        KRILL = as.vector(data5$KRILL),
-#                        SIC = as.vector(data5$SIC))
+#                        KRILL = as.vector(data$KRILL),
+#                        SIC = as.vector(data$SIC))
 # 
 # ggplot(data = DATA_PLOT, aes(KRILL, MN_phi), color = 'black', alpha = 0.6) +
 #   geom_ribbon(data = FIT_PLOT, 
@@ -232,8 +229,8 @@ PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
 # 
 # mf_KR_SIC <- matrix(nrow =  length(sim_KRILL), ncol = length(sim_SIC))
 # d_pts <- data.frame(MP = as.vector(mu_phi),
-#                     KR = as.vector(data5$KRILL),
-#                     S = as.vector(data5$SIC))
+#                     KR = as.vector(data$KRILL),
+#                     S = as.vector(data$SIC))
 # for (i in 1:length(sim_KRILL))
 # {
 #   for (j in 1:length(sim_SIC))
@@ -258,13 +255,13 @@ PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
 
 # time varying plots -----------------------------------------------------
 
-z_out_mn <- MCMCvis::MCMCpstr(fit5, params = 'z_out', func = mean)[[1]]
-z_out_sd <- MCMCvis::MCMCpstr(fit5, params = 'z_out', func = sd)[[1]]
+z_out_mn <- MCMCvis::MCMCpstr(fit, params = 'z_out', func = mean)[[1]]
+z_out_sd <- MCMCvis::MCMCpstr(fit, params = 'z_out', func = sd)[[1]]
 z_out_LCI <- z_out_mn - z_out_sd
 z_out_UCI <- z_out_mn + z_out_sd
 
-p_out_mn <- MCMCvis::MCMCpstr(fit5, params = 'p_out', func = mean)[[1]]
-p_out_sd <- MCMCvis::MCMCpstr(fit5, params = 'p_out', func = sd)[[1]]
+p_out_mn <- MCMCvis::MCMCpstr(fit, params = 'p_out', func = mean)[[1]]
+p_out_sd <- MCMCvis::MCMCpstr(fit, params = 'p_out', func = sd)[[1]]
 p_out_LCI <- p_out_mn - p_out_sd
 p_out_UCI <- p_out_mn + p_out_sd
 
@@ -275,7 +272,7 @@ for (i in 1:12)
 {
   #i <- 1
   #remove years that don't have data (wasn't done in model script)
-  t_date <- data5$date_array[,,i]
+  t_date <- data$date_array[,,i]
   to.rm.dt <- which(is.na(t_date[1,]))
   if (length(to.rm.dt) > 0)
   {
@@ -300,7 +297,7 @@ for (i in 1:12)
       #breaks for x axis on plot
       n_breaks <- seq(1, 60, by = 5)
       #min number of chicks (from counts in images and known counts later)
-      counts <- data5$c_array[,j,i] 
+      counts <- data$c_array[,j,i] 
       #remove 0 vals
       to.na <- which(counts == 0)
       if (length(to.na) > 0)
@@ -311,8 +308,8 @@ for (i in 1:12)
       #dotted line from start of season to first chick
       dt_seq <- seq(z_out_mn[1,j,i], z_out_mn[30,j,i], length = 30)
       
-      SITE <- data5$unsites[i]
-      YEAR <- data5$yrs_array[j,i]
+      SITE <- data$unsites[i]
+      YEAR <- data$yrs_array[j,i]
       min_z_out <- min(z_out_LCI[,j,i])
       rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
       PLT_DF <- data.frame(time = 1:60,  
@@ -369,7 +366,7 @@ GIF_DELAY <- 10
 #{
   i <- 1
   #remove years that don't have data (wasn't done in model script)
-  t_date <- data5$date_array[,,i]
+  t_date <- data$date_array[,,i]
   to.rm.dt <- which(is.na(t_date[1,]))
   if (length(to.rm.dt) > 0)
   {
@@ -395,7 +392,7 @@ GIF_DELAY <- 10
       #breaks for x axis on plot
       n_breaks <- seq(1, 60, by = 5)
       #min number of chicks (from counts in images and known counts later)
-      counts <- data5$c_array[,j,i] 
+      counts <- data$c_array[,j,i] 
       #remove 0 vals
       to.na <- which(counts == 0)
       if (length(to.na) > 0)
@@ -407,8 +404,8 @@ GIF_DELAY <- 10
       #dotted line from start of season to first chick
       dt_seq <- seq(z_out_mn[1,j,i], z_out_mn[30,j,i], length = 30)
       
-      SITE <- data5$unsites[i]
-      YEAR <- data5$yrs_array[j,i]
+      SITE <- data$unsites[i]
+      YEAR <- data$yrs_array[j,i]
       min_z_out <- min(z_out_LCI[,j,i])
       rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
       PLT_DF <- data.frame(time = 1:60,  
@@ -703,7 +700,7 @@ tf <- function(PR)
 # mu_p ~ dnorm(2, 0.1)
 PR <- rnorm(15000, 0, 1/sqrt(0.1))
 tf(PR)
-MCMCtrace(fit5, 
+MCMCtrace(fit, 
           params = 'mu_p',
           ind = TRUE, 
           priors = PR,
@@ -715,7 +712,7 @@ MCMCtrace(fit5,
 PR_p <- rnorm(15000, 0.1, 1/sqrt(10))
 PR <- PR_p[which(PR_p > 0 & PR_p < 0.5)]
 tf(PR)
-MCMCtrace(fit5, 
+MCMCtrace(fit, 
           params = 'mu_beta_p',
           ind = TRUE, 
           priors = PR,
@@ -724,7 +721,7 @@ MCMCtrace(fit5,
 
 # sigma_beta_p ~ dunif(0, 2)
 PR <- runif(15000, 0, 2)
-MCMCtrace(fit5, 
+MCMCtrace(fit, 
           params = 'sigma_beta_p',
           ind = TRUE, 
           priors = PR,
@@ -734,7 +731,7 @@ MCMCtrace(fit5,
 # theta_phi ~ dnorm(4, 0.25)
 PR <- rnorm(15000, 4, 1/sqrt(0.25))
 tf(PR)
-MCMCtrace(fit5, 
+MCMCtrace(fit, 
           params = 'theta_phi',
           ind = TRUE, 
           priors = PR,
@@ -743,7 +740,7 @@ MCMCtrace(fit5,
 
 # sigma_mu_phi ~ dunif(0, 3)
 PR <- runif(15000, 0, 3)
-MCMCtrace(fit5, 
+MCMCtrace(fit, 
           params = 'sigma_mu_phi',
           ind = TRUE, 
           priors = PR,
@@ -752,7 +749,7 @@ MCMCtrace(fit5,
 
 # sigma_nu_p ~ dunif(0, 3)
 PR <- runif(15000, 0, 3)
-MCMCtrace(fit5, 
+MCMCtrace(fit, 
           params = 'sigma_nu_p',
           ind = TRUE, 
           priors = PR,
