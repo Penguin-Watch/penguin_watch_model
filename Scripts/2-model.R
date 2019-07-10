@@ -1,18 +1,5 @@
-#SAME AS 4d, but tracking all site/years z_out
-
-
-
 #################
-# Penguin Watch Model - 4 - Penguin model (run with PBS script; results saved to Results)
-#
-# 0-detect-params.R | recovering generating values using one detection param vs many detection params
-# 00-recover-params.R | recovering generating values using realistic data/model
-# 1-process-krill-data.R | process krill data
-# 2-process-SIC-data.R | process SIC data
-# 3-process-pw-data.R | process PW Pro data
-# 4-model.R | penguin model
-# 4-run-model.pbs | pbs script to run penguin model on HPC resources
-# 5-analyze-output.R | analyze model output
+# 2 - survival model
 #
 # Author: Casey Youngflesh
 #################
@@ -23,12 +10,10 @@
 
 # Clear environment -------------------------------------------------------
 
-
 rm(list = ls())
 
 
 # DIR ---------------------------------------------------------------------
-
 
 #laptop
 # dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
@@ -58,7 +43,8 @@ setwd(dir[1])
 #unused nests should be marked with all NAs
 
 #PW_data <- read.csv('PW_data_2019-03-23.csv', stringsAsFactors = FALSE)
-PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
+#PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-07-10.csv', stringsAsFactors = FALSE)
 
 #remove specified colonies
 un_sites_p <- sort(unique(PW_data$site))
@@ -339,14 +325,14 @@ z_array[ones] <- NA
 
 
 
-# Krill covariate ---------------------------------------------------------------
-
-#total krill caught over the previous winter and current breeding season
-#150km radius for March - Feb
-
-#dim1 [j] = years (d_yrs)
-#dim2 [k] = sites (un_sites)
-
+# # Krill covariate ---------------------------------------------------------------
+# 
+# #total krill caught over the previous winter and current breeding season
+# #150km radius for March - Feb
+# 
+# #dim1 [j] = years (d_yrs)
+# #dim2 [k] = sites (un_sites)
+# 
 # un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
 # 
 # setwd(dir[2])
@@ -377,17 +363,14 @@ z_array[ones] <- NA
 # t1 <- as.vector(i_KRILL)
 # t2 <- scale(t1)[,1]
 # KRILL <- matrix(t2, nrow = NROW(i_KRILL))
-
-
-
-# SIC covariate -----------------------------------------------------------
-
-#SIC for the previous winter
-#150km radius for June - Sep
-#COULD ALSO USE 500 KM
-#COULD ALSO USE MAX OVER LAST 5 YEARS
-
-
+# 
+# 
+# 
+# # SIC covariate -----------------------------------------------------------
+# 
+# #SIC for the previous winter
+# #150km radius for June - Sep
+# 
 # setwd(dir[3])
 # 
 # sea_ice <- read.csv('SIC_150_W.csv')
@@ -445,8 +428,8 @@ DATA <- list(
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
   x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE)[,1],
-  #KRILL = KRILL,
-  #SIC = SIC,
+  # KRILL = KRILL,
+  # SIC = SIC,
   unsites = un_sites,
   yrs_array = yrs_array,
   c_array = c_array,
@@ -491,7 +474,7 @@ setwd(dir[4])
 # Model -------------------------------------------------------------------
 
 {
-  sink("pwatch_surv_4e.jags")
+  sink('pwatch_surv.jags')
   
   cat("
       
@@ -543,7 +526,7 @@ setwd(dir[4])
       {
       
       logit(phi[t,i,j,k]) <- mu_phi[j,k]
-      logit(p[t,i,j,k]) <- mu_p + nu_p[j,k] + beta_p[i,j,k]*x[t]
+      logit(p[t,i,j,k]) <- mu_p + nu_p[i,j,k] + beta_p[j,k] * x[t]
       
       } #t
       } #i
@@ -569,6 +552,7 @@ setwd(dir[4])
       mu_p ~ dnorm(0, 0.1)
       
       #priors - intercept and slopes
+      #FOR KRILL/SIC
       # alpha_theta ~ dnorm(0, 0.386)
       # pi_theta ~ dnorm(0, 0.386)
       # rho_theta ~ dnorm(0, 0.386)
@@ -579,14 +563,18 @@ setwd(dir[4])
       {
       mu_phi[j,k] ~ dnorm(theta_phi, tau_mu_phi)
       
+      #FOR KRILL/SIC
+      #mu_phi[j,k] ~ dnorm(theta_phi[j,k], tau_mu_phi)
+      #theta_phi[j,k] = alpha_theta + pi_theta * SIC[j,k] + rho_theta * KRILL[j,k]
+      
       #breeding success transform
       mu_phi_bs[j,k] <- (ilogit(mu_phi[j,k]) ^ 60) * 2
       
-      nu_p[j,k] ~ dnorm(0, tau_nu_p)      
+      beta_p[j,k] ~ dnorm(mu_beta_p, tau_beta_p)
       
       for (i in 1:NI[j,k])
       {
-      beta_p[i,j,k] ~ dnorm(mu_beta_p, tau_beta_p)
+      nu_p[i,j,k] ~ dnorm(0, tau_nu_p)
       } #i
       } #j
       } #k
@@ -666,29 +654,33 @@ Inits_4 <- list(#mu_phi = mp_array,
   .RNG.name = "base::Marsaglia-Multicarry", 
   .RNG.seed = 4)
 
-# Inits_5 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
-#                 mu_p = 2,
-#                 beta_p = 0.1,
-#                 sigma_mu_phi = 1,
-#                 sigma_nu_p = 1,
-#                 alpha_theta = 0,
-#                 pi_theta = 0,
-#                 rho_theta = 0,
-#                 .RNG.name = "base::Wichmann-Hill",
-#                 .RNG.seed = 5)
-# 
-# Inits_6 <- list(mu_phi = matrix(4, nrow = dim(DATA$y)[3], ncol = dim(DATA$y)[4]),
-#                 mu_p = 2,
-#                 beta_p = 0.1,
-#                 sigma_mu_phi = 1,
-#                 sigma_nu_p = 1,
-#                 alpha_theta = 0,
-#                 pi_theta = 0,
-#                 rho_theta = 0,
-#                 .RNG.name = "base::Wichmann-Hill", 
-#                 .RNG.seed = 6)
+Inits_5 <- list(#mu_phi = mp_array,
+                mu_p = 0,
+                mu_beta_p = 0.1,
+                sigma_beta_p = 1,
+                sigma_mu_phi = 1,
+                sigma_nu_p = 1,
+                theta_phi = 4,
+                # alpha_theta = 0,
+                # pi_theta = 0,
+                # rho_theta = 0,
+                .RNG.name = "base::Wichmann-Hill",
+                .RNG.seed = 5)
 
-F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4)#, Inits_5, Inits_6)
+Inits_6 <- list(#mu_phi = mp_array,
+                mu_p = 0,
+                mu_beta_p = 0.1,
+                sigma_beta_p = 1,
+                sigma_mu_phi = 1,
+                sigma_nu_p = 1,
+                theta_phi = 4,
+                # alpha_theta = 0,
+                # pi_theta = 0,
+                # rho_theta = 0,
+                .RNG.name = "base::Wichmann-Hill",
+                .RNG.seed = 6)
+
+F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 
 
 
@@ -709,33 +701,31 @@ Pars <- c('mu_phi',
           # 'alpha_theta',
           # 'pi_theta',
           # 'rho_theta'
-)
+          )
 
 
 # Run model ---------------------------------------------------------------
 
 #make sure model compiles
 # jagsRun(jagsData = DATA,
-#         jagsModel = 'pwatch_surv_4e.jags',
+#         jagsModel = 'pwatch_surv.jags',
 #         jagsInits = F_Inits,
 #         DEBUG = TRUE)
 
 jagsRun(jagsData = DATA, 
-        jagsModel = 'pwatch_surv_4e.jags',
+        jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_60k_2019-04-14_FULL_nu_p[j,k]_beta[i,j,k]',
+        jagsID = 'PW_100k_2019-07-10_nu_p[i,j,k]_beta[j,k]',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
-        logit(phi) <- mu_phi[j,k];
-        mu_phi_j_k ~ normal()
         logit(p) <- mu_p + nu_p[j,k] + beta_p[i,j,k]',
         db_hash = 'PW_data_2019-04-06.csv',
-        n_chain = 4,
-        n_adapt = 5000,
-        n_burn = 60000,
-        n_draw = 60000,
+        n_chain = 6,
+        n_adapt = 8000,
+        n_burn = 100000,
+        n_draw = 100000,
         n_thin = 20,
         EXTRA = FALSE,
         Rhat_max = 1.1,
