@@ -1,18 +1,17 @@
 #################
-# Penguin Watch Model - 3 - Process PW data
-#
-# 0-detect-params.R | recovering generating values using one detection param vs many detection params
-# 00-recover-params.R | recovering generating values using realistic data/model
-# 1-process-krill-data.R | process krill data
-# 2-process-SIC-data.R | process SIC data
-# 3-process-pw-data.R | process PW Pro data
-# 4-model.R | penguin model
-# 4-run-model.pbs | pbs script to run penguin model on HPC resources
-# 5-analyze-output.R | analyze model output
+# 1 - Process PW data
 #
 # Author: Casey Youngflesh
 #################
 
+#*create images with nest polygons for each site/year
+#*classify images in penguin watch pro
+#*create QC images to check user classifications
+#*manually QC images - place in 'Manual_QC_data_files/
+#*retain only relevant portions of post-QC classifications for each site (post-first chick sighting, pre-creche) - place in 'Model_input/'
+#*run this script
+#*run model script
+#*analyze model output
 
 
 # Clear environment -------------------------------------------------------
@@ -23,7 +22,10 @@ rm(list = ls())
 # DIR ---------------------------------------------------------------------
 
 
-setwd('~/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Model_input/')
+DATE <- '2019-07-10'
+
+setwd(paste0('~/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Model_input_', DATE, '/'))
+
 
 
 
@@ -35,7 +37,6 @@ library(dplyr)
 
 # load QC data ------------------------------------------------------------
 
-
 files_p <- list.files()[grep('.csv', list.files())]
 #don't yet have 2018 krill data
 #to.rm <- grep('2018', files)
@@ -45,7 +46,7 @@ files <- files_p
 full_df <- data.frame()
 for (i in 1:length(files))
 {
-  #i <- 21
+  #i <- 24
   temp <- read.csv(paste0(files[i]), stringsAsFactors = FALSE, header = TRUE)
   full_df <- dplyr::bind_rows(full_df, temp)
 }
@@ -55,4 +56,4 @@ for (i in 1:length(files))
 
 setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
 
-write.csv(full_df, file = 'PW_data_2019-04-06.csv', row.names = FALSE)
+write.csv(full_df, file = paste0('PW_data_', DATE, '.csv'), row.names = FALSE)
