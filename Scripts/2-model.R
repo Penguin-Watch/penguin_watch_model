@@ -84,13 +84,22 @@ tog <- c(ind, to.rm)
 tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 
-#set dates to use for model - days before first data point in input .csv (first chick sighting)
-DAYS_BEFORE <- 30
-DAYS_BUFF_FIRST_CHICK <- 0
-DAYS_AFTER <- 29 - DAYS_BUFF_FIRST_CHICK
+#set dates to model
+#lay -> hatch ~ 30 days (Hinke et al. 2017 MEE)
+#hatch -> creche ~ 30 days
 
+#reference on first chick sighting
+# DAYS_BEFORE <- 30
+# DAYS_BUFF_FIRST_CHICK <- 0
+# DAYS_AFTER <- 29 - DAYS_BUFF_FIRST_CHICK
+# number of time steps (rows) in response data
+# n_ts <- DAYS_BEFORE + DAYS_BUFF_FIRST_CHICK + DAYS_AFTER + 1
+
+#reference on days before chick creche
+DAYS_BEFORE <- 59
 #number of time steps (rows) in response data
-n_ts <- DAYS_BEFORE + DAYS_BUFF_FIRST_CHICK + DAYS_AFTER + 1
+n_ts <- DAYS_BEFORE + 1
+
 
 #number of nests (columns) in response data - i
 n_nests <- length(tog2)
@@ -133,13 +142,15 @@ for (k in 1:n_sites)
       #date range (includes days that might be missing for some reason)
       date_rng <- seq(temp_dates[1], temp_dates[length(temp_dates)], by = 'day')
       
+      #find max number of chicks for each nest at each relevant day
       temp_agg <- data.frame()
       for (t in 1:length(date_rng))
       {
         #t <- 1
         td_filt <- which(temp_dates == date_rng[t])
         temp3 <- temp2[td_filt,]
-        temp_max <- suppressWarnings(apply(temp3[,tog2], 2, function(x) max(x, na.rm = TRUE)))
+        temp_max <- suppressWarnings(apply(temp3[,tog2], 2, 
+                                           function(x) max(x, na.rm = TRUE)))
         temp4 <- data.frame(datetime = date_rng[t], t(temp_max))
         temp_agg <- rbind(temp_agg , temp4)
       }
@@ -149,8 +160,13 @@ for (k in 1:n_sites)
       
       
       #Specify FIRST and LAST days of season - number of days before first data point (first chick sighting) - days after specified data start day
-      FIRST <- min(date_rng) - DAYS_BEFORE
-      LAST <- min(date_rng) + DAYS_BUFF_FIRST_CHICK + DAYS_AFTER
+      #reference: first chick sighting
+      # FIRST <- min(date_rng) - DAYS_BEFORE
+      # LAST <- min(date_rng) + DAYS_BUFF_FIRST_CHICK + DAYS_AFTER
+      
+      #reference: chick creche
+      FIRST <- max(date_rng) - DAYS_BEFORE
+      LAST <- max(date_rng)
       
       # #Use same dates across all sites
       # first_date <- format(as.Date('12-15', format = '%m-%d'), '%m-%d')
@@ -159,8 +175,13 @@ for (k in 1:n_sites)
       # LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
       
       #which dates are within the designated period
-      valid_dates <- which(temp_agg$datetime >= min(date_rng) + 
-                             DAYS_BUFF_FIRST_CHICK & temp_agg$datetime <= LAST)
+      # #reference: first chick sighting
+      # valid_dates <- which(temp_agg$datetime >= min(date_rng) + 
+      #                        DAYS_BUFF_FIRST_CHICK & temp_agg$datetime <= LAST)
+      
+      #reference: chick creche
+      valid_dates <- which(!is.na(temp_agg$datetime))
+      
       sel_dates <- temp_agg$datetime[valid_dates]
       
       if (min(sel_dates) > FIRST)
@@ -174,6 +195,7 @@ for (k in 1:n_sites)
         na_first <- NULL
       }
       
+      #should not need to add NA to end when using creche as reference
       if (max(sel_dates) < LAST)
       {
         #add NA vals to end
