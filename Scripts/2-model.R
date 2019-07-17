@@ -457,22 +457,6 @@ for (i in 1:length(NJ))
 }
 
 
-DATA <- list(
-  y = nests_array, #response
-  NK = dim(nests_array)[4], #number of sites
-  NJ = NJ, #number of years covered for each site
-  NI = real_nests, #number of nests j,k [year, site]
-  NT = dim(nests_array)[1], #number of time steps
-  z = z_array, #known points of bird being alive
-  x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE)[,1],
-  # KRILL = KRILL,
-  # SIC = SIC,
-  unsites = un_sites,
-  yrs_array = yrs_array,
-  c_array = c_array,
-  date_array = date_array) #minimum # of chicks at each time step for each step/year
-
-
 
 #data availability
 d_avail <- data.frame()
@@ -506,10 +490,6 @@ for (i in 1:length(un_sites))
 #number of site/years of data
 num_ss <- length(which(d_avail$num_nests > 0))
 
-
-
-# input data --------------------------------------------------------------
-
 d_avail_f <- d_avail[which(!is.na(d_avail$season_year)),]
 
 idx_df_f <- unique(idx_df[,c('site', 'season_year', 
@@ -518,11 +498,23 @@ idx_df_f <- unique(idx_df[,c('site', 'season_year',
 #metadata
 d_mrg <- dplyr::left_join(d_avail_f, idx_df_f, by = c('site', 'season_year'))
 
-# dplyr::filter(idx_df, 
-#               site == 'DANC',
-#               season_year == 2013)
-# 
-# apply(nests_array[,,1,4], 2, function(x) sum(x, na.rm = TRUE))
+
+DATA <- list(
+  y = nests_array, #response
+  NK = dim(nests_array)[4], #number of sites
+  NJ = NJ, #number of years covered for each site
+  NI = real_nests, #number of nests j,k [year, site]
+  NT = dim(nests_array)[1], #number of time steps
+  z = z_array, #known points of bird being alive
+  x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE)[,1],
+  # KRILL = KRILL,
+  # SIC = SIC,
+  unsites = un_sites,
+  yrs_array = yrs_array,
+  c_array = c_array,
+  date_array = date_array,
+  d_mrg = d_mrg) 
+
 
 
 
