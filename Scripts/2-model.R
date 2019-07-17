@@ -16,13 +16,13 @@ rm(list = ls())
 # DIR ---------------------------------------------------------------------
 
 #laptop
-# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
-#          '../Krill_data/CCAMLR/Processed_CCAMLR/',
-#          '../../../SIC_data/Processed/',
-#          '~/Google_Drive/R/penguin_watch_model/Results/')
+dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
+         '../Krill_data/CCAMLR/Processed_CCAMLR/',
+         '../../../SIC_data/Processed/',
+         '~/Google_Drive/R/penguin_watch_model/Results/')
 
 #HPC
-dir <- c('../Data', '../Data', '../Data', '../Results')
+# dir <- c('../Data', '../Data', '../Data', '../Results')
 
 
 
@@ -114,15 +114,16 @@ nests_array <- array(NA, dim = c(n_ts, n_nests, n_yrs, n_sites))
 
 yrs_array <- array(NA, dim = c(n_yrs, n_sites))
 date_array <- array(NA, dim = c(n_ts, n_yrs, n_sites))
+idx_df <- data.frame()
 for (k in 1:n_sites)
 {
-  #k <- 5
+  #k <- 12
   temp <- dplyr::filter(PW_data, site == un_sites[k])
   
   j_idx <- 1
   for (j in 1:n_yrs)
   {
-    #j <- 1
+    #j <- 3
     temp2 <- dplyr::filter(temp, season_year == d_yrs[j])
     
     if (NROW(temp2) > 0)
@@ -208,9 +209,23 @@ for (k in 1:n_sites)
       {
         fill_mat <- matrix(NA, nrow = NROW(n_vals), ncol = length(nst_na))
         f_n_vals <- cbind(n_vals[,-nst_na], fill_mat)
+        
+        nest_cn <- colnames(n_vals[,-nst_na])
       } else {
         f_n_vals <- n_vals
+        
+        nest_cn <- colnames(n_vals)
       }
+      
+      t_idx_df <- data.frame(site = un_sites[k], 
+                             season_year = d_yrs[j],
+                             nest = nest_cn,
+                             idx = 1:length(nest_cn),
+                             chick_date = min(date_rng),
+                             creche_date = max(date_rng),
+                             days = length(date_rng))
+      
+      idx_df <- rbind(idx_df, t_idx_df)
       
       #appropriate date range and appropriate columns for nests
       nests_array[,,j_idx,k] <- f_n_vals
@@ -457,7 +472,9 @@ for (i in 1:length(un_sites))
       nv_nests <- 0
     }
     tt <- data.frame(site = un_sites[i],
-                     season_year = d_yrs[j],
+                     season_year = yrs_array[j,i],
+                     j = j,
+                     k = i,
                      num_nests = nv_nests)
     
     d_avail <- rbind(d_avail, tt)
@@ -469,9 +486,27 @@ num_ss <- length(which(d_avail$num_nests > 0))
 
 
 
-setwd(dir[4])
+# input data --------------------------------------------------------------
+
+d_avail_f <- d_avail[which(!is.na(d_avail$season_year)),]
+
+idx_df_f <- unique(idx_df[,c('site', 'season_year', 
+                             'chick_date', 'creche_date', 'days')])
+
+#metadata
+d_mrg <- dplyr::left_join(d_avail_f, idx_df_f, by = c('site', 'season_year'))
+
+# dplyr::filter(idx_df, 
+#               site == 'DANC',
+#               season_year == 2013)
+# 
+# apply(nests_array[,,1,4], 2, function(x) sum(x, na.rm = TRUE))
+
+
 
 # Model -------------------------------------------------------------------
+
+setwd(dir[4])
 
 {
   sink('pwatch_surv.jags')
@@ -716,7 +751,7 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_100k_2019-07-10_nu_p[i,j,k]_beta[j,k]',
+        jagsID = 'PW_500k_2019-07-17_nu_p[i,j,k]_beta[j,k]',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
@@ -724,9 +759,9 @@ jagsRun(jagsData = DATA,
         db_hash = 'PW_data_2019-04-06.csv',
         n_chain = 6,
         n_adapt = 8000,
-        n_burn = 100000,
-        n_draw = 100000,
-        n_thin = 20,
+        n_burn = 500000,
+        n_draw = 500000,
+        n_thin = 100,
         EXTRA = FALSE,
         Rhat_max = 1.1,
         n_max = 100000,
