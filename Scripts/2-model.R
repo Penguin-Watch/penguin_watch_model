@@ -16,13 +16,13 @@ rm(list = ls())
 # DIR ---------------------------------------------------------------------
 
 #laptop
-dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
-         '../Krill_data/CCAMLR/Processed_CCAMLR/',
-         '../../../SIC_data/Processed/',
-         '~/Google_Drive/R/penguin_watch_model/Results/')
+# dir <- c('~/Google_Drive/R/penguin_watch_model/Data/PW_data/',
+#          '../Krill_data/CCAMLR/Processed_CCAMLR/',
+#          '../../../SIC_data/Processed/',
+#          '~/Google_Drive/R/penguin_watch_model/Results/')
 
 #HPC
-# dir <- c('../Data', '../Data', '../Data', '../Results')
+dir <- c('../Data', '../Data', '../Data', '../Results')
 
 
 
