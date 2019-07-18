@@ -361,84 +361,6 @@ z_array[ones] <- NA
 
 
 
-
-# # Krill covariate ---------------------------------------------------------------
-# 
-# #total krill caught over the previous winter and current breeding season
-# #150km radius for March - Feb
-# 
-# #dim1 [j] = years (d_yrs)
-# #dim2 [k] = sites (un_sites)
-# 
-# un_sites_ncc <- substr(un_sites, start = 1, stop = 4)
-# 
-# setwd(dir[2])
-# 
-# krill <- read.csv('CCAMLR_krill_entire_season.csv')
-# 
-# i_KRILL <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
-# for (k in 1:length(un_sites_ncc))
-# {
-#   #k <- 1
-#   temp <- dplyr::filter(krill, SITE == un_sites_ncc[k])
-#   
-#   j_idx <- 1
-#   for (j in 1:length(d_yrs))
-#   {
-#     #j <- 1
-#     if (!is.na(yrs_array[j,k]))
-#     {
-#       temp2 <- dplyr::filter(temp, YEAR == d_yrs[j])
-#       
-#       i_KRILL[j_idx,k] <- temp2$T_KRILL
-#       j_idx <- j_idx + 1
-#     }
-#   }
-# }
-# 
-# #standardize krill catch
-# t1 <- as.vector(i_KRILL)
-# t2 <- scale(t1)[,1]
-# KRILL <- matrix(t2, nrow = NROW(i_KRILL))
-# 
-# 
-# 
-# # SIC covariate -----------------------------------------------------------
-# 
-# #SIC for the previous winter
-# #150km radius for June - Sep
-# 
-# setwd(dir[3])
-# 
-# sea_ice <- read.csv('SIC_150_W.csv')
-# 
-# i_SIC <- matrix(nrow = length(d_yrs), ncol = length(un_sites_ncc))
-# for (k in 1:length(un_sites_ncc))
-# {
-#   #k <- 1
-#   temp <- filter(sea_ice, SITE == un_sites_ncc[k])
-#   
-#   j_idx <- 1
-#   for (j in 1:length(d_yrs))
-#   {
-#     #j <- 1
-#     if (!is.na(yrs_array[j,k]))
-#     {
-#       temp2 <- filter(temp, YEAR == d_yrs[j])
-#       i_SIC[j_idx,k] <- temp2$W_MN
-#       j_idx <- j_idx + 1
-#     }
-#   }
-# }
-# 
-# 
-# #standardize krill catch
-# t1 <- as.vector(i_SIC)
-# t2 <- scale(t1)[,1]
-# SIC <- matrix(t2, nrow = NROW(i_SIC))
-
-
-
 # Create Data for JAGS ---------------------------------------------------------
 
 #nests_array:
@@ -746,11 +668,24 @@ Pars <- c('mu_phi',
           'sigma_nu_p',
           'nu_p',
           'z_out',
-          'p_out'
+          'p_out',
+          'z'
           # 'alpha_theta',
           # 'pi_theta',
           # 'rho_theta'
           )
+
+
+Pars_report <- c('mu_phi',
+          'mu_phi_bs',
+          'mu_p',
+          'beta_p',
+          'mu_beta_p',
+          'sigma_beta_p',
+          'theta_phi',
+          'sigma_mu_phi',
+          'sigma_nu_p',
+          'nu_p')
 
 
 # Run model ---------------------------------------------------------------
@@ -771,6 +706,7 @@ jagsRun(jagsData = DATA,
         track p_out
         logit(p) <- mu_p + nu_p[j,k] + beta_p[i,j,k]',
         db_hash = 'PW_data_2019-04-06.csv',
+        params_report = Pars_report,
         n_chain = 6,
         n_adapt = 8000,
         n_burn = 500000,
