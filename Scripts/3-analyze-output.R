@@ -30,7 +30,8 @@ pacman::p_load(MCMCvis, boot, dplyr)
 #p = detection prob
 
 #NAME <- 'PW_60k_2019-04-12_FULL_beta[j,k]' #nu_p[i,j,k] + beta_p[j,k]
-NAME <- 'PW_60k_2019-04-14_FULL_nu_p[j,k]_beta[i,j,k]' #nu_p[j,k] + beta_p[i,j,k]
+NAME <- 'PW_100k_2019-07-10_nu_p[i,j,k]_beta[j,k]'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-10'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
@@ -38,7 +39,7 @@ fit <- readRDS(paste0(NAME, '.rds'))
 data <- readRDS('jagsData.rds')
 
 setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
-PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-07-10.csv', stringsAsFactors = FALSE)
 
 
 
@@ -54,15 +55,21 @@ hist(sm[,'n.eff'])
 
 # trace plots -------------------------------------------------------------
 
-setwd('~/Desktop/')
+#create dir for figs if doesn't exist
+ifelse(!dir.exists(OUTPUT), 
+       dir.create(OUTPUT), 
+       FALSE)
+
+setwd(OUTPUT)
+
 # MCMCvis::MCMCtrace(fit, params = 'z_out', Rhat = TRUE, n.eff = TRUE,
 #                    filename = 'z_out_trace.pdf')
 MCMCvis::MCMCtrace(fit, params = 'nu_p', Rhat = TRUE, n.eff = TRUE,
-                   filename = 'nu_p_trace.pdf')
+                   ind = TRUE, filename = 'nu_p_trace.pdf')
 MCMCvis::MCMCtrace(fit, params = 'beta_p', Rhat = TRUE, n.eff = TRUE,
-                   filename = 'beta_p_trace.pdf')
+                   ind = TRUE, filename = 'beta_p_trace.pdf')
 MCMCvis::MCMCtrace(fit, params = 'mu_phi', Rhat = TRUE, n.eff = TRUE,
-                   filename = 'mu_phi_trace.pdf')
+                   ind = TRUE, filename = 'mu_phi_trace.pdf')
 
 
 # plot BS ------------------------------------------
@@ -92,20 +99,26 @@ mu_phi_bs_UCI <- MCMCvis::MCMCpstr(fit, params = 'mu_phi_bs',
 # sea_ice <- read.csv('SIC_150_W.csv')
 # sea_ice2 <- sea_ice[,c(1,2,7)]
 
-mrg <- data.frame(SITE = rep(data$unsites, each = 4),
-                  YEAR = as.vector(data$yrs_array[-5,]),
-                  mn_mu_phi = as.vector(mu_phi_bs),
-                  LCI_mu_phi = as.vector(mu_phi_bs_LCI),
-                  UCI_mu_phi = as.vector(mu_phi_bs_UCI))
+#USE d_mrg in data object
+yrs_rng <- range(data$yrs_array, na.rm = TRUE)
 
+site_vec <- c()
+year_vec <- c()
+for (i in 1:length(data$unsites))
+{
+  #i <- 1
+  tv <- rep(data$unsites[i], sum(!is.na(data$yrs_array[,i])))
+  yv <- data$yrs_array[which(!is.na(data$yrs_array[,i])),i]
+  
+  site_vec <- c(site_vec, tv)
+  year_vec <- c(year_vec, yv)
+}
 
-# mrg2 <- dplyr::left_join(mrg, krill, by = c('SITE', 'YEAR'))
-# mrg3 <- dplyr::left_join(mrg2, sea_ice2, by = c('SITE', 'YEAR'))
-# mrg4 <- dplyr::left_join(mrg3, SLL, by = c('SITE' = 'site_id'))
-# 
-
-to.rm <- which(is.na(mrg$YEAR))
-mrg2 <- mrg[-to.rm,]
+mrg2 <- data.frame(SITE = site_vec,
+                  YEAR = year_vec,
+                  mn_mu_phi = as.vector(mu_phi_bs)[!is.na(as.vector(mu_phi_bs))],
+                  LCI_mu_phi = as.vector(mu_phi_bs_LCI)[!is.na(as.vector(mu_phi_bs))],
+                  UCI_mu_phi = as.vector(mu_phi_bs_UCI)[!is.na(as.vector(mu_phi_bs))])
 
 
 library(ggplot2)
@@ -121,6 +134,7 @@ p <- ggplot(mrg2, aes(YEAR, mn_mu_phi, color = SITE)) +
   xlab('Year')
 
 ggsave('site_bs.pdf', p)
+
 
 
 
@@ -251,6 +265,69 @@ ggsave('site_bs.pdf', p)
 #             marker = list(size = 5, color = "red", symbol = 104))
 
 
+# precip events -----------------------------------------------------------
+
+#aggregate precip events to day (sum rain and max snow)
+
+setwd('~/Google_Drive/R/penguin_watch_model/Data/precip_data')
+
+fls <- list.files()
+
+precip_df <- data.frame()
+for (i in 1:length(data$unsites))
+{
+  #i <- 1
+  fls2 <- fls[grep(data$unsites[i], fls)]
+  
+  years <- as.numeric(substr(fls2, start = 6, stop = 9))
+  for (j in 1:length(years))
+  {
+    #j <- 1
+    
+    #read in csv for that site/year
+    tt <- read.csv(fls2[grep(years[j], fls2)])
+    
+    #remove time and transform to date
+    dates <- as.Date(sapply(strsplit(as.character(tt$datetime), 
+                                    split = ' '), '[', 1), 
+                    format = '%Y:%m:%d')
+    
+    udates <- unique(dates)
+    for (k in 1:length(udates))
+    {
+      #k <- 1
+      t2 <- tt[which(dates == udates[k]),]
+      
+      #max snow score
+      t_snow <- t2$score[grep('S', t2$score)]
+      if (length(t_snow) > 0)
+      {
+        m_snow <- max(as.numeric(substr(t_snow, start = 2, stop = 2)))
+      } else {
+        m_snow <- 0
+      }
+      
+      #rain
+      t_rain <- t2$score[grep('R', t2$score)]
+      if (length(t_rain) > 0)
+      {
+        s_rain <- sum(as.numeric(substr(t_rain, start = 2, stop = 2)))
+      } else {
+        s_rain <- 0
+      }
+      
+      t_precip <- data.frame(site = data$unsites[i],
+                             season_year = years[j],
+                             date = udates[k],
+                             m_snow,
+                             s_rain)
+      
+      precip_df <- rbind(precip_df, t_precip)
+    }
+  }
+}
+
+
 
 
 # time varying plots -----------------------------------------------------
@@ -265,10 +342,17 @@ p_out_sd <- MCMCvis::MCMCpstr(fit, params = 'p_out', func = sd)[[1]]
 p_out_LCI <- p_out_mn - p_out_sd
 p_out_UCI <- p_out_mn + p_out_sd
 
+#plot snow events in purple (2 or greater) and rain events in orange (2 or greater)
+#width of vertical lines indicate severity of precipitation event
 
-setwd('~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-04-12')
+#create dir for figs if doesn't exist
+ifelse(!dir.exists(paste0(OUTPUT, '/time_plots')), 
+       dir.create(paste0(OUTPUT, '/time_plots')), 
+       FALSE)
 
-for (i in 1:12)
+setwd(paste0(OUTPUT, '/time_plots'))
+
+for (i in 1:dim(data$date_array)[3])
 {
   #i <- 1
   #remove years that don't have data (wasn't done in model script)
@@ -278,9 +362,9 @@ for (i in 1:12)
   {
     t_date2 <- t_date[,-to.rm.dt]
   }
-  for (j in 1:4)
+  for (j in 1:dim(z_out_mn)[2])
   {
-    #j <- 1
+    #j <- 2
     
     if (sum(!is.na(z_out_mn[,j,i])) > 0)
     {
@@ -291,6 +375,16 @@ for (i in 1:12)
       } else {
         dates <- as.Date(t_date2[,j], origin = '1970-01-01')
       }
+      
+      #filter for daily precip events for site/year
+      t_precip <- dplyr::filter(precip_df, 
+                                site == data$unsites[i],
+                                season_year == data$yrs_array[j,i],
+                                m_snow >= 2 | s_rain >= 2,
+                                date < max(dates),
+                                date > min(dates))
+      t_precip$ts <- as.numeric(t_precip[,'date'] - min(dates))
+      
       
       #keep every 5th date value
       n_dates <- dates[seq(1, 60, by = 5)]
@@ -305,24 +399,29 @@ for (i in 1:12)
         counts[to.na] <- NA
       }
       
+      #NEEDS TO BE CHANGED AFTER NEXT MODEL RUN TO REFLECT DIFFERENT STARTING POINTS
       #dotted line from start of season to first chick
-      dt_seq <- seq(z_out_mn[1,j,i], z_out_mn[30,j,i], length = 30)
+      dt_seq <- seq(z_out_mn[1,j,i], z_out_mn[31,j,i], length = 31)
       
       SITE <- data$unsites[i]
       YEAR <- data$yrs_array[j,i]
       min_z_out <- min(z_out_LCI[,j,i])
       rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
+      rng_dt_seq <- (range(dt_seq)[2])
       PLT_DF <- data.frame(time = 1:60,  
                            z_out_mn = c(rep(NA, 30), z_out_mn[31:60,j,i]),
                            z_out_LCI = c(rep(NA, 30), z_out_LCI[31:60,j,i]),
                            z_out_UCI = c(rep(NA, 30), z_out_UCI[31:60,j,i]),
-                           z_out_dot = c(dt_seq, rep(NA, 30)),
+                           z_out_dot = c(dt_seq, rep(NA, 29)),
                            p_out_mn = p_out_mn[,j,i], 
                            p_out_LCI = p_out_LCI[,j,i],
                            p_out_UCI = p_out_UCI[,j,i],
-                           p_out_mn_sc = p_out_mn[,j,i] * rng_z_out + min_z_out,
-                           p_out_LCI_sc = p_out_LCI[,j,i] * rng_z_out + min_z_out,
-                           p_out_UCI_sc = p_out_UCI[,j,i] * rng_z_out + min_z_out,
+                           # p_out_mn_sc = p_out_mn[,j,i] * rng_z_out + min_z_out,
+                           # p_out_LCI_sc = p_out_LCI[,j,i] * rng_z_out + min_z_out,
+                           # p_out_UCI_sc = p_out_UCI[,j,i] * rng_z_out + min_z_out,
+                           p_out_mn_sc = p_out_mn[,j,i] * rng_dt_seq,
+                           p_out_LCI_sc = p_out_LCI[,j,i] * rng_dt_seq,
+                           p_out_UCI_sc = p_out_UCI[,j,i] * rng_dt_seq,
                            count = counts)
       
       p <- ggplot(PLT_DF, aes(x = time)) + 
@@ -334,11 +433,21 @@ for (i in 1:12)
                     fill = 'red', alpha = 0.2) +
         geom_line(aes(y = p_out_mn_sc),
                   col = 'red') +
-        #geom_line(aes(y = count),
-        #          col = 'green') +
+        #precipitation
+        geom_vline(xintercept = t_precip$ts, 
+                       color = 'purple', size = (t_precip$m_snow/3),
+                   alpha = 0.5) +
+        geom_vline(xintercept = t_precip$ts, 
+                   color = 'orange', size = (t_precip$s_rain/3),
+                   alpha = 0.5) +
+        # geom_line(aes(y = count),
+        #           col = 'green') +
         theme_bw() +
-        scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out, 
+        scale_y_continuous(limits = c(-1, (max(dt_seq) + 1)),
+                           sec.axis = sec_axis(~(.)/max(dt_seq),
                                                name = 'Detection probability')) +
+        # scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out,
+        #                                        name = 'Detection probability')) +
         scale_x_continuous(labels = n_dates, breaks = n_breaks) +
         ylab('Number of chicks') +
         xlab('') +
@@ -346,7 +455,7 @@ for (i in 1:12)
         theme(axis.text.x = element_text(angle = 90, hjust = 1))
       
       #print(p)
-      ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-04-12.pdf'))
+      ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-07-10.pdf'))
     }
   }
 }
@@ -354,335 +463,298 @@ for (i in 1:12)
 
 
 
-# gifs --------------------------------------------------------------------
+# analyze -----------------------------------------------------------------
 
-#takes a few minutes per site - may need to be altered for sites other than BROW 2018 (because of different frequency of images, etc.)
+#to check where there might be problems - reference plots created above and look at time series
+data$unsites
+data$yrs_array
 
-#GIF_DIM <- '384X316'
-GIF_DIM <- '768X632'
-GIF_DELAY <- 10
+site <- 12
+year <- 2
+tdat <- data$y[-c(1:30), , year, site]
+n_id <- which(apply(tdat, 2, function(x) sum(!is.na(x))) > 0)
 
-#for (i in 1:12)
-#{
-  i <- 1
-  #remove years that don't have data (wasn't done in model script)
-  t_date <- data$date_array[,,i]
-  to.rm.dt <- which(is.na(t_date[1,]))
-  if (length(to.rm.dt) > 0)
+tdat[, n_id]
+
+
+
+# compare death rates at different period of season -----------------------
+
+mort <- data.frame()
+for (i in 1:length(data$unsites))
+{
+  #i <- 1
+  for (j in 1:length(data$yrs_array[,i]))
   {
-    t_date2 <- t_date[,-to.rm.dt]
-  }
-  
-  #for (j in 1:4)
-  #{
-    j <- 1
-    
-    if (sum(!is.na(z_out_mn[,j,i])) > 0)
+    #j <- 5
+    if (!is.na(data$yrs_array[j,i]))
     {
-      #if t_date2 doesn't have dims (all NA cols were removed)
-      if (is.null(dim(t_date2)))
-      {
-        dates <- as.Date(t_date2, origin = '1970-01-01')
-      } else {
-        dates <- as.Date(t_date2[,j], origin = '1970-01-01')
-      }
+      #lay to hatch
+      lh <- round((z_out_mn[1,j,i] - z_out_mn[31,j,i]) / 31, 3)
       
-      #keep every other date value
-      n_dates <- dates[seq(1, 60, by = 5)]
-      #breaks for x axis on plot
-      n_breaks <- seq(1, 60, by = 5)
-      #min number of chicks (from counts in images and known counts later)
-      counts <- data$c_array[,j,i] 
-      #remove 0 vals
-      to.na <- which(counts == 0)
-      if (length(to.na) > 0)
-      {
-        counts[to.na] <- NA
-      }
+      #young hatch to older hatch
+      yo <- round((z_out_mn[31,j,i] - z_out_mn[45,j,i]) / 15, 3)
       
+      #older hatch to creche
+      oc <- round((z_out_mn[45,j,i] - z_out_mn[60,j,i]) / 15, 3)
       
-      #dotted line from start of season to first chick
-      dt_seq <- seq(z_out_mn[1,j,i], z_out_mn[30,j,i], length = 30)
+      t_m <- data.frame(site = data$unsites[i], 
+                        season_year = data$yrs_array[j,i],
+                        lh, yo, oc)
       
-      SITE <- data$unsites[i]
-      YEAR <- data$yrs_array[j,i]
-      min_z_out <- min(z_out_LCI[,j,i])
-      rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
-      PLT_DF <- data.frame(time = 1:60,  
-                           z_out_mn = c(rep(NA, 30), z_out_mn[31:60,j,i]),
-                           z_out_LCI = c(rep(NA, 30), z_out_LCI[31:60,j,i]),
-                           z_out_UCI = c(rep(NA, 30), z_out_UCI[31:60,j,i]),
-                           z_out_dot = c(dt_seq, rep(NA, 30)),
-                           p_out_mn = p_out_mn[,j,i], 
-                           p_out_LCI = p_out_LCI[,j,i],
-                           p_out_UCI = p_out_UCI[,j,i],
-                           p_out_mn_sc = p_out_mn[,j,i] * rng_z_out + min_z_out,
-                           p_out_LCI_sc = p_out_LCI[,j,i] * rng_z_out + min_z_out,
-                           p_out_UCI_sc = p_out_UCI[,j,i] * rng_z_out + min_z_out,
-                           count = counts)
-      
-      
-      gdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-                     SITE, '-', YEAR, '-2019-04-12-plot')
-      
-      #create dir for figs if doesn't exist and change to that dir
-      ifelse(!dir.exists(gdir), 
-             dir.create(gdir), 
-             FALSE)
-      
-      setwd(gdir)
-      
-      #hourly time steps (only 8 hours)
-      times <- seq(from = 31, to = 61, by = 1/8)
-      ltimes <- length(times)
-      times2 <- times[-c((ltimes - 4):ltimes)]
-      
-      #navigate to directory with camera images
-      imgdir <- paste0('/Users/caseyyoungflesh/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Full_res_images')
-      setwd(imgdir)
-      
-      #names of all image directories
-      dirs <- list.files()
-      
-      #grep for site and year
-      idx <- c(grep(SITE, dirs), grep(YEAR, dirs))
-      
-      #directory for that specific site and year - navgate to that dir
-      sydir <- dirs[idx[duplicated(idx)]]
-      setwd(sydir)
-      files <- list.files()
-      
-      #filter PW data by site and year
-      sydata <- dplyr::filter(PW_data, season_year == YEAR, site == SITE)
-      
-      #convert to comprehensible dates
-      sub_dates <- substr(sydata$datetime, start = 1, stop = 10)
-      sub_times <- substr(sydata$datetime, start = 12, stop = 19)
-      conv_dates <- as.Date(sub_dates, format = '%Y:%m:%d')
-      conv_times <- as.numeric(substr(sub_times, start = 1, stop = 2))
-      
-      #times for first day
-      fd_times <- as.numeric(substr(sub_times[which(conv_dates == conv_dates[1])], 
-                                    start = 1, stop = 2))
-      
-      #starting image name
-      img_name_st <- sydata$imagename[1]
-      
-      #just jpg files
-      files2 <- files[grep('.JPG', files)]
-      
-      #find index first relevant image
-      img_idx <- grep(img_name_st, files2)
-      
-      #jpg files that are relevant
-      files3 <- files2[img_idx:length(files2)]
-      
-      #how many images remain for the first day
-      r_img <- 17 - min(fd_times)
-      #unique dates
-      ucd <- unique(conv_dates)
-      
-      #vector of dates
-      full_dt <- c(rep(ucd[1], r_img), rep(ucd[-1], each = 8))
-      #trim off tail (images end before end of day)
-      tr_date <- full_dt[1:(length(files3)-1)]
-      full_time <- c((conv_times[1]+1):17, rep(10:17, times = 29))
-      tr_time <- full_time[1:(length(files3)-1)]
-      
-      #cbind filenames, dates, and times
-      img_td <- data.frame(filename = files3, 
-                           date = c(conv_dates[1], tr_date), 
-                           time = c(conv_times[1], tr_time))
-      
-      # ##############################
-      # #insert black images into day
-      # 
-      # #each day is 10:00 - 17:00
-      # hours <- 10:17
-      # night <- c(18:24, 1:9)
-      # #length day
-      # lh <- length(as.numeric(hours))
-      # #length night
-      # ln <- length(night)
-      # 
-      # #number of images before night on first day
-      # nidx <- lh - which(hours == min(fd_times)) + 1
-      # #files for day 1
-      # day_1 <- c(files3[1:nidx], rep('~/Google_Drive/R/penguin_watch_model/Data/black.JPG', ln))
-      # 
-      # #vector of images
-      # counter <- (nidx + 1)
-      # day_img <- day_1
-      # for (m in 2:30)
-      # {
-      #   day_img <- c(day_img, files3[counter:(counter + lh - 1)], 
-      #                rep('~/Google_Drive/R/penguin_watch_model/Data/black.JPG', ln))
-      #   counter <- counter + lh - 1
-      # }
-      # 
-      # #keep only images that are represented in plot
-      # final_imgs <- day_img[1:length(times)]
-      # ##############################
-      
-      
-      
-      ##############################
-      #no black images
-
-      #each day is 10:00 - 17:00 (8 of 24 hours)
-      
-      #pad with black before starting and after ending
-      #number of black img before start
-      n_blk_img_st <- img_td[1,]$time - 10
-      tb <- data.frame(filename = 
-                         rep('~/Google_Drive/R/penguin_watch_model/Data/black.JPG', 
-                             n_blk_img_st), 
-                       date = rep(img_td$date[1], n_blk_img_st),
-                       time = 10:(10 + n_blk_img_st - 1))
-      
-      img_td2 <- rbind(tb, img_td)
-      
-      #number of black img after end
-      #total number of end images - current number of img - don't fil last day
-      n_blk_img_end <- (29*8) - NROW(img_td2)
-      
-      #number of hours left in day
-      eday <- 17 - tail(img_td2, n = 1)$time
-      
-      #number of full days remaining to fill
-      ndays <- (n_blk_img_end - eday)/8
-      
-      #last day from previous df
-      ld <- tail(img_td2$date, n = 1)
-      
-      tb2 <- data.frame(filename = 
-                         rep('~/Google_Drive/R/penguin_watch_model/Data/black.JPG', 
-                             n_blk_img_end), 
-                       date = c(rep(ld, eday), 
-                                rep(seq(from = (ld+1), 
-                                    to = (ld+ndays),
-                                    by = 1), each = 8)),
-                       time = c((17-eday+1):17, rep(10:17, times = ndays)))
-      
-      img_td3 <- rbind(img_td2, tb2)
-      
-      #remove last 4 images (second half of last day)
-      limg <- NROW(img_td3)
-      img_td4 <- img_td3[-c((limg-4):limg),]
-      ##############################
-      
-      
-      #create gif of camera images using imagemagick
-      #make dir
-      cdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-                     SITE, '-', YEAR, '-2019-04-12-cam')
-      
-      #create dir for figs if doesn't exist and change to that dir
-      ifelse(!dir.exists(cdir), 
-             dir.create(cdir), 
-             FALSE)
-      
-      #create vector of image names
-      #8 images per day
-      im_imgs <- paste0(img_td3$filename, collapse = ' ')
-      DELAY <- GIF_DELAY
-      SIZE <- GIF_DIM
-      
-      #camera image gif
-      #interface with imagemagick through command line
-      system(paste0('convert -delay ', DELAY,
-                    ' -resize ',  SIZE, ' ',
-                    im_imgs, ' ',
-                    cdir, '/', sydir, '-cam.gif'))
-      
-      #8 hours per day
-      #create fig for each hourly time step
-      setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-                     SITE, '-', YEAR, '-2019-04-12-plot'))
-      for (d in 1:length(times2))
-      {
-        p <- ggplot(PLT_DF, aes(x = time)) + 
-          geom_ribbon(aes(ymin = z_out_LCI, ymax = z_out_UCI),
-                      fill = 'blue', alpha = 0.2) +
-          geom_line(aes(y = z_out_mn), col = 'blue') +
-          geom_line(aes(y = z_out_dot), col = 'blue', linetype = 2) +
-          geom_ribbon(aes(ymin = p_out_LCI_sc, ymax = p_out_UCI_sc),
-                      fill = 'red', alpha = 0.2) +
-          geom_line(aes(y = p_out_mn_sc),
-                    col = 'red') +
-          #geom_line(aes(y = count),
-          #          col = 'green') +
-          geom_vline(xintercept = (times2[d]-0.5), color = 'green') +
-          theme_bw() +
-          scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out, 
-                                                 name = 'Detection probability')) +
-          scale_x_continuous(labels = n_dates, breaks = n_breaks) +
-          ylab('Number of chicks') +
-          xlab('') +
-          ggtitle(paste0(SITE, ' - ', YEAR)) + 
-          theme(axis.text.x = element_text(angle = 90, hjust = 1))
-        
-        #convert d to string
-        st_d <- toString(d)
-        #number of characters for d
-        nch_d <- nchar(st_d)
-        #if less than three, pad with zeros
-        if (nch_d == 2)
-        {
-          st_d <- paste0('0', st_d)
-        }
-        if (nch_d == 1)
-        {
-          st_d <- paste0('00', st_d)
-        }
-        
-        #print(p)
-        ggsave(p, filename = paste0('GIF-', st_d, '-', SITE, '-', YEAR, '-2019-04-12.pdf'))
-      }
-      
-      DELAY <- GIF_DELAY
-      SIZE <- GIF_DIM
-      plt_imgs <- paste0(list.files(), collapse = ' ')
-      #plot gif
-      #interface with imagemagick through command line
-      system(paste0('convert -delay ', DELAY,
-                    ' -resize ',  SIZE, ' ',
-                    plt_imgs, ' ',
-                    cdir, '/', sydir, '-plot.gif'))
-      
-      
-      #combine gifs using imagemagick
-      #from here: https://stackoverflow.com/questions/30927367/imagemagick-making-2-gifs-into-side-by-side-gifs-using-im-convert
-      
-      setwd(cdir)
-      
-      # separate frames of cam gif
-      system(paste0('convert ', sydir, '-cam.gif', 
-                    ' -coalesce a-%04d.gif'))
-      # separate frames of plot gif
-      system(paste0('convert ', sydir, '-plot.gif', 
-                    ' -coalesce b-%04d.gif'))
-      Sys.sleep(5)
-      # append frames side-by-side
-      system(paste0('for f in a-*.gif; do convert $f ${f/a/b} +append $f; done'))
-      Sys.sleep(5)
-      # rejoin frames
-      system(paste0('convert -loop 0 -delay 10 a-*.gif ', 
-                    sydir, '-cam-plot-combine.gif'))
-      Sys.sleep(10)
-      # remove temp files
-      system(paste0('rm a*.gif b*.gif'))
-      
-      
-      # convert BROWc2018-cam.gif -coalesce a-%04d.gif             # separate frames of 1.gif
-      # convert BROWc2018-plot.gif -coalesce b-%04d.gif            # separate frames of 2.gif
-      # for f in a-*.gif; do convert $f ${f/a/b} +append $f; done  # append frames side-by-side
-      # convert -loop 0 -delay 10 a-*.gif cam-plot-combine.gif     # rejoin frames
-      # rm a*.gif
-      # rm b*.gif    
+      mort <- rbind(mort, t_m)
     }
-  #}
-#}
+  }
+}
+
+num <- cbind(rep(1, NROW(mort)), rep(2, NROW(mort)), rep(3, NROW(mort)))
+mval <- mort[,c('lh', 'yo', 'oc')]
+
+
+
+
+setwd(OUTPUT)
+
+pdf('death_rates_season.pdf', width = 5, height = 5)
+plot(density(mval[,1]), xlim = c(0, 0.6), ylim = c(0,5), 
+     col = rgb(1,0,0,0.3), lwd = 3, 
+     main = 'Chick death rates over nesting season', 
+     xlab = 'Chick deaths per day')
+lines(density(mval[,2]), col = rgb(0,1,0,0.3), lwd = 3)
+lines(density(mval[,3]), col = rgb(0,0,1,0.3), lwd = 3)
+legend('topright',
+       legend = c('lay -> hatch', 'hatch -> young chick', 
+                  'young chick -> creche'),
+       col = c(rgb(1,0,0,0.3), rgb(0,1,0,0.3), rgb(0,0,1,0.3)),
+       lwd = c(2,2,2,2), cex = 1)
+dev.off()
+
+#friedman test to check for differences in means (repeated measures - does not assume normality)
+friedman.test(as.matrix(mval))
+#post-hoc test
+require(PMCMR)
+posthoc.friedman.nemenyi.test(as.matrix(mval))
+
+
+
+
+# merge data ----------------------------------------------------------
+
+p2 <- data.frame()
+for (i in 1:length(data$unsites))
+{
+  #i <- 1
+  tsite <- dplyr::filter(precip_df, site == data$unsites[i])
+  
+  u_year <- unique(tsite$season_year)
+  for (j in 1:length(u_year))
+  {
+    #j <- 3
+    tyear <- dplyr::filter(tsite, season_year == u_year[j])
+    tsnow <- length(which(tyear$m_snow >= 2))
+    train <- length(which(tyear$s_rain >= 2))
+    
+    tt <- data.frame(SITE = data$unsites[i], 
+                     YEAR = u_year[j],
+                     tsnow,
+                     train)
+    p2 <- rbind(p2, tt)
+  }
+}
+
+#merge lat/ln with precip, BS, and creche date
+cll <- unique(PW_data[,c('site', 'col_lat', 'col_lon')])
+mrg3 <- dplyr::left_join(mrg2, cll, by = c('SITE' = 'site'))
+mrg4 <- dplyr::left_join(mrg3, p2, by = c('SITE', 'YEAR'))
+
+mrg5 <- dplyr::left_join(mrg4, data$d_mrg, by = c('SITE' = 'site', 'YEAR' = 'season_year'))
+
+
+#Merge with Hinke et al. 2017 (MEE) data
+hinke_2017 <- data.frame(SITE = c('CAPE', 'CIER', 'COPA', 'GALI', 'LION', 'PETE'), 
+                         YEAR = rep(2017, 6),
+                         mn_mu_phi = c(1.63, 1.47, 1.53, 1.46, 1.26, 1.51),
+                         LCI_mu_phi = rep(NA, 6),
+                         UCI_mu_phi = rep(NA, 6),
+                         col_lat = c(-62.46, -64.143, -62.175, 
+                                     -65.244, -62.135, -65.177),
+                         col_lon = c(-60.789, -60.984, -58.456, 
+                                     -64.247, -58.126, -64.189),
+                         tsnow = rep(NA, 6),
+                         train = rep(NA, 6),
+                         j = rep(NA, 6),
+                         k = rep(NA, 6),
+                         num_nests = c(8, 15, 58, 28, 19, 37),
+                         chick_date = rep(NA, 6),
+                         creche_date = c('2017-01-18', '2017-01-20', '2016-12-22',
+                                         '2017-02-04', '2016-12-20', '2017-02-08'),
+                         days = rep(NA, 6))
+
+mrg6 <- rbind(mrg5, hinke_2017)
+
+mrg6$SOURCE <- c(rep('PW', length(which(!is.na(mrg6$train)))), 
+                 rep('Hinke', length(which(is.na(mrg6$train)))))
+
+
+
+# covariates/plots --------------------------------------------------------------
+
+#compare BS to total precip - no relationship
+plot(mrg6$tsnow, mrg6$mn_mu_phi)
+plot(mrg6$train, mrg6$mn_mu_phi)
+
+
+
+#compare BS to phenology
+#convert creche date to julian day
+jd_1 <- as.numeric(strftime(mrg6$creche_date, format = "%j"))
+idx <- which(jd_1 > 300)
+jd_2 <- jd_1
+jd_2[idx] <- jd_1[idx] - 300
+jd_2[-idx] <- jd_1[-idx] + 65
+
+mrg6$c_jd <- jd_2
+
+plot(mrg6$c_jd, mrg6$mn_mu_phi)
+plot(mrg6$col_lat, mrg6$c_jd)
+
+
+#compare BS to lat and substrate type
+# to.rm <- which(mrg4$col_lat > -60)
+# mrg5 <- mrg4[-to.rm,]
+# plot(mrg5$col_lat, mrg5$mn_mu_phi)
+# f1 <- lm(mn_mu_phi ~ col_lat, data = mrg5)
+# abline(f1, col = 'red')
+
+#compare BS to krill/SIC
+
+
+
+
+
+# BS map ------------------------------------------------------------------
+
+#map of breeding success
+require(raster)
+setwd('~/Google_Drive/R/penguin_watch_model/Data/peninsula/')
+AP <- rgdal::readOGR('GADM_peninsula.shp')
+
+mrg6_agg <- aggregate(mn_mu_phi ~ SITE + col_lat + col_lon + SOURCE, data = mrg6, mean)
+
+setwd(OUTPUT)
+
+#all sites
+pdf('BS_map.pdf')
+#AP shp file
+ggplot(data = AP, aes(long, lat, group = group)) +
+  geom_polygon(fill = 'grey') + 
+  geom_path(data = AP, aes(long, lat, group = group), 
+            inherit.aes = FALSE,
+            color = 'black') +
+  #all coord
+  coord_map(xlim = c(-68, -33),
+              ylim = c(-67, -51)) +
+  theme_void() +
+  #theme_bw()
+  #BS
+  geom_point(data = mrg6_agg,
+             inherit.aes = FALSE,
+             size = 8,
+             alpha = 0.9,
+             aes(col_lon, col_lat, color = mn_mu_phi)) +
+  scale_color_gradient('Chicks per pair',
+                       limits = c(min(mrg6$mn_mu_phi),
+                                  max(mrg6$mn_mu_phi)),
+                       low = '#2c7fb8',
+                       high = '#edf8b1') +
+  # #point outlines
+  # geom_point(data = mrg6_agg,
+  #            inherit.aes = FALSE,
+  #            size = 8,
+  #            shape = 21,
+  #            alpha = 0.8,
+  #            stroke = 1,
+  #            color = 'black',
+  #            aes(col_lon, col_lat)) +
+  #point outlines - PW
+  geom_point(data = mrg6_agg[which(mrg6_agg$SOURCE == 'PW'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'black',
+             aes(col_lon, col_lat)) +
+  #point outlines - Hinke
+  geom_point(data = mrg6_agg[which(mrg6_agg$SOURCE == 'Hinke'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'red',
+             aes(col_lon, col_lat))
+  #theme(legend.position='none') +
+dev.off()
+
+
+#just AP sites
+pdf('BS_map_AP.pdf')
+#AP shp file
+ggplot(data = AP, aes(long, lat, group = group)) +
+  geom_polygon(fill = 'grey') + 
+  geom_path(data = AP, aes(long, lat, group = group), 
+            inherit.aes = FALSE,
+            color = 'black') +
+  #AP coord
+  coord_map(xlim = c(-68, -53),
+              ylim = c(-66.5, -61)) +
+  # #all coord
+  # coord_map(xlim = c(-68, -33),
+  #           ylim = c(-67, -51)) +
+  theme_void() +
+  #theme_bw()
+  #BS
+  geom_point(data = mrg6_agg,
+             inherit.aes = FALSE,
+             size = 8,
+             alpha = 0.9,
+             aes(col_lon, col_lat, color = mn_mu_phi)) +
+  scale_color_gradient('Chicks per pair',
+                       limits = c(min(mrg6$mn_mu_phi),
+                                  max(mrg6$mn_mu_phi)),
+                       low = '#2c7fb8',
+                       high = '#edf8b1') +
+  # #point outlines
+  # geom_point(data = mrg6_agg,
+  #            inherit.aes = FALSE,
+  #            size = 8,
+  #            shape = 21,
+  #            alpha = 0.8,
+  #            stroke = 1,
+  #            color = 'black',
+  #            aes(col_lon, col_lat)) +
+  #point outlines - PW
+  geom_point(data = mrg6_agg[which(mrg6_agg$SOURCE == 'PW'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'black',
+             aes(col_lon, col_lat)) +
+  #point outlines - Hinke
+  geom_point(data = mrg6_agg[which(mrg6_agg$SOURCE == 'Hinke'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'red',
+             aes(col_lon, col_lat))
+#theme(legend.position='none') +
+dev.off()
+
 
 
 
