@@ -1,5 +1,5 @@
 #################
-# Process krill data
+# Process krill data - WITH AKER
 #
 # CCAMLR krill data: https://www.ccamlr.org/en/data/statistical-bulletin
 #
@@ -29,6 +29,8 @@ rm(list = ls())
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
 
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-10'
+
 
 # Load packages -----------------------------------------------------------
 
@@ -45,15 +47,10 @@ library(ggplot2)
 #created buffers around actual lat/lons - don't want low-res land mask to interfere with krill trawls
 #determine which sites we have PW data for
 
-setwd(paste0(dir, '/Data'))
+setwd(OUTPUT)
 
 #read in lat/lon
-#cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
-#SLL <- read.csv('site_ll.csv')
-
-#remove name column
-#p_SLL <- cbind(SLL$longitude, SLL$latitude)
-#use mrg6 lats (this study + Hinke)
+mrg6 <- readRDS('mrg6.rds')
 SLL <- unique(mrg6[,c('SITE', 'col_lon', 'col_lat')])
 p_SLL <- cbind(SLL$col_lon, SLL$col_lat)
 
@@ -391,14 +388,14 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
     tt_site <- cbind(SLL$col_lon[i], SLL$col_lat[i])
     #convert to spatial points
     temp_site_sp <- sp::SpatialPoints(tt_site, proj4string = CRS('+init=epsg:4326'))
-  
+    
     #transform to 3031
     temp_site <- sp::spTransform(temp_site_sp, CRS(proj4string(Ant)))
     #width is in m so multiple by 1k
     assign(SLL$SITE[i], rgeos::gBuffer(temp_site, width = BUFFER_SIZE*1000))
   }
-
-
+  
+  
   #create data.frame that shows which SSMU each buffer intersects (more than 10% buffer area)
   #remove APPA (AP pelagic area)
   SSMU_n <- SSMU[which(!SSMU@data$ShortLabel %in% c('APPA')),]
@@ -414,9 +411,9 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
     #i <- 9
     t_data <- get(SLL$SITE[i])
     vals <- which(rgeos::gIntersects(t_data, SSMU_n, byid = TRUE) == TRUE)
-  
+    
     int <- rgeos::gIntersection(t_data, SSMU_n, byid = TRUE)
-  
+    
     #-----------#
     #plot check
     # plot(AP)
@@ -424,13 +421,13 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
     # plot(t_data, add = TRUE, col = rgb(1,0,0,0.2))
     # plot(int, add = T, col = rgb(0,1,0,0.5))
     #-----------#
-  
+    
     int_area <- raster::area(int)
     buff_area <- raster::area(t_data)
     per_area <- round(int_area/buff_area, digits = 3)
     #n_vals <- vals[which(per_area > 0.1)]
     zones <- SSMU_n@data$ShortLabel[vals]
-  
+    
     zone_ovl[i,c(1,(vals+1))] <- c(SLL$SITE[i], per_area)
   }
   
@@ -449,33 +446,33 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
     tzone <- zone_ovl[i, ]
     tind <- which(!is.na(tzone[-1]))
     tper <- tzone[which(!is.na(zone_ovl[i, -1]))+1]
-  
+    
     #what does the area add up to
     total_area <- sum(as.numeric(tper))
     #fraction of that area that is made up by each of the SSMU
     final_per <- as.numeric(tper)/total_area
-  
+    
     #years
     for (k in 1:length(yrs))
     {
       #k <- 33
       temp_yr <- dplyr::filter(CCAMLR_krill, Calendar_Year == yrs[k])
-    
+      
       #each month
       for (m in 1:12)
       {
         #m <- 1
         temp_mn <- dplyr::filter(temp_yr, Month == m)
-      
+        
         t2_k <- c()
         for (j in 1:length(tind))
         {
           #j <- 1
           temp_z <- dplyr::filter(temp_mn, SSMU_Code == cn[tind[j]])
-        
+          
           #krill catch weighted by spatial overlap - final_per
           t_k <- temp_z$Krill_Green_Weight * as.numeric(final_per[j])
-      
+          
           if (length(t_k) > 0)
           {
             t2_k <- c(t2_k, t_k)
@@ -506,7 +503,7 @@ krill_weighted_150 <- weight_krill_fun(BUFFER_SIZE = 150)
 # Time frame for krill covariate processing -----------------------------------------
 
 #PW years included in krill data output (1999/2000 season is PW year 2000)
-yrs <- 2012:2018
+yrs <- 2000:2018
 
 
 
@@ -521,21 +518,21 @@ for (i in 1:NROW(SLL))
 {
   #i <- 1
   temp_krill <- dplyr::filter(krill_weighted_25, SITE == SLL$SITE[i])
-
+  
   #PW year (1999/2000 season is PW year 2000)
   for (j in 1:length(yrs))
   {
     #j <- 1
     #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
-
+    
     yr_one <- dplyr::filter(temp_krill, YEAR == yrs[j]-1)
     DEC <- dplyr::filter(yr_one, MONTH == 12)
     yr_two <- dplyr::filter(temp_krill, YEAR == yrs[j])
     JAN <- dplyr::filter(yr_two, MONTH == 1)
-
+    
     #total krill caught over this period
     t_krill <- sum(c(DEC$WEIGHTED_KRILL, JAN$WEIGHTED_KRILL), na.rm = TRUE)
-
+    
     if (!is.na(t_krill))
     {
       #output
