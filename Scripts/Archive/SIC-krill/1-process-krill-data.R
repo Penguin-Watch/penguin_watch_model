@@ -1,14 +1,5 @@
 #################
-# Penguin Watch Model - 1 - Process krill data
-#
-# 0-detect-params.R | recovering generating values using one detection param vs many detection params
-# 00-recover-params.R | recovering generating values using realistic data/model
-# 1-process-krill-data.R | process krill data
-# 2-process-SIC-data.R | process SIC data
-# 3-process-pw-data.R | process PW Pro data
-# 4-model.R | penguin model
-# 4-run-model.pbs | pbs script to run penguin model on HPC resources
-# 5-analyze-output.R | analyze model output
+# Process krill data
 #
 # CCAMLR krill data: https://www.ccamlr.org/en/data/statistical-bulletin
 #
@@ -56,32 +47,15 @@ library(ggplot2)
 
 setwd(paste0(dir, '/Data'))
 
-cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
-
 #read in lat/lon
-SLL <- read.csv('site_ll.csv')
-
-# #lat/lon from ASi
-# ASI <- read.csv('ASI_sites_expanded.csv')
-# SLL <- data.frame()
-# for (i in 1:length(cam_sites))
-# {
-#   #i <- 1
-#   idx <- ASI$Site.code %in% cam_sites[i]
-#   lat <- ASI$Lat[idx]
-#   lon <- ASI$Lon[idx]
-#   temp <- data.frame(SITE = cam_sites[i], 
-#                      NAME = ASI$Hotspot.Name[idx],
-#                      LAT = lat, 
-#                      LON = lon)
-#   SLL <- rbind(SLL, temp)
-# }
-
-#BOOT is now PCHA in MAPPPD database
-#LOCK is PORT in MAPPPD database
+#cam_sites <- as.character(read.csv('cam_sites.csv', header = FALSE)[,1])
+#SLL <- read.csv('site_ll.csv')
 
 #remove name column
-p_SLL <- cbind(SLL$longitude, SLL$latitude)
+#p_SLL <- cbind(SLL$longitude, SLL$latitude)
+#use mrg6 lats (this study + Hinke)
+SLL <- unique(mrg6[,c('SITE', 'col_lon', 'col_lat')])
+p_SLL <- cbind(SLL$col_lon, SLL$col_lat)
 
 #points are in 4326 (uses lat/lon)
 col_points <- sp::SpatialPoints(p_SLL, proj4string = CRS('+init=epsg:4326'))
@@ -123,8 +97,6 @@ all_site_buffers_150 <- rgeos::gBuffer(t_col_points, width = 150000)
 all_site_buffers_100 <- rgeos::gBuffer(t_col_points, width = 100000)
 all_site_buffers_50 <- rgeos::gBuffer(t_col_points, width = 50000)
 all_site_buffers_25 <- rgeos::gBuffer(t_col_points, width = 25000)
-
-
 
 
 
@@ -395,9 +367,9 @@ all_site_buffers_25 <- rgeos::gBuffer(t_col_points, width = 25000)
 #PW year is year t-1/t season (year 2000 is 1999/2000 season)
 #CCCAMLR year is t/t+1 Dec 1 - Nov 30 (year 1999 is Dec 1, 1999 - Nov 30, 2000)
 #weight is in TONNES
-setwd(paste0(dir, 'Data/Krill_data/CCAMLR/CCAMLR_2018_Statistical_Bulletin_Volume_30_Data_Files/'))
+setwd(paste0(dir, 'Data/Krill_data/CCAMLR/CCAMLR_2019_Statistical_Bulletin_Volume_31_Data_Files/'))
 
-#1985-2017 calendar years (through 2016/2017 season)
+#1985-2018 calendar years (through 2017/2018 season)
 CCAMLR_krill <- read.csv('AggregatedKrillCatch.csv')
 
 #sometimes there are 0s in CCAMLR datasheet, sometimes no entries at all. Assume that no entries means that there was no fishing done in that sector in that month/year, while zero means there was fishing done, but nothing was caught.
@@ -412,19 +384,18 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   
   #create buffers for each site
   #buffer size in KM
-  for (i in 1:length(cam_sites))
+  for (i in 1:NROW(SLL))
   {
     #i <- 1
-    temp_site <- dplyr::filter(SLL, SITE == cam_sites[i])
-  
-    tt_site <- cbind(temp_site$LON, temp_site$LAT)
+    
+    tt_site <- cbind(SLL$col_lon[i], SLL$col_lat[i])
     #convert to spatial points
     temp_site_sp <- sp::SpatialPoints(tt_site, proj4string = CRS('+init=epsg:4326'))
   
     #transform to 3031
     temp_site <- sp::spTransform(temp_site_sp, CRS(proj4string(Ant)))
     #width is in m so multiple by 1k
-    assign(cam_sites[i], rgeos::gBuffer(temp_site, width = BUFFER_SIZE*1000))
+    assign(SLL$SITE[i], rgeos::gBuffer(temp_site, width = BUFFER_SIZE*1000))
   }
 
 
@@ -434,14 +405,14 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   
   #empty data.frame with SSMU as colnames
   zone_ovl <- data.frame(matrix(vector(), 
-                                length(cam_sites), 
+                                NROW(SLL), 
                                 length(SSMU_n@data$ShortLabel)+1))
   colnames(zone_ovl) <- c('SITE', as.character(SSMU_n@data$ShortLabel))
   
-  for (i in 1:length(cam_sites))
+  for (i in 1:NROW(SLL))
   {
     #i <- 9
-    t_data <- get(cam_sites[i])
+    t_data <- get(SLL$SITE[i])
     vals <- which(rgeos::gIntersects(t_data, SSMU_n, byid = TRUE) == TRUE)
   
     int <- rgeos::gIntersection(t_data, SSMU_n, byid = TRUE)
@@ -460,7 +431,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
     #n_vals <- vals[which(per_area > 0.1)]
     zones <- SSMU_n@data$ShortLabel[vals]
   
-    zone_ovl[i,c(1,(vals+1))] <- c(cam_sites[i], per_area)
+    zone_ovl[i,c(1,(vals+1))] <- c(SLL$SITE[i], per_area)
   }
   
   #weight krill catch based on percent overlap between buffer zone and SSMU
@@ -516,7 +487,8 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
         #sum the weighted krill across all SSMU
         temp_mn_weight_kr <- round(sum(t2_k), digits = 2)
         
-        t_mn_df <- data.frame(SITE = tsite, YEAR = yrs[k], MONTH = m, WEIGHTED_KRILL = temp_mn_weight_kr)
+        t_mn_df <- data.frame(SITE = tsite, YEAR = yrs[k], MONTH = m, 
+                              WEIGHTED_KRILL = temp_mn_weight_kr)
         krill_weighted <- rbind(krill_weighted, t_mn_df)
       }
     }
@@ -528,16 +500,13 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
 krill_weighted_25 <- weight_krill_fun(BUFFER_SIZE = 25)
 krill_weighted_150 <- weight_krill_fun(BUFFER_SIZE = 150)
 
-dplyr::filter(krill_weighted_150, YEAR == 2017)
-#CHECK NA vals
-#krill_weighted_150[which(is.na(krill_weighted_150$WEIGHTED_KRILL)),]
 
 
 
 # Time frame for krill covariate processing -----------------------------------------
 
 #PW years included in krill data output (1999/2000 season is PW year 2000)
-yrs <- 2012:2017
+yrs <- 2012:2018
 
 
 
@@ -548,10 +517,10 @@ yrs <- 2012:2017
 
 #CCAMLR data
 CCAMLR_kr_BS <- data.frame()
-for (i in 1:length(cam_sites))
+for (i in 1:NROW(SLL))
 {
   #i <- 1
-  temp_krill <- dplyr::filter(krill_weighted_25, SITE == cam_sites[i])
+  temp_krill <- dplyr::filter(krill_weighted_25, SITE == SLL$SITE[i])
 
   #PW year (1999/2000 season is PW year 2000)
   for (j in 1:length(yrs))
@@ -570,13 +539,13 @@ for (i in 1:length(cam_sites))
     if (!is.na(t_krill))
     {
       #output
-      t_out <- data.frame(SITE = cam_sites[i],
+      t_out <- data.frame(SITE = SLL$SITE[i],
                           YEAR = yrs[j],
                           T_KRILL = t_krill)
       #merge with final output
       CCAMLR_kr_BS <- rbind(CCAMLR_kr_BS, t_out)
     } else {
-      t_out <- data.frame(SITE = cam_sites[i],
+      t_out <- data.frame(SITE = SLL$SITE[i],
                           YEAR = yrs[j],
                           T_KRILL = 0)
       CCAMLR_kr_BS <- rbind(CCAMLR_kr_BS, t_out)
@@ -584,8 +553,8 @@ for (i in 1:length(cam_sites))
   }
 }
 
-# setwd('../Processed_CCAMLR/')
-# write.csv(CCAMLR_kr_BS, 'CCAMLR_krill_breeding_season.csv', row.names = FALSE)
+setwd('../Processed_CCAMLR/')
+write.csv(CCAMLR_kr_BS, 'CCAMLR_krill_breeding_season.csv', row.names = FALSE)
 
 
 
@@ -648,10 +617,10 @@ for (i in 1:length(cam_sites))
 #YEAR is PW year
 
 CCAMLR_kr_WS <- data.frame()
-for (i in 1:length(cam_sites))
+for (i in 1:NROW(SLL))
 {
   #i <- 1
-  temp_krill <- dplyr::filter(krill_weighted_150, SITE == cam_sites[i])
+  temp_krill <- dplyr::filter(krill_weighted_150, SITE == SLL$SITE[i])
   
   #PW year (1999/2000 season is PW year 2000)
   for (j in 1:length(yrs))
@@ -669,13 +638,13 @@ for (i in 1:length(cam_sites))
     if (!is.na(t_krill))
     {
       #output
-      t_out <- data.frame(SITE = cam_sites[i],
+      t_out <- data.frame(SITE = SLL$SITE[i],
                           YEAR = yrs[j],
                           T_KRILL = t_krill)
       #merge with final output
       CCAMLR_kr_WS <- rbind(CCAMLR_kr_WS, t_out)
     } else {
-      t_out <- data.frame(SITE = cam_sites[i],
+      t_out <- data.frame(SITE = SLL$SITE[i],
                           YEAR = yrs[j],
                           T_KRILL = 0)
       CCAMLR_kr_WS <- rbind(CCAMLR_kr_WS, t_out)
@@ -684,23 +653,8 @@ for (i in 1:length(cam_sites))
 }
 
 
-#LOCK is PORT in MAPPPD
-#BOOT is PCHA is MAPPP
-
-CCAMLR_kr_WS$SITE <- as.character(CCAMLR_kr_WS$SITE)
-
-if (length(which(CCAMLR_kr_WS$SITE == 'PORT')) > 0)
-{
-  CCAMLR_kr_WS$SITE[which(CCAMLR_kr_WS$SITE == 'PORT')] <- 'LOCK'
-}
-
-if (length(which(CCAMLR_kr_WS$SITE == 'PCHA')) > 0)
-{
-  CCAMLR_kr_WS$SITE[which(CCAMLR_kr_WS$SITE == 'PCHA')] <- 'BOOT'
-}
-
-# setwd('../Processed_CCAMLR/')
-# write.csv(CCAMLR_kr_WS, 'CCAMLR_krill_entire_season.csv', row.names = FALSE)
+setwd('../Processed_CCAMLR/')
+write.csv(CCAMLR_kr_WS, 'CCAMLR_krill_entire_season.csv', row.names = FALSE)
 
 
 # #AKER data
@@ -765,14 +719,15 @@ if (length(which(CCAMLR_kr_WS$SITE == 'PCHA')) > 0)
 
 # Effect of krill fishing across years ------------------------------------
 
+#MARCH - JAN
 #150km radius average (or total) across all years at each site
 #YEAR is PW year
 
 CCAMLR_kr_AY <- data.frame()
-for (i in 1:length(cam_sites))
+for (i in 1:NROW(SLL))
 {
-  #i <- 1
-  temp_krill <- dplyr::filter(krill_weighted_150, SITE == cam_sites[i])
+  #i <- 2
+  temp_krill <- dplyr::filter(krill_weighted_150, SITE == SLL$SITE[i])
   
   #PW year (1999/2000 season is PW year 2000)
   t_yr_krill <- c()
@@ -796,18 +751,18 @@ for (i in 1:length(cam_sites))
   if (!is.na(mn_yr_krill))
   {
     #output
-    t_out <- data.frame(SITE = cam_sites[i],
+    t_out <- data.frame(SITE = SLL$SITE[i],
                         T_KRILL = mn_yr_krill)
     #merge with final output
     CCAMLR_kr_AY <- rbind(CCAMLR_kr_AY, t_out)
   } else {
-    t_out <- data.frame(SITE = cam_sites[i],
+    t_out <- data.frame(SITE = SLL$SITE[i],
                         T_KRILL = 0)
     CCAMLR_kr_AY <- rbind(CCAMLR_kr_AY, t_out)
   }
 }
 
-# write.csv(CCAMLR_kr_AY, 'CCAMLR_krill_average.csv', row.names = FALSE)
+write.csv(CCAMLR_kr_AY, 'CCAMLR_krill_average.csv', row.names = FALSE)
 
 
 
@@ -882,7 +837,7 @@ ggplot(CCAMLR_kr_AY, aes(SITE, T_KRILL)) +
   geom_col() +
   ylab('Mean krill catch (tonnes)') +
   theme_bw() +
-  ggtitle('CCAMLR - Mean krill catch (2010-2017)')
+  ggtitle('CCAMLR - Mean krill catch March - Jan (2012-2018)')
 
 
 # #AKER
