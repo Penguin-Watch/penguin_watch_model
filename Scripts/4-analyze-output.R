@@ -596,27 +596,40 @@ mrg6$SOURCE <- c(rep('PW', length(which(!is.na(mrg6$train)))),
                  rep('Hinke', length(which(is.na(mrg6$train)))))
 
 
+#merge with krill data
+setwd('~/Google_Drive/R/penguin_watch_model/Data/Krill_data/CCAMLR/Processed_CCAMLR/')
+
+#krill catch from entire year
+krill <- read.csv('CCAMLR_krill_entire_season.csv')
+colnames(krill)[3] <- 'YR_KRILL'
+mrg7 <- dplyr::left_join(mrg6, krill, by = c('SITE', 'YEAR'))
+
+#krill catch from just breeding season
+krill2 <- read.csv('CCAMLR_krill_breeding_season.csv')
+colnames(krill2)[3] <- 'BR_KRILL'
+mrg8 <- dplyr::left_join(mrg7, krill2, by = c('SITE', 'YEAR'))
+
 
 # covariates/plots --------------------------------------------------------------
 
 #compare BS to total precip - no relationship
-plot(mrg6$tsnow, mrg6$mn_mu_phi)
-plot(mrg6$train, mrg6$mn_mu_phi)
+plot(mrg8$tsnow, mrg8$mn_mu_phi)
+plot(mrg8$train, mrg8$mn_mu_phi)
 
 
 
 #compare BS to phenology
 #convert creche date to julian day
-jd_1 <- as.numeric(strftime(mrg6$creche_date, format = "%j"))
+jd_1 <- as.numeric(strftime(mrg8$creche_date, format = "%j"))
 idx <- which(jd_1 > 300)
 jd_2 <- jd_1
 jd_2[idx] <- jd_1[idx] - 300
 jd_2[-idx] <- jd_1[-idx] + 65
 
-mrg6$c_jd <- jd_2
+mrg8$c_jd <- jd_2
 
-plot(mrg6$c_jd, mrg6$mn_mu_phi)
-plot(mrg6$col_lat, mrg6$c_jd)
+plot(mrg8$c_jd, mrg8$mn_mu_phi)
+plot(mrg8$col_lat, mrg8$c_jd)
 
 
 #compare BS to lat and substrate type
@@ -626,9 +639,9 @@ plot(mrg6$col_lat, mrg6$c_jd)
 # f1 <- lm(mn_mu_phi ~ col_lat, data = mrg5)
 # abline(f1, col = 'red')
 
-#compare BS to krill/SIC
-
-
+#compare BS to krill
+library(quantreg)
+plot(mrg8$YR_KRILL, mrg8$mn_mu_phi)
 
 
 
