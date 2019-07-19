@@ -89,15 +89,6 @@ mu_phi_bs_UCI <- MCMCvis::MCMCpstr(fit, params = 'mu_phi_bs',
                                 func = function(x) quantile(x, probs = c(0.975)))[[1]]
 
 
-# setwd('~/Google_Drive/R/penguin_watch_model/Data/')
-# SLL <- read.csv('site_ll.csv')
-
-# setwd('Krill_data/CCAMLR/Processed_CCAMLR/')
-# krill <- read.csv('CCAMLR_krill_entire_season.csv')
-# 
-# setwd('../../../SIC_data/Processed')
-# sea_ice <- read.csv('SIC_150_W.csv')
-# sea_ice2 <- sea_ice[,c(1,2,7)]
 
 #USE d_mrg in data object
 yrs_rng <- range(data$yrs_array, na.rm = TRUE)
@@ -134,106 +125,6 @@ p <- ggplot(mrg2, aes(YEAR, mn_mu_phi, color = SITE)) +
   xlab('Year')
 
 ggsave('site_bs.pdf', p)
-
-
-
-
-# plot regression fit SIC/KRILL -----------------------------------------------------
-
-# plot(mrg5$T_KRILL, mrg5$mn_mu_phi)
-# plot(mrg5$W_MN, mrg5$mn_mu_phi)
-# plot(mrg5$latitude, mrg5$mn_mu_phi)
-# 
-# 
-# alpha_ch <- MCMCvis::MCMCchains(fit, params = 'alpha_theta')[,1]
-# pi_ch <- MCMCvis::MCMCchains(fit, params = 'pi_theta')[,1]
-# rho_ch <- MCMCvis::MCMCchains(fit, params = 'rho_theta')[,1]
-# 
-# sim_KRILL <- seq(min(data$KRILL, na.rm = TRUE)-1, 
-#                  max(data$KRILL, na.rm = TRUE)+1, length = 100)
-# sim_SIC <- seq(min(data$SIC, na.rm = TRUE)-1, 
-#                max(data$SIC, na.rm = TRUE)+1, length = 100)
-# 
-# mf_KRILL <- matrix(nrow = length(alpha_ch), ncol = 100)
-# mf_SIC <- matrix(nrow = length(alpha_ch), ncol = 100)
-# for (i in 1:length(sim_KRILL))
-# {
-#   mf_KRILL[,i] <- alpha_ch + rho_ch * sim_KRILL[i] #+ pi_ch * mean(sim_SIC) #mean of cov is 0
-#   mf_SIC[,i] <- alpha_ch + pi_ch * sim_SIC[i] #+ rho_ch * mean(sim_KRILL) #mean of cov is 0
-# }
-# 
-# med_mf_KRILL <- apply(mf_KRILL, 2, median)
-# LCI_mf_KRILL <- apply(mf_KRILL, 2, function(x) quantile(x, probs = 0.025))
-# UCI_mf_KRILL <- apply(mf_KRILL, 2, function(x) quantile(x, probs = 0.975))
-# 
-# FIT_PLOT <- data.frame(MN_FIT = med_mf_KRILL, 
-#                        MN_X = sim_KRILL,
-#                        LCI_FIT = LCI_mf_KRILL,
-#                        UCI_FIT = UCI_mf_KRILL)
-# 
-# DATA_PLOT <- data.frame(MN_phi = as.vector(mu_phi), 
-#                        LCI_phi = as.vector(mu_phi_LCI),
-#                        UCI_phi = as.vector(mu_phi_UCI),
-#                        KRILL = as.vector(data$KRILL),
-#                        SIC = as.vector(data$SIC))
-# 
-# ggplot(data = DATA_PLOT, aes(KRILL, MN_phi), color = 'black', alpha = 0.6) +
-#   geom_ribbon(data = FIT_PLOT, 
-#               aes(x = MN_X, ymin = LCI_FIT, ymax = UCI_FIT),
-#               fill = 'grey', alpha = 0.7,
-#               inherit.aes = FALSE) +
-#   geom_line(data = FIT_PLOT, aes(MN_X, MN_FIT), color = 'red',
-#             alpha = 0.9,
-#             inherit.aes = FALSE,
-#             size = 1.4) +
-#   geom_errorbar(data = DATA_PLOT, 
-#                 aes(ymin = LCI_phi, ymax = UCI_phi), width = 0.3,
-#                 color = 'black', alpha = 0.2) +
-#   geom_point(data = DATA_PLOT, aes(KRILL, MN_phi), color = 'black',
-#              inherit.aes = FALSE, size = 3, alpha = 0.7) +
-#   theme_bw() +
-#   xlab('Krill catch') +
-#   ylab('survival rate') +
-#   theme(
-#     axis.text = element_text(size = 16),
-#     axis.title = element_text(size = 18),
-#     axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
-#     axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
-#     axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
-# 
-# 
-# med_mf_SIC <- apply(mf_SIC, 2, median)
-# LCI_mf_SIC <- apply(mf_SIC, 2, function(x) quantile(x, probs = 0.025))
-# UCI_mf_SIC <- apply(mf_SIC, 2, function(x) quantile(x, probs = 0.975))
-# 
-# FIT_PLOT <- data.frame(MN_FIT = med_mf_SIC, 
-#                        MN_X = sim_SIC,
-#                        LCI_FIT = LCI_mf_SIC,
-#                        UCI_FIT = UCI_mf_SIC)
-# 
-# ggplot(data = DATA_PLOT, aes(SIC, MN_phi), color = 'black', alpha = 0.6) +
-#   geom_ribbon(data = FIT_PLOT, 
-#               aes(x = MN_X, ymin = LCI_FIT, ymax = UCI_FIT),
-#               fill = 'grey', alpha = 0.7,
-#               inherit.aes = FALSE) +
-#   geom_line(data = FIT_PLOT, aes(MN_X, MN_FIT), color = 'red',
-#             alpha = 0.9,
-#             inherit.aes = FALSE,
-#             size = 1.4) +
-#   geom_errorbar(data = DATA_PLOT, 
-#                 aes(ymin = LCI_phi, ymax = UCI_phi), width = 0.3,
-#                 color = 'black', alpha = 0.2) +
-#   geom_point(data = DATA_PLOT, aes(SIC, MN_phi), color = 'black',
-#              inherit.aes = FALSE, size = 3, alpha = 0.7) +
-#   theme_bw() +
-#   xlab('SIC') +
-#   ylab('survival rate') +
-#   theme(
-#     axis.text = element_text(size = 16),
-#     axis.title = element_text(size = 18),
-#     axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
-#     axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
-#     axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
 
 
 
@@ -570,6 +461,7 @@ mrg4 <- dplyr::left_join(mrg3, p2, by = c('SITE', 'YEAR'))
 mrg5 <- dplyr::left_join(mrg4, data$d_mrg, by = c('SITE' = 'site', 'YEAR' = 'season_year'))
 
 
+#using lat/lon from Penguin Watch for PETE
 #Merge with Hinke et al. 2017 (MEE) data
 hinke_2017 <- data.frame(SITE = c('CAPE', 'CIER', 'COPA', 'GALI', 'LION', 'PETE'), 
                          YEAR = rep(2017, 6),
@@ -577,9 +469,9 @@ hinke_2017 <- data.frame(SITE = c('CAPE', 'CIER', 'COPA', 'GALI', 'LION', 'PETE'
                          LCI_mu_phi = rep(NA, 6),
                          UCI_mu_phi = rep(NA, 6),
                          col_lat = c(-62.46, -64.143, -62.175, 
-                                     -65.244, -62.135, -65.177),
+                                     -65.244, -62.135, -65.17),
                          col_lon = c(-60.789, -60.984, -58.456, 
-                                     -64.247, -58.126, -64.189),
+                                     -64.247, -58.126, -64.14),
                          tsnow = rep(NA, 6),
                          train = rep(NA, 6),
                          j = rep(NA, 6),
@@ -597,8 +489,8 @@ lynch_2009 <- data.frame(SITE = 'PETE',
                                        (3343/2293), (3348/2719)),
                          LCI_mu_phi = rep(NA, 5),
                          UCI_mu_phi = rep(NA, 5),
-                         col_lat = rep(-65.177, 5),
-                         col_lon = rep(-64.189, 5),
+                         col_lat = rep(-65.17, 5),
+                         col_lon = rep(-64.14, 5),
                          tsnow = rep(NA, 5),
                          train = rep(NA, 5),
                          j = rep(NA, 5),

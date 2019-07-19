@@ -11,6 +11,12 @@ rm(list = ls())
 
 
 
+# dir ---------------------------------------------------------------------
+
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-10'
+
+
+
 # Load packages -----------------------------------------------------------
 
 if('pacman' %in% rownames(installed.packages()) == FALSE)
@@ -25,8 +31,11 @@ pacman::p_load(MCMCvis, boot, dplyr)
 
 # Load data -------------------------------------------------------
 
+setwd(OUTPUT)
+
 #read in RDS from 3-analyze-output.R
 mrg6 <- readRDS('mrg6.rds')
+mrg6$YEAR <- as.numeric(mrg6$YEAR)
 
 #merge with krill data
 setwd('~/Google_Drive/R/penguin_watch_model/Data/Krill_data/CCAMLR/Processed_CCAMLR/')
@@ -46,7 +55,9 @@ mrg8 <- dplyr::left_join(mrg7, krill2, by = c('SITE', 'YEAR'))
 # covariates/plots --------------------------------------------------------------
 
 #compare BS to total precip - no relationship
-plot(mrg8$tsnow, mrg8$mn_mu_phi)
+plot(mrg8$tsnow, mrg8$mn_mu_phi, 
+     xlab = 'Number of large snow events at site',
+     ylab = 'Breeding success')
 plot(mrg8$train, mrg8$mn_mu_phi)
 
 
@@ -71,10 +82,10 @@ plot(mrg8$col_lat, mrg8$c_jd)
 # f1 <- lm(mn_mu_phi ~ col_lat, data = mrg5)
 # abline(f1, col = 'red')
 
-#compare BS to krill
-library(quantreg)
+#compare BS to krill - no pattern
 plot(mrg8$YR_KRILL, mrg8$mn_mu_phi)
 
+tt <- dplyr::select(mrg8, SITE, YEAR, mn_mu_phi, col_lat, col_lon, YR_KRILL)
 
 
 # BS map ------------------------------------------------------------------
@@ -84,7 +95,16 @@ require(raster)
 setwd('~/Google_Drive/R/penguin_watch_model/Data/peninsula/')
 AP <- rgdal::readOGR('GADM_peninsula.shp')
 
-mrg_agg <- aggregate(mn_mu_phi ~ SITE + col_lat + col_lon + SOURCE, data = mrg8, mean)
+mrg_agg <- aggregate(mn_mu_phi ~ SITE + col_lat + col_lon, data = mrg8, mean)
+
+#merge with source
+mrg_agg2 <- dplyr::left_join(mrg_agg, unique(mrg8[,c('SITE', 'SOURCE')]), by = c('SITE'))
+
+#change PETE to all
+PETE_idx <- which(mrg_agg2$SITE == 'PETE')
+mrg_agg3 <- mrg_agg2[-PETE_idx[2:3],]
+mrg_agg3[which(mrg_agg3$SITE == 'PETE'),'SOURCE'] <- 'ALL'
+
 
 setwd(OUTPUT)
 
@@ -102,18 +122,18 @@ ggplot(data = AP, aes(long, lat, group = group)) +
   theme_void() +
   #theme_bw()
   #BS
-  geom_point(data = mrg_agg,
+  geom_point(data = mrg_agg3,
              inherit.aes = FALSE,
              size = 8,
              alpha = 0.9,
              aes(col_lon, col_lat, color = mn_mu_phi)) +
   scale_color_gradient('Chicks per pair',
-                       limits = c(min(mrg_agg$mn_mu_phi),
-                                  max(mrg_agg$mn_mu_phi)),
+                       limits = c(min(mrg_agg3$mn_mu_phi),
+                                  max(mrg_agg3$mn_mu_phi)),
                        low = '#2c7fb8',
                        high = '#edf8b1') +
   # #point outlines
-  # geom_point(data = mrg_agg,
+  # geom_point(data = mrg_agg3,
   #            inherit.aes = FALSE,
   #            size = 8,
   #            shape = 21,
@@ -122,7 +142,7 @@ ggplot(data = AP, aes(long, lat, group = group)) +
   #            color = 'black',
   #            aes(col_lon, col_lat)) +
   #point outlines - PW
-  geom_point(data = mrg6_agg[which(mrg_agg$SOURCE == 'PW'),],
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
              inherit.aes = FALSE,
              size = 8,
              shape = 21,
@@ -131,13 +151,22 @@ ggplot(data = AP, aes(long, lat, group = group)) +
              color = 'black',
              aes(col_lon, col_lat)) +
   #point outlines - Hinke
-  geom_point(data = mrg_agg[which(mrg_agg$SOURCE == 'Hinke'),],
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
              inherit.aes = FALSE,
              size = 8,
              shape = 21,
              alpha = 0.8,
              stroke = 1,
              color = 'red',
+             aes(col_lon, col_lat)) +
+  #point outlines - ALL THREE SOURCES
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'purple',
              aes(col_lon, col_lat))
 #theme(legend.position='none') +
 dev.off()
@@ -160,18 +189,18 @@ ggplot(data = AP, aes(long, lat, group = group)) +
   theme_void() +
   #theme_bw()
   #BS
-  geom_point(data = mrg_agg,
+  geom_point(data = mrg_agg3,
              inherit.aes = FALSE,
              size = 8,
              alpha = 0.9,
              aes(col_lon, col_lat, color = mn_mu_phi)) +
   scale_color_gradient('Chicks per pair',
-                       limits = c(min(mrg_agg$mn_mu_phi),
-                                  max(mrg_agg$mn_mu_phi)),
+                       limits = c(min(mrg_agg3$mn_mu_phi),
+                                  max(mrg_agg3$mn_mu_phi)),
                        low = '#2c7fb8',
                        high = '#edf8b1') +
   # #point outlines
-  # geom_point(data = mrg_agg,
+  # geom_point(data = mrg_agg3,
   #            inherit.aes = FALSE,
   #            size = 8,
   #            shape = 21,
@@ -180,7 +209,7 @@ ggplot(data = AP, aes(long, lat, group = group)) +
   #            color = 'black',
   #            aes(col_lon, col_lat)) +
   #point outlines - PW
-  geom_point(data = mrg_agg[which(mrg_agg$SOURCE == 'PW'),],
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
              inherit.aes = FALSE,
              size = 8,
              shape = 21,
@@ -189,13 +218,22 @@ ggplot(data = AP, aes(long, lat, group = group)) +
              color = 'black',
              aes(col_lon, col_lat)) +
   #point outlines - Hinke
-  geom_point(data = mrg_agg[which(mrg_agg$SOURCE == 'Hinke'),],
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
              inherit.aes = FALSE,
              size = 8,
              shape = 21,
              alpha = 0.8,
              stroke = 1,
              color = 'red',
+             aes(col_lon, col_lat)) + 
+  #point outlines - ALL THREE SOURCES
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'purple',
              aes(col_lon, col_lat))
 #theme(legend.position='none') +
 dev.off()
