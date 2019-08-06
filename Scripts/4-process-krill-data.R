@@ -56,8 +56,9 @@ colnames(SLL_p) <- c('SITE', 'col_lon', 'col_lat')
 
 #add SG sites
 sg_add <- data.frame(SITE = c('COOP', 'GODH', 'MAIV', 'OCEA'), 
-                              col_lon = c(-54.78, -54.29, -54.24, -54.34),
-                              col_lat = c(-35.83, -36.26, -36.50, -36.27))
+                     col_lon = c(-35.83, -36.26, -36.50, -36.27),
+                     col_lat = c(-54.78, -54.29, -54.24, -54.34))
+                              
 SLL <- rbind(SLL_p, sg_add)
 
 p_SLL <- cbind(SLL$col_lon, SLL$col_lat)
@@ -130,7 +131,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   #buffer size in KM
   for (i in 1:NROW(SLL))
   {
-    #i <- 1
+    #i <- 738
     
     tt_site <- cbind(SLL$col_lon[i], SLL$col_lat[i])
     #convert to spatial points
@@ -155,7 +156,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   
   for (i in 1:NROW(SLL))
   {
-    #i <- 3
+    #i <- 738
     t_data <- get(SLL$SITE[i])
     vals <- which(rgeos::gIntersects(t_data, SSMU_n, byid = TRUE) == TRUE)
   
@@ -192,7 +193,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   #for each cam site
   for (i in 1:NROW(zone_ovl))
   {
-    #i <- 3
+    #i <- 738
     #which cols are not NA
     tsite <- zone_ovl[i, 1]
     tzone <- zone_ovl[i, ]
