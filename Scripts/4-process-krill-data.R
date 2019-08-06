@@ -47,11 +47,19 @@ library(ggplot2)
 #created buffers around actual lat/lons - don't want low-res land mask to interfere with krill trawls
 #determine which sites we have PW data for
 
-setwd(OUTPUT)
+setwd(paste0(dir, 'Data'))
 
 #read in lat/lon
-mrg6 <- readRDS('mrg6.rds')
-SLL <- unique(mrg6[,c('SITE', 'col_lon', 'col_lat')])
+site_md <- read.csv('site.csv', stringsAsFactors = FALSE)
+SLL_p <- unique(site_md[,c('site_id', 'longitude', 'latitude')])
+colnames(SLL_p) <- c('SITE', 'col_lon', 'col_lat')
+
+#add SG sites
+sg_add <- data.frame(SITE = c('COOP', 'GODH', 'MAIV', 'OCEA'), 
+                              col_lon = c(-54.78, -54.29, -54.24, -54.34),
+                              col_lat = c(-35.83, -36.26, -36.50, -36.27))
+SLL <- rbind(SLL_p, sg_add)
+
 p_SLL <- cbind(SLL$col_lon, SLL$col_lat)
 
 #points are in 4326 (uses lat/lon)
@@ -116,7 +124,7 @@ CCAMLR_krill <- read.csv('AggregatedKrillCatch.csv')
 
 weight_krill_fun <- function(BUFFER_SIZE = 150)
 {
-  #BUFFER_SIZE = 150
+  #BUFFER_SIZE = 25
   
   #create buffers for each site
   #buffer size in KM
@@ -147,7 +155,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   
   for (i in 1:NROW(SLL))
   {
-    #i <- 9
+    #i <- 3
     t_data <- get(SLL$SITE[i])
     vals <- which(rgeos::gIntersects(t_data, SSMU_n, byid = TRUE) == TRUE)
   
@@ -161,13 +169,18 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
     # plot(int, add = T, col = rgb(0,1,0,0.5))
     #-----------#
   
-    int_area <- raster::area(int)
-    buff_area <- raster::area(t_data)
-    per_area <- round(int_area/buff_area, digits = 3)
-    #n_vals <- vals[which(per_area > 0.1)]
-    zones <- SSMU_n@data$ShortLabel[vals]
+    if (!is.null(int))
+    {
+      int_area <- raster::area(int)
+      buff_area <- raster::area(t_data)
+      per_area <- round(int_area/buff_area, digits = 3)
+      #n_vals <- vals[which(per_area > 0.1)]
+      zones <- SSMU_n@data$ShortLabel[vals]
   
-    zone_ovl[i,c(1,(vals+1))] <- c(SLL$SITE[i], per_area)
+      zone_ovl[i,c(1,(vals+1))] <- c(SLL$SITE[i], per_area)
+    } else {
+      zone_ovl[i,c(1,(vals+1))] <- c(SLL$SITE[i])
+    }
   }
   
   #weight krill catch based on percent overlap between buffer zone and SSMU
@@ -179,7 +192,7 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
   #for each cam site
   for (i in 1:NROW(zone_ovl))
   {
-    #i <- 5
+    #i <- 3
     #which cols are not NA
     tsite <- zone_ovl[i, 1]
     tzone <- zone_ovl[i, ]
@@ -194,29 +207,32 @@ weight_krill_fun <- function(BUFFER_SIZE = 150)
     #years
     for (k in 1:length(yrs))
     {
-      #k <- 33
+      #k <- 1
       temp_yr <- dplyr::filter(CCAMLR_krill, Calendar_Year == yrs[k])
     
       #each month
       for (m in 1:12)
       {
-        #m <- 1
+        #m <- 12
         temp_mn <- dplyr::filter(temp_yr, Month == m)
       
         t2_k <- c()
-        for (j in 1:length(tind))
+        if (length(tind) > 0)
         {
-          #j <- 1
-          temp_z <- dplyr::filter(temp_mn, SSMU_Code == cn[tind[j]])
-        
-          #krill catch weighted by spatial overlap - final_per
-          t_k <- temp_z$Krill_Green_Weight * as.numeric(final_per[j])
-      
-          if (length(t_k) > 0)
+          for (j in 1:length(tind))
           {
-            t2_k <- c(t2_k, t_k)
-          } else {
-            t2_k <- c(t2_k, 0)
+            #j <- 1
+            temp_z <- dplyr::filter(temp_mn, SSMU_Code == cn[tind[j]])
+        
+            #krill catch weighted by spatial overlap - final_per
+            t_k <- temp_z$Krill_Green_Weight * as.numeric(final_per[j])
+      
+            if (length(t_k) > 0)
+            {
+              t2_k <- c(t2_k, t_k)
+            } else {
+              t2_k <- c(t2_k, 0)
+            }
           }
         }
         
@@ -297,7 +313,7 @@ write.csv(CCAMLR_kr_BS, 'CCAMLR_krill_breeding_season.csv', row.names = FALSE)
 # Effect of krill fishing during whole season ----------------------------
 
 
-#150km radius for March - Feb (e.g., March 1999 - Feb 2000 for 1999/2000 breeding season)
+#150km radius for March - Jan (e.g., March 1999 - Feb 2000 for 1999/2000 breeding season)
 #YEAR is PW year
 
 CCAMLR_kr_WS <- data.frame()
@@ -344,7 +360,7 @@ write.csv(CCAMLR_kr_WS, 'CCAMLR_krill_entire_season.csv', row.names = FALSE)
 
 # Effect of krill fishing across years ------------------------------------
 
-#MARCH - JAN
+#MARCH - FEB
 #150km radius average (or total) across all years at each site
 #YEAR is PW year
 
@@ -363,10 +379,10 @@ for (i in 1:NROW(SLL))
     yr_one <- dplyr::filter(temp_krill, YEAR == yrs[j]-1)
     MAR_DEC <- dplyr::filter(yr_one, MONTH > 2)
     yr_two <- dplyr::filter(temp_krill, YEAR == yrs[j])
-    JAN <- dplyr::filter(yr_two, MONTH == 1)
+    JAN_FEB <- dplyr::filter(yr_two, MONTH <= 2)
     
     #total krill caught over this period
-    t_krill <- sum(c(MAR_DEC$WEIGHTED_KRILL, JAN$WEIGHTED_KRILL), na.rm = TRUE)
+    t_krill <- sum(c(MAR_DEC$WEIGHTED_KRILL, JAN_FEB$WEIGHTED_KRILL), na.rm = TRUE)
     
     t_yr_krill <- c(t_yr_krill, t_krill)
   }

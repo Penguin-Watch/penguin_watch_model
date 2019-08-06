@@ -463,7 +463,7 @@ mrg5 <- dplyr::left_join(mrg4, data$d_mrg, by = c('SITE' = 'site', 'YEAR' = 'sea
 
 #using lat/lon from Penguin Watch for PETE
 #Merge with Hinke et al. 2017 (MEE) data
-hinke_2017 <- data.frame(SITE = c('CAPE', 'CIER', 'COPA', 'GALI', 'LION', 'PETE'), 
+hinke_2017 <- data.frame(SITE = c('SHIR', 'CIER', 'LLAN', 'GALE', 'LION', 'PETE'), 
                          YEAR = rep(2017, 6),
                          mn_mu_phi = c(1.63, 1.47, 1.53, 1.46, 1.26, 1.51),
                          LCI_mu_phi = rep(NA, 6),
