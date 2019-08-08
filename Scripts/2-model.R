@@ -42,8 +42,6 @@ setwd(dir[1])
 #make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
 #unused nests should be marked with all NAs
 
-#PW_data <- read.csv('PW_data_2019-03-23.csv', stringsAsFactors = FALSE)
-#PW_data <- read.csv('PW_data_2019-04-06.csv', stringsAsFactors = FALSE)
 PW_data <- read.csv('PW_data_2019-07-10.csv', stringsAsFactors = FALSE)
 
 #remove specified colonies
@@ -429,14 +427,11 @@ DATA <- list(
   NT = dim(nests_array)[1], #number of time steps
   z = z_array, #known points of bird being alive
   x = scale(as.numeric(1:dim(nests_array)[1]), scale = FALSE)[,1],
-  # KRILL = KRILL,
-  # SIC = SIC,
   unsites = un_sites,
   yrs_array = yrs_array,
   c_array = c_array,
   date_array = date_array,
   d_mrg = d_mrg) 
-
 
 
 
