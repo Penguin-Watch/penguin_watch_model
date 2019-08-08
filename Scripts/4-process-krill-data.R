@@ -29,7 +29,7 @@ rm(list = ls())
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
 
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-10'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
 
 
 # Load packages -----------------------------------------------------------
@@ -61,19 +61,10 @@ sg_add <- data.frame(SITE = c('COOP', 'GODH', 'MAIV', 'OCEA'),
                               
 SLL <- rbind(SLL_p, sg_add)
 
-p_SLL <- cbind(SLL$col_lon, SLL$col_lat)
-
-#points are in 4326 (uses lat/lon)
-col_points <- sp::SpatialPoints(p_SLL, proj4string = CRS('+init=epsg:4326'))
-
-#load Antarctic polygon
-setwd(paste0(dir, '/Data/Coastline_medium_res_polygon/'))
-Ant <- rgdal::readOGR('Coastline_medium_res_polygon.shp')
-
-#AP
-setwd('../peninsula/')
-AP_p <- rgdal::readOGR('GADM_peninsula.shp')
-AP <- sp::spTransform(AP_p, CRS(proj4string(Ant)))
+# #AP
+# setwd('../peninsula/')
+# AP_p <- rgdal::readOGR('GADM_peninsula.shp')
+# AP <- sp::spTransform(AP_p, CRS(proj4string(Ant)))
 
 #CCAMLR zones
 # setwd('../asd-shapefile-WGS84/')
@@ -95,14 +86,20 @@ for (i in 1:length(SSMU_names))
 }
 
 
-#convert colony points to 3031 (rgeos expects projected spatial object)
-t_col_points <- sp::spTransform(col_points, CRS(proj4string(Ant)))
+#buffers for each colony
+# p_SLL <- cbind(SLL$col_lon, SLL$col_lat)
 
-#create buffers around sites - 150km
-all_site_buffers_150 <- rgeos::gBuffer(t_col_points, width = 150000)
-all_site_buffers_100 <- rgeos::gBuffer(t_col_points, width = 100000)
-all_site_buffers_50 <- rgeos::gBuffer(t_col_points, width = 50000)
-all_site_buffers_25 <- rgeos::gBuffer(t_col_points, width = 25000)
+#points are in 4326 (uses lat/lon)
+# col_points <- sp::SpatialPoints(p_SLL, proj4string = CRS('+init=epsg:4326'))
+
+#convert colony points to 3031 (rgeos expects projected spatial object)
+# t_col_points <- sp::spTransform(col_points, CRS(proj4string(Ant)))
+
+# #create buffers around sites - 150km
+# all_site_buffers_150 <- rgeos::gBuffer(t_col_points, width = 150000)
+# all_site_buffers_100 <- rgeos::gBuffer(t_col_points, width = 100000)
+# all_site_buffers_50 <- rgeos::gBuffer(t_col_points, width = 50000)
+# all_site_buffers_25 <- rgeos::gBuffer(t_col_points, width = 25000)
 
 
 
