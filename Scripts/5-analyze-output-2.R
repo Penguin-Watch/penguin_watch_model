@@ -13,19 +13,15 @@ rm(list = ls())
 
 # dir ---------------------------------------------------------------------
 
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-10'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
 
 
 
 # Load packages -----------------------------------------------------------
 
-if('pacman' %in% rownames(installed.packages()) == FALSE)
-{
-  install.packages('pacman')
-}
-
-pacman::p_load(MCMCvis, boot, dplyr)
-
+library(MCMCvis)
+library(boot)
+library(dplyr)
 
 
 
@@ -33,59 +29,28 @@ pacman::p_load(MCMCvis, boot, dplyr)
 
 setwd(OUTPUT)
 
-#read in RDS from 3-analyze-output.R
-mrg6 <- readRDS('mrg6.rds')
-mrg6$YEAR <- as.numeric(mrg6$YEAR)
-
-#merge with krill data
-setwd('~/Google_Drive/R/penguin_watch_model/Data/Krill_data/CCAMLR/Processed_CCAMLR/')
-
-#krill catch from entire year
-krill <- read.csv('CCAMLR_krill_entire_season.csv')
-colnames(krill)[3] <- 'YR_KRILL'
-mrg7 <- dplyr::left_join(mrg6, krill, by = c('SITE', 'YEAR'))
-
-#krill catch from just breeding season
-krill2 <- read.csv('CCAMLR_krill_breeding_season.csv')
-colnames(krill2)[3] <- 'BR_KRILL'
-mrg8 <- dplyr::left_join(mrg7, krill2, by = c('SITE', 'YEAR'))
+#read in master data object
+master_output <- readRDS('master_output.rds')
 
 
 
-# covariates/plots --------------------------------------------------------------
-
-#compare BS to total precip - no relationship
-plot(mrg8$tsnow, mrg8$mn_mu_phi, 
-     xlab = 'Number of large snow events at site',
-     ylab = 'Breeding success')
-plot(mrg8$train, mrg8$mn_mu_phi)
+# plot BS ------------------------------------------
 
 
-#compare BS to phenology
-#convert creche date to julian day
-jd_1 <- as.numeric(strftime(mrg8$creche_date, format = "%j"))
-idx <- which(jd_1 > 300)
-jd_2 <- jd_1
-jd_2[idx] <- jd_1[idx] - 300
-jd_2[-idx] <- jd_1[-idx] + 65
+library(ggplot2)
+p <- ggplot(mrg2, aes(YEAR, mn_mu_phi, color = SITE)) + 
+  geom_point(size = 3, position = position_dodge(width = 0.7)) +
+  geom_errorbar(data = mrg2,
+                aes(ymin = LCI_mu_phi, ymax = UCI_mu_phi,
+                    color = SITE), width = 1.1,
+                position = position_dodge(width = 0.7)) +
+  theme_bw() +
+  ylim(c(0, 2)) +
+  ylab('Breeding Success') +
+  xlab('Year')
 
-mrg8$c_jd <- jd_2
+ggsave('site_bs.pdf', p)
 
-plot(mrg8$c_jd, mrg8$mn_mu_phi)
-plot(mrg8$col_lat, mrg8$c_jd)
-
-
-#compare BS to lat and substrate type
-# to.rm <- which(mrg4$col_lat > -60)
-# mrg5 <- mrg4[-to.rm,]
-# plot(mrg5$col_lat, mrg5$mn_mu_phi)
-# f1 <- lm(mn_mu_phi ~ col_lat, data = mrg5)
-# abline(f1, col = 'red')
-
-#compare BS to krill - no pattern
-plot(mrg8$YR_KRILL, mrg8$mn_mu_phi)
-
-tt <- dplyr::select(mrg8, SITE, YEAR, mn_mu_phi, col_lat, col_lon, YR_KRILL)
 
 
 # BS map ------------------------------------------------------------------
@@ -94,11 +59,17 @@ tt <- dplyr::select(mrg8, SITE, YEAR, mn_mu_phi, col_lat, col_lon, YR_KRILL)
 require(raster)
 setwd('~/Google_Drive/R/penguin_watch_model/Data/peninsula/')
 AP <- rgdal::readOGR('GADM_peninsula.shp')
+setwd('~/Google_Drive/R/penguin_watch_model/Data/Sub-antarctic_coastline_low_res_polygon/')
+SG <- rgdal::readOGR('Sub-antarctic_coastline_low_res_polygon.shp')
+SG2 <- sp::spTransform(SG, CRS(proj4string(AP)))
 
-mrg_agg <- aggregate(mn_mu_phi ~ SITE + col_lat + col_lon, data = mrg8, mean)
+
+mrg_agg <- aggregate(mn_mu_phi ~ SITE + col_lat + col_lon, 
+                     data = mrg9, mean)
 
 #merge with source
-mrg_agg2 <- dplyr::left_join(mrg_agg, unique(mrg8[,c('SITE', 'SOURCE')]), by = c('SITE'))
+mrg_agg2 <- dplyr::left_join(mrg_agg, unique(mrg8[,c('SITE', 'SOURCE')]), 
+                             by = c('SITE'))
 
 #change PETE to all
 PETE_idx <- which(mrg_agg2$SITE == 'PETE')
@@ -119,8 +90,8 @@ ggplot(data = AP, aes(long, lat, group = group)) +
   #all coord
   coord_map(xlim = c(-68, -33),
             ylim = c(-67, -51)) +
-  theme_void() +
-  #theme_bw()
+  #theme_void() +
+  theme_bw() +
   #BS
   geom_point(data = mrg_agg3,
              inherit.aes = FALSE,
@@ -181,13 +152,152 @@ ggplot(data = AP, aes(long, lat, group = group)) +
             inherit.aes = FALSE,
             color = 'black') +
   #AP coord
-  coord_map(xlim = c(-68, -53),
-            ylim = c(-66.5, -61)) +
+  coord_map(xlim = c(-68, -46),
+            ylim = c(-66.5, -59)) +
   # #all coord
   # coord_map(xlim = c(-68, -33),
   #           ylim = c(-67, -51)) +
-  theme_void() +
-  #theme_bw()
+  #theme_void() +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  #BS
+  geom_point(data = mrg_agg3,
+             inherit.aes = FALSE,
+             size = 8,
+             alpha = 0.9,
+             aes(col_lon, col_lat, color = mn_mu_phi)) +
+  scale_color_gradient('Chicks per pair',
+                       limits = c(min(mrg_agg3$mn_mu_phi),
+                                  max(mrg_agg3$mn_mu_phi)),
+                       low = '#2c7fb8',
+                       high = '#edf8b1') +
+  # #point outlines
+  # geom_point(data = mrg_agg3,
+  #            inherit.aes = FALSE,
+  #            size = 8,
+  #            shape = 21,
+  #            alpha = 0.8,
+  #            stroke = 1,
+  #            color = 'black',
+  #            aes(col_lon, col_lat)) +
+  #point outlines - PW
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'black',
+             aes(col_lon, col_lat)) +
+  #point outlines - Hinke
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             #color = 'red',
+             color = 'black',
+             aes(col_lon, col_lat)) + 
+  #point outlines - ALL THREE SOURCES
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             #color = 'purple',
+             color = 'black',
+             aes(col_lon, col_lat))
+#theme(legend.position='none') +
+dev.off()
+
+
+PT_SZ <- 40
+#just SG sites
+pdf('BS_map_SG.pdf')
+#SG shp file
+ggplot(data = SG2, aes(long, lat, group = group)) +
+  geom_polygon(fill = 'grey') + 
+  geom_path(data = SG2, aes(long, lat, group = group), 
+            inherit.aes = FALSE,
+            color = 'black') +
+  # #AP coord
+  # coord_map(xlim = c(-68, -53),
+  #           ylim = c(-66.5, -61)) +
+  #SG coord
+  coord_map(xlim = c(-39.5, -34.5),
+            ylim = c(-53, -55.5)) +
+  # #all coord
+  # coord_map(xlim = c(-68, -33),
+  #           ylim = c(-67, -51)) +
+  #theme_void() +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme(legend.position="none") +
+  scale_x_continuous(breaks = c(-39, -37, -35)) +
+  scale_y_continuous(breaks = c(-53, -54, -55)) +
+  #BS
+  geom_point(data = mrg_agg3,
+             inherit.aes = FALSE,
+             size = PT_SZ,
+             alpha = 0.9,
+             aes(col_lon, col_lat, color = mn_mu_phi)) +
+  scale_color_gradient('Chicks per pair',
+                       limits = c(min(mrg_agg3$mn_mu_phi),
+                                  max(mrg_agg3$mn_mu_phi)),
+                       low = '#2c7fb8',
+                       high = '#edf8b1') +
+  #point outlines - PW
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
+             inherit.aes = FALSE,
+             size = PT_SZ,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'black',
+             aes(col_lon, col_lat)) +
+  #point outlines - Hinke
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'red',
+             aes(col_lon, col_lat)) + 
+  #point outlines - ALL THREE SOURCES
+  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
+             inherit.aes = FALSE,
+             size = 8,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'purple',
+             aes(col_lon, col_lat))
+#theme(legend.position='none') +
+dev.off()
+
+
+#inset
+pdf('continent.pdf')
+#SG shp file
+ggplot(data = SG2, aes(long, lat, group = group)) +
+  geom_polygon(fill = 'grey') + 
+  geom_path(data = SG2, aes(long, lat, group = group), 
+            inherit.aes = FALSE,
+            color = 'black') +
+  # #AP coord
+  # coord_map(xlim = c(-68, -53),
+  #           ylim = c(-66.5, -61)) +
+  #SG coord
+  coord_map(xlim = c(-39.5, -34.5),
+            ylim = c(-53, -55.5)) +
+  # #all coord
+  # coord_map(xlim = c(-68, -33),
+  #           ylim = c(-67, -51)) +
+  #theme_void() +
+  theme_bw() +
   #BS
   geom_point(data = mrg_agg3,
              inherit.aes = FALSE,
@@ -237,5 +347,32 @@ ggplot(data = AP, aes(long, lat, group = group)) +
              aes(col_lon, col_lat))
 #theme(legend.position='none') +
 dev.off()
+
+
+
+
+# BS ~ precip -------------------------------------------------------------
+
+plot(master_output$tsnow, master_output$mn_mu_phi, 
+     xlab = 'Number of large snow events at site',
+     ylab = 'Breeding success')
+plot(master_output$train, master_output$mn_mu_phi)
+
+
+
+# BS ~ krill --------------------------------------------------------------
+
+plot(master_output$krill_BR, master_output$mn_mu_phi)
+plot(master_output$krill_WS, master_output$mn_mu_phi)
+plot(master_output$krill_AY, master_output$mn_mu_phi)
+
+
+
+# BS ~ tourism ------------------------------------------------------------
+
+#
+#
+
+
 
 
