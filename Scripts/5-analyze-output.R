@@ -357,10 +357,10 @@ dev.off()
 
 # BS ~ precip -------------------------------------------------------------
 
-plot(master_output$tsnow, master_output$mn_mu_phi, 
+plot(master_output$tsnow, master_output$mn_bs, 
      xlab = 'Number of large snow events at site',
      ylab = 'Breeding success')
-plot(master_output$train, master_output$mn_mu_phi,
+plot(master_output$train, master_output$mn_bs,
      xlab = 'Number of large rain events at site',
      ylab = 'Breeding success')
 
@@ -370,11 +370,11 @@ plot(master_output$train, master_output$mn_mu_phi,
 # BS ~ krill --------------------------------------------------------------
 
 #krill caught during breeding season
-plot(master_output$krill_BR, master_output$mn_mu_phi)
+plot(master_output$krill_BR, master_output$mn_bs)
 #krill caught during entire previous year (most krill is caught during Austral winter)
-plot(master_output$krill_WS, master_output$mn_mu_phi)
+plot(master_output$krill_WS, master_output$mn_bs)
 #average krill catch across years
-plot(master_output$krill_AY, master_output$mn_mu_phi)
+plot(master_output$krill_AY, master_output$mn_bs)
 
 
 
