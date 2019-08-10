@@ -1,5 +1,5 @@
 #################
-# Analyze covariates
+# Analyze results
 #
 # Author: Casey Youngflesh
 #################
@@ -102,24 +102,94 @@ setwd(OUTPUT)
 #RED circles = Mean breeding success for site comes from Hinke et al. 2018
 #PURPE cirlces = Mean breeding success for site comes from this study, Hinke et al. 2018, and Lynch et al. 2009 (three studies)
 
+#how transparent points are when plotted
+ALPHA_PT <- 0.9
+
+
 #all sites
-pdf('BS_map.pdf')
+# pdf('BS_map.pdf')
+# #AP shp file
+# ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
+#   geom_polygon(fill = 'grey') + 
+#   geom_path(data = AP_SA_ll, aes(long, lat, group = group), 
+#             inherit.aes = FALSE,
+#             color = 'black') +
+#   #lat/lon limits
+#   coord_map(xlim = c(-70, -30),
+#             ylim = c(-67, -51)) +
+#   #theme_void() +
+#   theme_bw() +
+#   #BS
+#   geom_point(data = mrg_agg3,
+#              inherit.aes = FALSE,
+#              size = 8,
+#              alpha = ALPHA_PT,
+#              aes(col_lon, col_lat, color = mn_bs)) +
+#   scale_color_gradient('Chicks per pair',
+#                        limits = c(min(mrg_agg3$mn_bs),
+#                                   max(mrg_agg3$mn_bs)),
+#                        low = '#2c7fb8',
+#                        high = '#edf8b1') +
+#   # #point outlines
+#   # geom_point(data = mrg_agg3,
+#   #            inherit.aes = FALSE,
+#   #            size = 8,
+#   #            shape = 21,
+#   #            alpha = 0.8,
+#   #            stroke = 1,
+#   #            color = 'black',
+#   #            aes(col_lon, col_lat)) +
+#   #point outlines - PW
+#   geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
+#              inherit.aes = FALSE,
+#              size = 8,
+#              shape = 21,
+#              alpha = 0.8,
+#              stroke = 1,
+#              color = 'black',
+#              aes(col_lon, col_lat)) +
+#   #point outlines - Hinke
+#   geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
+#              inherit.aes = FALSE,
+#              size = 8,
+#              shape = 21,
+#              alpha = 0.8,
+#              stroke = 1,
+#              color = 'red',
+#              aes(col_lon, col_lat)) +
+#   #point outlines - ALL THREE SOURCES
+#   geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
+#              inherit.aes = FALSE,
+#              size = 8,
+#              shape = 21,
+#              alpha = 0.8,
+#              stroke = 1,
+#              color = 'purple',
+#              aes(col_lon, col_lat))
+# #theme(legend.position='none') +
+# dev.off()
+
+
+
+#just AP sites
+pdf('BS_map_AP.pdf')
 #AP shp file
 ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
   geom_path(data = AP_SA_ll, aes(long, lat, group = group), 
             inherit.aes = FALSE,
             color = 'black') +
-  #lat/lon limits
-  coord_map(xlim = c(-70, -30),
-            ylim = c(-67, -51)) +
+  #Just AP lat/lon
+  coord_map(xlim = c(-68, -46),
+            ylim = c(-66.5, -59)) +
   #theme_void() +
   theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   #BS
   geom_point(data = mrg_agg3,
              inherit.aes = FALSE,
              size = 8,
-             alpha = 0.9,
+             alpha = ALPHA_PT,
              aes(col_lon, col_lat, color = mn_bs)) +
   scale_color_gradient('Chicks per pair',
                        limits = c(min(mrg_agg3$mn_bs),
@@ -152,73 +222,7 @@ ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
              alpha = 0.8,
              stroke = 1,
              color = 'red',
-             aes(col_lon, col_lat)) +
-  #point outlines - ALL THREE SOURCES
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'purple',
-             aes(col_lon, col_lat))
-#theme(legend.position='none') +
-dev.off()
-
-
-
-#just AP sites
-pdf('BS_map_AP.pdf')
-#AP shp file
-ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
-  geom_polygon(fill = 'grey') + 
-  geom_path(data = AP_SA_ll, aes(long, lat, group = group), 
-            inherit.aes = FALSE,
-            color = 'black') +
-  #Just AP lat/lon
-  coord_map(xlim = c(-68, -46),
-            ylim = c(-66.5, -59)) +
-  #theme_void() +
-  theme_bw() +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-  #BS
-  geom_point(data = mrg_agg3,
-             inherit.aes = FALSE,
-             size = 8,
-             alpha = 0.9,
-             aes(col_lon, col_lat, color = mn_mu_phi)) +
-  scale_color_gradient('Chicks per pair',
-                       limits = c(min(mrg_agg3$mn_mu_phi),
-                                  max(mrg_agg3$mn_mu_phi)),
-                       low = '#2c7fb8',
-                       high = '#edf8b1') +
-  # #point outlines
-  # geom_point(data = mrg_agg3,
-  #            inherit.aes = FALSE,
-  #            size = 8,
-  #            shape = 21,
-  #            alpha = 0.8,
-  #            stroke = 1,
-  #            color = 'black',
-  #            aes(col_lon, col_lat)) +
-  #point outlines - PW
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'black',
-             aes(col_lon, col_lat)) +
-  #point outlines - Hinke
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             #color = 'red',
-             color = 'black',
+             #color = 'black',
              aes(col_lon, col_lat)) + 
   #point outlines - ALL THREE SOURCES
   geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
@@ -227,8 +231,8 @@ ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
              shape = 21,
              alpha = 0.8,
              stroke = 1,
-             #color = 'purple',
-             color = 'black',
+             color = 'purple',
+             #color = 'black',
              aes(col_lon, col_lat))
 #theme(legend.position='none') +
 dev.off()
@@ -256,11 +260,11 @@ ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   geom_point(data = mrg_agg3,
              inherit.aes = FALSE,
              size = PT_SZ,
-             alpha = 0.9,
-             aes(col_lon, col_lat, color = mn_mu_phi)) +
+             alpha = ALPHA_PT,
+             aes(col_lon, col_lat, color = mn_bs)) +
   scale_color_gradient('Chicks per pair',
-                       limits = c(min(mrg_agg3$mn_mu_phi),
-                                  max(mrg_agg3$mn_mu_phi)),
+                       limits = c(min(mrg_agg3$mn_bs),
+                                  max(mrg_agg3$mn_bs)),
                        low = '#2c7fb8',
                        high = '#edf8b1') +
   #point outlines - PW
@@ -306,6 +310,47 @@ ggplot(data = Ant, aes(long, lat, group = group)) +
   #theme_bw()
 #theme(legend.position='none') +
 dev.off()
+
+
+
+
+# just PW sites, no BS -------------------------------------------------------
+
+uPW <- unique(PW_output[,c('SITE', 'col_lat', 'col_lon')])
+# uH <- dplyr::filter(master_output, SOURCE == 'Hinke')
+# uL <- dplyr::filter(master_output, SOURCE == 'Lynch')
+
+#all Penguin Watch sites
+pdf('PW_site_map.pdf')
+#AP shp file
+ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
+  geom_polygon(fill = 'grey') +
+  geom_path(data = AP_SA_ll, aes(long, lat, group = group),
+            inherit.aes = FALSE,
+            color = 'black') +
+  #lat/lon limits
+  coord_map(xlim = c(-70, -30),
+            ylim = c(-67, -51)) +
+  theme_void() +
+  #theme_bw() +
+  #BS
+  geom_point(data = uPW,
+             inherit.aes = FALSE,
+             size = 6,
+             alpha = 1,
+             aes(col_lon, col_lat, color = 'red')) +
+  #point outlines
+  geom_point(data = uPW,
+             inherit.aes = FALSE,
+             size = 6,
+             shape = 21,
+             alpha = 0.8,
+             stroke = 1,
+             color = 'black',
+             aes(col_lon, col_lat)) +
+  theme(legend.position='none')
+dev.off()
+
 
 
 

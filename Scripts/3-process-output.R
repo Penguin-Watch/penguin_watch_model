@@ -1,5 +1,5 @@
 #################
-# Analyze model output
+# Process model output
 #
 # Author: Casey Youngflesh
 #################

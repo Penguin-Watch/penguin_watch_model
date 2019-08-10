@@ -1,5 +1,5 @@
 #################
-# 1 - Process PW data
+# Process Penguin Watch data
 #
 # Author: Casey Youngflesh
 #################
