@@ -1,5 +1,5 @@
 #################
-# 2 - survival model
+# Survival model
 #
 # Author: Casey Youngflesh
 #################
