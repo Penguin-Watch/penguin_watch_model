@@ -13,8 +13,9 @@ rm(list = ls())
 
 # dir ---------------------------------------------------------------------
 
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
 
+dir <- '~/Google_Drive/R/penguin_watch_model/'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
 
 
 # Load packages -----------------------------------------------------------
@@ -22,7 +23,9 @@ OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
 library(MCMCvis)
 library(boot)
 library(dplyr)
-
+library(sp)
+library(rgdal)
+library(ggplot2)
 
 
 # Load data -------------------------------------------------------
@@ -36,39 +39,55 @@ master_output <- readRDS('master_output.rds')
 
 # plot BS ------------------------------------------
 
+#just penguin watch BS estimates
+PW_output <- dplyr::filter(master_output, SOURCE == 'PW')
 
-library(ggplot2)
-p <- ggplot(mrg2, aes(YEAR, mn_mu_phi, color = SITE)) + 
+setwd(OUTPUT)
+
+pdf('site_bs.pdf')
+ggplot(PW_output, aes(YEAR, mn_bs, color = SITE)) + 
   geom_point(size = 3, position = position_dodge(width = 0.7)) +
-  geom_errorbar(data = mrg2,
-                aes(ymin = LCI_mu_phi, ymax = UCI_mu_phi,
+  geom_errorbar(data = PW_output,
+                aes(ymin = LCI_bs, ymax = UCI_bs,
                     color = SITE), width = 1.1,
                 position = position_dodge(width = 0.7)) +
   theme_bw() +
   ylim(c(0, 2)) +
   ylab('Breeding Success') +
   xlab('Year')
+dev.off()
 
-ggsave('site_bs.pdf', p)
 
 
 
 # BS map ------------------------------------------------------------------
 
 #map of breeding success
-require(raster)
-setwd('~/Google_Drive/R/penguin_watch_model/Data/peninsula/')
-AP <- rgdal::readOGR('GADM_peninsula.shp')
-setwd('~/Google_Drive/R/penguin_watch_model/Data/Sub-antarctic_coastline_low_res_polygon/')
-SG <- rgdal::readOGR('Sub-antarctic_coastline_low_res_polygon.shp')
-SG2 <- sp::spTransform(SG, CRS(proj4string(AP)))
+
+#read in maps of AP and sub Antarctic
+# #AP
+setwd(paste0(dir, 'Data/peninsula'))
+AP_p <- rgdal::readOGR('GADM_peninsula.shp')
+AP <- sp::spTransform(AP_p, CRS("+init=epsg:3031"))
+#Sub Antarctic
+setwd(paste0(dir, 'Data/Sub-antarctic_coastline_low_res_polygon'))
+SA_p <- rgdal::readOGR('Sub-antarctic_coastline_low_res_polygon.shp')
+SA <- sp::spTransform(SA_p, CRS("+init=epsg:3031"))
+AP_SA <- raster::union(AP, SA)
+#transform to 4326
+AP_SA_ll <- sp::spTransform(AP_SA, CRS("+init=epsg:4326"))
+#Antarctic continent
+setwd(paste0(dir, 'Data/Coastline_low_res_polygon'))
+Ant <- rgdal::readOGR('Coastline_low_res_polygon.shp')
 
 
-mrg_agg <- aggregate(mn_mu_phi ~ SITE + col_lat + col_lon, 
-                     data = mrg9, mean)
+
+#mean BS at each site
+mrg_agg <- aggregate(mn_bs ~ SITE + col_lat + col_lon, 
+                     data = master_output, mean)
 
 #merge with source
-mrg_agg2 <- dplyr::left_join(mrg_agg, unique(mrg8[,c('SITE', 'SOURCE')]), 
+mrg_agg2 <- dplyr::left_join(mrg_agg, unique(master_output[,c('SITE', 'SOURCE')]), 
                              by = c('SITE'))
 
 #change PETE to all
@@ -79,16 +98,20 @@ mrg_agg3[which(mrg_agg3$SITE == 'PETE'),'SOURCE'] <- 'ALL'
 
 setwd(OUTPUT)
 
+#BLACK circles = Mean breeding success for site comes from this study
+#RED circles = Mean breeding success for site comes from Hinke et al. 2018
+#PURPE cirlces = Mean breeding success for site comes from this study, Hinke et al. 2018, and Lynch et al. 2009 (three studies)
+
 #all sites
 pdf('BS_map.pdf')
 #AP shp file
-ggplot(data = AP, aes(long, lat, group = group)) +
+ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
-  geom_path(data = AP, aes(long, lat, group = group), 
+  geom_path(data = AP_SA_ll, aes(long, lat, group = group), 
             inherit.aes = FALSE,
             color = 'black') +
-  #all coord
-  coord_map(xlim = c(-68, -33),
+  #lat/lon limits
+  coord_map(xlim = c(-70, -30),
             ylim = c(-67, -51)) +
   #theme_void() +
   theme_bw() +
@@ -97,10 +120,10 @@ ggplot(data = AP, aes(long, lat, group = group)) +
              inherit.aes = FALSE,
              size = 8,
              alpha = 0.9,
-             aes(col_lon, col_lat, color = mn_mu_phi)) +
+             aes(col_lon, col_lat, color = mn_bs)) +
   scale_color_gradient('Chicks per pair',
-                       limits = c(min(mrg_agg3$mn_mu_phi),
-                                  max(mrg_agg3$mn_mu_phi)),
+                       limits = c(min(mrg_agg3$mn_bs),
+                                  max(mrg_agg3$mn_bs)),
                        low = '#2c7fb8',
                        high = '#edf8b1') +
   # #point outlines
@@ -143,20 +166,18 @@ ggplot(data = AP, aes(long, lat, group = group)) +
 dev.off()
 
 
+
 #just AP sites
 pdf('BS_map_AP.pdf')
 #AP shp file
-ggplot(data = AP, aes(long, lat, group = group)) +
+ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
-  geom_path(data = AP, aes(long, lat, group = group), 
+  geom_path(data = AP_SA_ll, aes(long, lat, group = group), 
             inherit.aes = FALSE,
             color = 'black') +
-  #AP coord
+  #Just AP lat/lon
   coord_map(xlim = c(-68, -46),
             ylim = c(-66.5, -59)) +
-  # #all coord
-  # coord_map(xlim = c(-68, -33),
-  #           ylim = c(-67, -51)) +
   #theme_void() +
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
@@ -217,20 +238,14 @@ PT_SZ <- 40
 #just SG sites
 pdf('BS_map_SG.pdf')
 #SG shp file
-ggplot(data = SG2, aes(long, lat, group = group)) +
+ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
-  geom_path(data = SG2, aes(long, lat, group = group), 
+  geom_path(data = AP_SA_ll, aes(long, lat, group = group), 
             inherit.aes = FALSE,
             color = 'black') +
-  # #AP coord
-  # coord_map(xlim = c(-68, -53),
-  #           ylim = c(-66.5, -61)) +
-  #SG coord
+  #just SG lat/lon
   coord_map(xlim = c(-39.5, -34.5),
             ylim = c(-53, -55.5)) +
-  # #all coord
-  # coord_map(xlim = c(-68, -33),
-  #           ylim = c(-67, -51)) +
   #theme_void() +
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
@@ -280,71 +295,15 @@ dev.off()
 
 
 #inset
-pdf('continent.pdf')
+pdf('Ant_continent.pdf')
 #SG shp file
-ggplot(data = SG2, aes(long, lat, group = group)) +
+ggplot(data = Ant, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
-  geom_path(data = SG2, aes(long, lat, group = group), 
+  geom_path(data = Ant, aes(long, lat, group = group), 
             inherit.aes = FALSE,
             color = 'black') +
-  # #AP coord
-  # coord_map(xlim = c(-68, -53),
-  #           ylim = c(-66.5, -61)) +
-  #SG coord
-  coord_map(xlim = c(-39.5, -34.5),
-            ylim = c(-53, -55.5)) +
-  # #all coord
-  # coord_map(xlim = c(-68, -33),
-  #           ylim = c(-67, -51)) +
-  #theme_void() +
-  theme_bw() +
-  #BS
-  geom_point(data = mrg_agg3,
-             inherit.aes = FALSE,
-             size = 8,
-             alpha = 0.9,
-             aes(col_lon, col_lat, color = mn_mu_phi)) +
-  scale_color_gradient('Chicks per pair',
-                       limits = c(min(mrg_agg3$mn_mu_phi),
-                                  max(mrg_agg3$mn_mu_phi)),
-                       low = '#2c7fb8',
-                       high = '#edf8b1') +
-  # #point outlines
-  # geom_point(data = mrg_agg3,
-  #            inherit.aes = FALSE,
-  #            size = 8,
-  #            shape = 21,
-  #            alpha = 0.8,
-  #            stroke = 1,
-  #            color = 'black',
-  #            aes(col_lon, col_lat)) +
-  #point outlines - PW
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'black',
-             aes(col_lon, col_lat)) +
-  #point outlines - Hinke
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'red',
-             aes(col_lon, col_lat)) + 
-  #point outlines - ALL THREE SOURCES
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'purple',
-             aes(col_lon, col_lat))
+  theme_void()
+  #theme_bw()
 #theme(legend.position='none') +
 dev.off()
 
@@ -356,20 +315,27 @@ dev.off()
 plot(master_output$tsnow, master_output$mn_mu_phi, 
      xlab = 'Number of large snow events at site',
      ylab = 'Breeding success')
-plot(master_output$train, master_output$mn_mu_phi)
+plot(master_output$train, master_output$mn_mu_phi,
+     xlab = 'Number of large rain events at site',
+     ylab = 'Breeding success')
+
 
 
 
 # BS ~ krill --------------------------------------------------------------
 
+#krill caught during breeding season
 plot(master_output$krill_BR, master_output$mn_mu_phi)
+#krill caught during entire previous year (most krill is caught during Austral winter)
 plot(master_output$krill_WS, master_output$mn_mu_phi)
+#average krill catch across years
 plot(master_output$krill_AY, master_output$mn_mu_phi)
 
 
 
 # BS ~ tourism ------------------------------------------------------------
 
+#need data
 #
 #
 
