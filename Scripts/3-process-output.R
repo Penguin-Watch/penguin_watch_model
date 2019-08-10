@@ -254,9 +254,9 @@ for (i in 1:length(data$unsites))
 
 mrg2 <- data.frame(SITE = site_vec,
                    YEAR = year_vec,
-                   mn_mu_phi = as.vector(mu_phi_bs)[!is.na(as.vector(mu_phi_bs))],
-                   LCI_mu_phi = as.vector(mu_phi_bs_LCI)[!is.na(as.vector(mu_phi_bs))],
-                   UCI_mu_phi = as.vector(mu_phi_bs_UCI)[!is.na(as.vector(mu_phi_bs))])
+                   mn_bs = as.vector(mu_phi_bs)[!is.na(as.vector(mu_phi_bs))],
+                   LCI_bs = as.vector(mu_phi_bs_LCI)[!is.na(as.vector(mu_phi_bs))],
+                   UCI_bs = as.vector(mu_phi_bs_UCI)[!is.na(as.vector(mu_phi_bs))])
 
 
 #merge lat/ln with precip, BS, and creche date
@@ -273,9 +273,9 @@ mrg5 <- dplyr::left_join(mrg4, data$d_mrg, by = c('SITE' = 'site', 'YEAR' = 'sea
 #Merge with Hinke et al. 2017 (MEE) data
 hinke_2017 <- data.frame(SITE = c('SHIR', 'CIER', 'LLAN', 'GALE', 'LION', 'PETE'), 
                          YEAR = rep(2017, 6),
-                         mn_mu_phi = c(1.63, 1.47, 1.53, 1.46, 1.26, 1.51),
-                         LCI_mu_phi = rep(NA, 6),
-                         UCI_mu_phi = rep(NA, 6),
+                         mn_bs = c(1.63, 1.47, 1.53, 1.46, 1.26, 1.51),
+                         LCI_bs = rep(NA, 6),
+                         UCI_bs = rep(NA, 6),
                          col_lat = c(-62.46, -64.143, -62.175, 
                                      -65.244, -62.135, -65.17),
                          col_lon = c(-60.789, -60.984, -58.456, 
@@ -293,10 +293,10 @@ hinke_2017 <- data.frame(SITE = c('SHIR', 'CIER', 'LLAN', 'GALE', 'LION', 'PETE'
 #merge with Lynch et al. 2009 (Polar Bio) data
 lynch_2009 <- data.frame(SITE = 'PETE', 
                          YEAR = c('2004', '2005', '2006', '2007', '2008'),
-                         mn_mu_phi = c((3260/2145), (2781/2265), (3453/2438),
+                         mn_bs = c((3260/2145), (2781/2265), (3453/2438),
                                        (3343/2293), (3348/2719)),
-                         LCI_mu_phi = rep(NA, 5),
-                         UCI_mu_phi = rep(NA, 5),
+                         LCI_bs = rep(NA, 5),
+                         UCI_bs = rep(NA, 5),
                          col_lat = rep(-65.17, 5),
                          col_lon = rep(-64.14, 5),
                          tsnow = rep(NA, 5),
@@ -328,6 +328,8 @@ mrg6$SOURCE <- c(rep('PW', length(which(!is.na(mrg6$train)))),
 # save master object ------------------------------------------------------
 
 setwd(OUTPUT)
+
+mrg6$YEAR <- as.numeric(mrg6$YEAR)
 saveRDS(mrg6, 'bs_precip_mrg.rds')
 
 
