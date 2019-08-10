@@ -37,6 +37,7 @@ library(dplyr)
 library(rgdal)
 library(rgeos)
 library(raster)
+library(sp)
 
 
 # read in merged data -----------------------------------------------------
