@@ -21,11 +21,11 @@ OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
 # Load packages -----------------------------------------------------------
 
 library(MCMCvis)
-library(boot)
 library(dplyr)
+library(ggplot2)
 library(sp)
 library(rgdal)
-library(ggplot2)
+library(boot)
 
 
 # Load data -------------------------------------------------------
