@@ -357,24 +357,32 @@ dev.off()
 
 # BS ~ precip -------------------------------------------------------------
 
-plot(master_output$tsnow, master_output$mn_bs, 
-     xlab = 'Number of large snow events at site',
-     ylab = 'Breeding success')
-plot(master_output$train, master_output$mn_bs,
-     xlab = 'Number of large rain events at site',
-     ylab = 'Breeding success')
+# plot(master_output$tsnow, master_output$mn_bs, 
+#      xlab = 'Number of large snow events at site',
+#      ylab = 'Breeding success (chicks/pair)')
+# plot(master_output$train, master_output$mn_bs,
+#      xlab = 'Number of large rain events at site',
+#      ylab = 'Breeding success (chicks/pair)')
 
-
+#BOTH
+plot((master_output$train + master_output$tsnow), master_output$mn_bs,
+     xlab = 'Number of large precip events at site',
+     ylab = 'Breeding success (chicks/pair)')
 
 
 # BS ~ krill --------------------------------------------------------------
 
 #krill caught during breeding season
-plot(master_output$krill_BR, master_output$mn_bs)
+# plot(master_output$krill_BR, master_output$mn_bs)
 #krill caught during entire previous year (most krill is caught during Austral winter)
-plot(master_output$krill_WS, master_output$mn_bs)
+plot(master_output$krill_WS, master_output$mn_bs,
+     xlab = 'Krill catch', ylab = 'Breeding success (chicks/pair)')
 #average krill catch across years
-plot(master_output$krill_AY, master_output$mn_bs)
+# plot(master_output$krill_AY, master_output$mn_bs)
+
+#just PW
+# plot(PW_output$krill_WS, PW_output$mn_bs,
+#      xlab = 'Krill catch', ylab = 'Breeding success (chicks/pair)')
 
 
 

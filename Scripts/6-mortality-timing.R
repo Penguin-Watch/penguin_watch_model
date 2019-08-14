@@ -150,7 +150,7 @@ for (i in 1:dim(data$date_array)[3])
   #years
   for (j in 1:dim(z_out_mn)[2])
   {
-    #j <- 1
+    #j <- 2
     
     if (sum(!is.na(z_out_mn[,j,i])) > 0)
     {
@@ -236,14 +236,15 @@ for (i in 1:dim(data$date_array)[3])
         # scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out,
         #                                        name = 'Detection probability')) +
         #one y-axis with number of chicks from 0 to max
-        scale_y_continuous(limits = c(0, (max(dt_seq) + 1))) +
+        # scale_y_continuous(limits = c(0, (max(dt_seq) + 1))) +
+        #comment out all y_continuous to plot min(chicks) : max(chicks)
         #THIS IS FOR PRECIPITATION
-        geom_vline(xintercept = t_precip$ts,
-                   color = 'purple', size = (t_precip$m_snow/3),
-                   alpha = 0.5) +
-        geom_vline(xintercept = t_precip$ts,
-                   color = 'orange', size = (t_precip$s_rain/3),
-                   alpha = 0.5) +
+        # geom_vline(xintercept = t_precip$ts,
+        #            color = 'purple', size = (t_precip$m_snow/3),
+        #            alpha = 0.5) +
+        # geom_vline(xintercept = t_precip$ts,
+        #            color = 'orange', size = (t_precip$s_rain/3),
+        #            alpha = 0.5) +
         #THIS IS FOR THE NUMBER OF CONFIRMED CHICKS
         # geom_line(aes(y = count),
         #           col = 'green') +
