@@ -22,7 +22,7 @@ rm(list = ls())
 # DIR ---------------------------------------------------------------------
 
 
-DATE <- '2019-07-10'
+DATE <- '2019-08-13'
 
 setwd(paste0('~/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Model_input_', DATE, '/'))
 
@@ -37,11 +37,7 @@ library(dplyr)
 
 # load QC data ------------------------------------------------------------
 
-files_p <- list.files()[grep('.csv', list.files())]
-#don't yet have 2018 krill data
-#to.rm <- grep('2018', files)
-#files <- files_p[-to.rm]
-files <- files_p
+files <- list.files()[grep('.csv', list.files())]
 
 full_df <- data.frame()
 for (i in 1:length(files))

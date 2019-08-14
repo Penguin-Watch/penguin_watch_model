@@ -4,9 +4,6 @@
 # Author: Casey Youngflesh
 #################
 
-#include data starting at first chick sighting, ending at creche point. No NA needed for night.
-#can control number of days starting data from first chick sighting with DAYS_BUFF_FIRST_CHICK
-
 
 # Clear environment -------------------------------------------------------
 
@@ -39,10 +36,11 @@ library(jagsRun)
 
 setwd(dir[1])
 
+#include data starting at first chick sighting, ending at creche point
 #make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
 #unused nests should be marked with all NAs
 
-PW_data <- read.csv('PW_data_2019-07-10.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-08-13.csv', stringsAsFactors = FALSE)
 
 #remove specified colonies
 un_sites_p <- sort(unique(PW_data$site))
@@ -83,7 +81,7 @@ tog2 <- tog[!(duplicated(tog) | duplicated(tog, fromLast = TRUE))]
 
 
 #set dates to model
-#lay -> hatch ~ 30 days (Hinke et al. 2017 MEE)
+#lay -> hatch ~ 30 days (Hinke et al. 2018 MEE)
 #hatch -> creche ~ 30 days
 
 #reference on first chick sighting
@@ -124,13 +122,13 @@ date_array <- array(NA, dim = c(n_ts, n_yrs, n_sites))
 idx_df <- data.frame()
 for (k in 1:n_sites)
 {
-  #k <- 12
+  #k <- 2
   temp <- dplyr::filter(PW_data, site == un_sites[k])
   
   j_idx <- 1
   for (j in 1:n_yrs)
   {
-    #j <- 3
+    #j <- 6
     temp2 <- dplyr::filter(temp, season_year == d_yrs[j])
     
     if (NROW(temp2) > 0)
@@ -144,9 +142,10 @@ for (k in 1:n_sites)
       temp_agg <- data.frame()
       for (t in 1:length(date_rng))
       {
-        #t <- 1
+        #t <- 13
         td_filt <- which(temp_dates == date_rng[t])
         temp3 <- temp2[td_filt,]
+        #tog2 is nest cols
         temp_max <- suppressWarnings(apply(temp3[,tog2], 2, 
                                            function(x) max(x, na.rm = TRUE)))
         temp4 <- data.frame(datetime = date_rng[t], t(temp_max))
@@ -210,7 +209,7 @@ for (k in 1:n_sites)
       n_vals <- rbind(na_first, vals[valid_dates, ], na_last)
       
       #feed dates into matrix (saved as int)
-      #back transform using: as.Date(date_array[,j,k], origin = '1970-01-01')
+      #back transform using: as.Date(date_array[,j_idx,k], origin = '1970-01-01')
       date_array[,j_idx,k] <- seq(FIRST, LAST, by = 'days')
       
       #determines if there are any nests with NA values for the entire column (removed during the QC step)
@@ -292,14 +291,6 @@ for (k in 1:dim(nests_array)[4])
 
 # check to see if any nests have observations with more than 2 chicks
 # which(nests_array > 2, arr.ind = TRUE)
-# num_o2 <- length(nests_array[which(nests_array > 2, arr.ind = TRUE)])
-# total <- length(nests_array[which(!is.na(nests_array), arr.ind = TRUE)])
-# num_o2/total
-
-#determine which observation have more than two chicks observed and change them to 2
-#ind.g2 <- which(nests_array > 2, arr.ind = TRUE)
-#nests_array[ind.g2] <- 2
-
 
 
 
@@ -375,7 +366,6 @@ for (i in 1:length(NJ))
   #i <- 1
   NJ[i] <- max(which(!is.na(yrs_array[,i])))
 }
-
 
 
 #data availability
@@ -695,12 +685,12 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_500k_2019-07-17_nu_p[i,j,k]_beta[j,k]',
+        jagsID = 'PW_500k_2019-08-13_nu_p[i,j,k]_beta[j,k]',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
         logit(p) <- mu_p + nu_p[j,k] + beta_p[i,j,k]',
-        db_hash = 'PW_data_2019-04-06.csv',
+        db_hash = 'PW_data_2019-08-13.csv',
         params_report = Pars_report,
         n_chain = 6,
         n_adapt = 8000,
