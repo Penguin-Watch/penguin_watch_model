@@ -25,9 +25,9 @@ library(dplyr)
 #phi = survival prob
 #p = detection prob
 
-#NAME <- 'PW_100k_2019-07-10_nu_p[i,j,k]_beta[j,k]'
-NAME <- 'PW_500k_2019-07-17_nu_p[i,j,k]_beta[j,k]'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
+#NAME <- 'PW_500k_2019-07-17_nu_p[i,j,k]_beta[j,k]'
+NAME <- 'PW_500k_2019-08-13_nu_p[i,j,k]_beta[j,k]'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-13'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
