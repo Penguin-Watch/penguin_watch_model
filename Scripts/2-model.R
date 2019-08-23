@@ -653,7 +653,7 @@ Pars <- c('mu_phi',
           'sigma_nu_p',
           'nu_p',
           'z_out',
-          'p_out',
+          'p_out'
           # 'alpha_theta',
           # 'pi_theta',
           # 'rho_theta'
