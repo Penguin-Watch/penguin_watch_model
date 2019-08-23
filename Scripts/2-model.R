@@ -654,7 +654,6 @@ Pars <- c('mu_phi',
           'nu_p',
           'z_out',
           'p_out',
-          'z'
           # 'alpha_theta',
           # 'pi_theta',
           # 'rho_theta'
@@ -685,7 +684,7 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_500k_2019-08-13_nu_p[i,j,k]_beta[j,k]',
+        jagsID = 'PW_400k_2019-08-23_nu_p[i,j,k]_beta[j,k]',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
