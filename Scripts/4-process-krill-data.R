@@ -28,7 +28,7 @@ rm(list = ls())
 
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-23'
 
 
 # Load packages -----------------------------------------------------------
@@ -497,5 +497,5 @@ cidx<- grep('T_KRILL', coln)
 colnames(mrg_BS_WS_AY)[cidx] <- c('krill_BR', 'krill_WS', 'krill_AY')
 
 #save as rds
-saveRDS(mrg_BS_WS_AY, 'master_output.rds')
+saveRDS(mrg_BS_WS_AY, 'bs_precip_krill_mrg.rds')
 
