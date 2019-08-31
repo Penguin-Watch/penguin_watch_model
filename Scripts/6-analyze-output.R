@@ -15,7 +15,7 @@ rm(list = ls())
 
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-23'
 
 
 # Load packages -----------------------------------------------------------
@@ -26,6 +26,7 @@ library(ggplot2)
 library(sp)
 library(rgdal)
 library(boot)
+library(rstanarm)
 
 
 # Load data -------------------------------------------------------
@@ -357,40 +358,102 @@ dev.off()
 
 # BS ~ precip -------------------------------------------------------------
 
-# plot(master_output$tsnow, master_output$mn_bs, 
-#      xlab = 'Number of large snow events at site',
-#      ylab = 'Breeding success (chicks/pair)')
-# plot(master_output$train, master_output$mn_bs,
-#      xlab = 'Number of large rain events at site',
-#      ylab = 'Breeding success (chicks/pair)')
+master2 <- dplyr::filter(master_output, SOURCE == 'PW')
+sum_precip <- master2$train + master2$tsnow
 
-#BOTH
-plot((master_output$train + master_output$tsnow), master_output$mn_bs,
-     xlab = 'Number of large precip events at site',
-     ylab = 'Breeding success (chicks/pair)')
+rs_fun <- function(y, x, XLAB, YLAB, obj)
+{
+fit <- rstanarm::stan_glm(y ~ x, 
+                          chains = 4)
+
+alpha_ch <- c()
+beta_ch <- c()
+for (i in 1:4)
+{
+  a1 <- fit$stanfit@sim$samples[[i]]$alpha
+  b1 <- fit$stanfit@sim$samples[[i]]$beta
+  alpha_ch <- c(alpha_ch, a1)
+  beta_ch <- c(beta_ch, b1)
+}
+
+sim_x <- seq(min(x), max(x), length = 100)
+mf <- matrix(nrow = length(alpha_ch), ncol = 100)
+for (i in 1:length(sim_x))
+{
+  mf[,i] <- alpha_ch + beta_ch * sim_x[i]
+}
+
+med_mf <- apply(mf, 2, median)
+LCI_mf <- apply(mf, 2, function(x) quantile(x, probs = 0.025))
+UCI_mf <- apply(mf, 2, function(x) quantile(x, probs = 0.975))
+
+FIT_PLOT <- data.frame(MN = med_mf,
+                       MN_X = sim_x,
+                       LCI = LCI_mf,
+                       UCI = UCI_mf)
+
+DATA_PLOT2 <- data.frame(x = x,
+                         y = y)
+
+p <- ggplot(data = DATA_PLOT2, aes(x, y)) +
+  #model fit
+  geom_ribbon(data = FIT_PLOT,
+              aes(x = MN_X, ymin = LCI, ymax = UCI),
+              fill = 'grey', alpha = 0.7,
+              inherit.aes = FALSE) +
+  geom_line(data = FIT_PLOT, aes(MN_X, MN), color = 'red',
+            alpha = 0.9,
+            inherit.aes = FALSE,
+            size = 1.4) +
+  #latent state
+  geom_point(data = DATA_PLOT2, aes(x, y), color = 'black',
+             inherit.aes = FALSE, size = 3, alpha = 0.3) +
+  theme_bw() +
+  #scale_x_discrete(limits = c(seq(18,30, by = 2))) +
+  ylab(YLAB) +
+  xlab(XLAB) +
+  theme(
+    plot.title = element_text(size = 22),
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 18),
+    axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
+    axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
+    axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
+ggsave(p, filename = paste0(obj))
+
+return(fit)
+}
+
+fit1 <- rs_fun(y = master2$mn_bs, 
+               x = sum_precip, XLAB = 'Total # of precipitation events', 
+               YLAB = 'Breeding Success (chicks / pair)',
+               obj = 'bs_precip.jpg')
+
+MCMCvis::MCMCsummary(fit1, params = 'x')
 
 
 # BS ~ krill --------------------------------------------------------------
 
-#krill caught during breeding season
-# plot(master_output$krill_BR, master_output$mn_bs)
-#krill caught during entire previous year (most krill is caught during Austral winter)
-plot(master_output$krill_WS, master_output$mn_bs,
-     xlab = 'Krill catch', ylab = 'Breeding success (chicks/pair)')
-#average krill catch across years
-# plot(master_output$krill_AY, master_output$mn_bs)
+#krill caught in previous year
 
-#just PW
-# plot(PW_output$krill_WS, PW_output$mn_bs,
-#      xlab = 'Krill catch', ylab = 'Breeding success (chicks/pair)')
+fit2 <- rs_fun(y = master2$mn_bs, 
+               x = master2$krill_WS, XLAB = 'Krill catch (tons)', 
+               YLAB = 'Breeding Success (chicks / pair)',
+               obj = 'bs_krill.jpg')
+
+MCMCvis::MCMCsummary(fit2, params = 'x')
 
 
 
 # BS ~ tourism ------------------------------------------------------------
 
-#need data
-#
-#
+
+# fit3 <- rs_fun(y = master2$mn_bs,
+#                x = master2$XXXX, XLAB = 'Number of visitors',
+#                YLAB = 'Breeding Success (chicks / pair)',
+#                obj = 'bs_tourism.jpg')
+# 
+# MCMCvis::MCMCsummary(fit3, params = 'x')
 
 
 

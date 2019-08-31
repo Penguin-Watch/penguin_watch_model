@@ -344,5 +344,5 @@ p_out_obj <- MCMCvis::MCMCchains(fit, params = 'p_out', mcmc.list = TRUE)
 
 saveRDS(z_out_obj, 'z_out.rds')
 saveRDS(p_out_obj, 'p_out.rds')
-saveRDS(data, 'jagsData.rds')
 saveRDS(precip_df, 'precip_df.rds')
+saveRDS(data, 'jagsData.rds')

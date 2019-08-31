@@ -61,4 +61,11 @@ for (i in 1:length(fls))
 }
 
 
-bs_precip_mrg <- readRDS('bs_precip_mrg.rds')
+
+# merge with rest of data -------------------------------------------------
+
+setwd(OUTPUT)
+
+#save as rds
+saveRDS(XXXX, 'master_output.rds')
+

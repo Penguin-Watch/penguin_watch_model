@@ -16,7 +16,7 @@ rm(list = ls())
 
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-23'
 
 
 # Load packages -----------------------------------------------------------
@@ -40,12 +40,14 @@ CCAMLR_kr_AY <- read.csv('CCAMLR_krill_average.csv')
 # which sites have the most fishing at them?
 
 #CCAMLR
-ggplot(CCAMLR_kr_AY, aes(SITE, T_KRILL)) +
+p <- ggplot(CCAMLR_kr_AY, aes(SITE, T_KRILL)) +
   geom_col() +
   ylab('Mean krill catch (tonnes)') +
   theme_bw() +
   ggtitle('CCAMLR - Mean krill catch March - Jan (2000-2018)')
 
+setwd(OUTPUT)
+ggsave(p, filename = 'krill_catch_by_site.jpg')
 
 
 # When is krill fishing most intense in this region? ----------------------
@@ -57,10 +59,27 @@ for (i in 1:12)
   #i <- 1
   temp <- dplyr::filter(krill_weighted_150, MONTH == i)
   swk <- sum(temp$WEIGHTED_KRILL, na.rm = TRUE)
-  krill_time[i,2] <- swk
+  krill_time[i,2] <- swk/1000
 }
 
-ggplot(krill_time, aes(x = MONTH, y = KRILL)) +
+months <- c('Jan', 'Mar', 'May', 'Jul',
+            'Sep', 'Nov')
+
+p2 <- ggplot(krill_time, aes(x = MONTH, y = KRILL)) +
   geom_col() + 
   theme_bw() +
-  ggtitle('CCAMLR - Krill catch by month')
+  xlab('Month') +
+  ylab('Total krill catch (thousands of tons)') +
+  scale_x_continuous(breaks = seq(1,12, by = 2), labels = months) +
+  theme(
+    plot.title = element_text(size = 22),
+    axis.text = element_text(size = 16),
+    axis.title = element_text(size = 18),
+    axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
+    axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
+    axis.ticks.length= unit(0.2, 'cm')) + #length of axis tick
+  ggtitle('')
+  #ggtitle('CCAMLR - Krill catch by month')
+
+setwd(OUTPUT)
+ggsave(p2, filename = 'krill_catch_by_month.jpg')

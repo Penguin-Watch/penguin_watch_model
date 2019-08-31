@@ -15,7 +15,7 @@ rm(list = ls())
 # dir ---------------------------------------------------------------------
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-07-17'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-23'
 
 
 # Load packages -----------------------------------------------------------
@@ -239,12 +239,12 @@ for (i in 1:dim(data$date_array)[3])
         # scale_y_continuous(limits = c(0, (max(dt_seq) + 1))) +
         #comment out all y_continuous to plot min(chicks) : max(chicks)
         #THIS IS FOR PRECIPITATION
-        # geom_vline(xintercept = t_precip$ts,
-        #            color = 'purple', size = (t_precip$m_snow/3),
-        #            alpha = 0.5) +
-        # geom_vline(xintercept = t_precip$ts,
-        #            color = 'orange', size = (t_precip$s_rain/3),
-        #            alpha = 0.5) +
+        geom_vline(xintercept = t_precip$ts,
+                   color = 'purple', size = (t_precip$m_snow/3),
+                   alpha = 0.5) +
+        geom_vline(xintercept = t_precip$ts,
+                   color = 'orange', size = (t_precip$s_rain/3),
+                   alpha = 0.5) +
         #THIS IS FOR THE NUMBER OF CONFIRMED CHICKS
         # geom_line(aes(y = count),
         #           col = 'green') +
@@ -256,7 +256,7 @@ for (i in 1:dim(data$date_array)[3])
         theme(axis.text.x = element_text(angle = 90, hjust = 1))
       
       #print(p)
-      ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-07-10.pdf'))
+      ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-08-23.jpg'))
     }
   }
 }
