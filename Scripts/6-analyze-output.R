@@ -425,7 +425,8 @@ return(fit)
 }
 
 fit1 <- rs_fun(y = master2$mn_bs, 
-               x = sum_precip, XLAB = 'Total # of precipitation events', 
+               x = sum_precip, 
+               XLAB = 'Total # of precipitation events', 
                YLAB = 'Breeding Success (chicks / pair)',
                obj = 'bs_precip.jpg')
 
@@ -437,7 +438,7 @@ MCMCvis::MCMCsummary(fit1, params = 'x')
 #krill caught in previous year
 
 fit2 <- rs_fun(y = master2$mn_bs, 
-               x = master2$krill_WS, XLAB = 'Krill catch (tons)', 
+               x = log(master2$krill_WS), XLAB = 'log(Krill catch) (tons)', 
                YLAB = 'Breeding Success (chicks / pair)',
                obj = 'bs_krill.jpg')
 
@@ -447,14 +448,26 @@ MCMCvis::MCMCsummary(fit2, params = 'x')
 
 # BS ~ tourism ------------------------------------------------------------
 
+#filter SG (don't have data for sites there yet)
+master3 <- filter(master2, t_visitors > 1000)
 
-# fit3 <- rs_fun(y = master2$mn_bs,
-#                x = master2$XXXX, XLAB = 'Number of visitors',
-#                YLAB = 'Breeding Success (chicks / pair)',
-#                obj = 'bs_tourism.jpg')
-# 
-# MCMCvis::MCMCsummary(fit3, params = 'x')
+fit3 <- rs_fun(y = master3$mn_bs,
+               x = master3$t_visitors, XLAB = 'Number of visitors',
+               YLAB = 'Breeding Success (chicks / pair)',
+               obj = 'bs_tourism.jpg')
+
+MCMCvis::MCMCsummary(fit3, params = 'x')
 
 
 
+
+# BS ~ tourism ------------------------------------------------------------
+
+z_idx <- which(master2$t_visitors < 1000)
+fit5 <- rstanarm::stan_glm(master3$mn_bs ~ log(master3$t_visitors) + 
+                            sum_precip[-z_idx] + 
+                             log(master3$krill_WS), 
+                          chains = 4)
+
+MCMCsummary(fit5, round = 7)
 
