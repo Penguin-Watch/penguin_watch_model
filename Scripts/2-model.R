@@ -44,7 +44,7 @@ PW_data <- read.csv('PW_data_2019-08-13.csv', stringsAsFactors = FALSE)
 
 #remove specified colonies
 un_sites_p <- sort(unique(PW_data$site))
-to_rm <- c('AITC')
+to_rm <- c('AITC', 'MAIV')
 un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
 #un_sites <- un_sites_p
 
