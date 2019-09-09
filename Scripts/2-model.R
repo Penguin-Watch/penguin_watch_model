@@ -525,7 +525,7 @@ setwd(dir[4])
       } #j
       } #k
       
-      mu_beta_p ~ dnorm(0.1, 10) T(0, 0.5)
+      mu_beta_p ~ dnorm(0.1, 10) T(0, 1)
       tau_beta_p <- pow(sigma_beta_p, -2)
       sigma_beta_p ~ dunif(0, 2)
 
