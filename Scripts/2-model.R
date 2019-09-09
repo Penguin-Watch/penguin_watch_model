@@ -501,6 +501,9 @@ setwd(dir[4])
       z_out[t,j,k] <- sum(z[t,1:NI[j,k],j,k])
       p_out[t,j,k] <- mean(p[t,1:NI[j,k],j,k])
       }
+      
+      #breeding success - number of chicks at last time step / total # nests
+      bs[j,k] <- z_out[NT,j,k] / NI[j,k]
       }
       }
       
@@ -508,24 +511,11 @@ setwd(dir[4])
       mu_p ~ dnorm(0, 0.1)
       
       #priors - intercept and slopes
-      #FOR KRILL/SIC
-      # alpha_theta ~ dnorm(0, 0.386)
-      # pi_theta ~ dnorm(0, 0.386)
-      # rho_theta ~ dnorm(0, 0.386)
-      
       for (k in 1:NK)
       {
       for (j in 1:NJ[k])
       {
       mu_phi[j,k] ~ dnorm(theta_phi, tau_mu_phi)
-      
-      #FOR KRILL/SIC
-      #mu_phi[j,k] ~ dnorm(theta_phi[j,k], tau_mu_phi)
-      #theta_phi[j,k] = alpha_theta + pi_theta * SIC[j,k] + rho_theta * KRILL[j,k]
-      
-      #breeding success transform
-      mu_phi_bs[j,k] <- (ilogit(mu_phi[j,k]) ^ 60) * 2
-      
       beta_p[j,k] ~ dnorm(mu_beta_p, tau_beta_p)
       
       for (i in 1:NI[j,k])
@@ -565,9 +555,6 @@ Inits_1 <- list(#mu_phi = mp_array,
   sigma_mu_phi = 1,
   sigma_nu_p = 1,
   theta_phi = 4,
-  # alpha_theta = 0,
-  # pi_theta = 0,
-  # rho_theta = 0,
   .RNG.name = "base::Mersenne-Twister", 
   .RNG.seed = 1)
 
@@ -578,9 +565,6 @@ Inits_2 <- list(#mu_phi = mp_array,
   sigma_mu_phi = 1,
   sigma_nu_p = 1,
   theta_phi = 4,
-  # alpha_theta = 0,
-  # pi_theta = 0,
-  # rho_theta = 0,
   .RNG.name = "base::Wichmann-Hill", 
   .RNG.seed = 2)
 
@@ -591,9 +575,6 @@ Inits_3 <- list(#mu_phi = mp_array,
   sigma_mu_phi = 1,
   sigma_nu_p = 1,
   theta_phi = 4,
-  # alpha_theta = 0,
-  # pi_theta = 0,
-  # rho_theta = 0,
   .RNG.name = "base::Marsaglia-Multicarry", 
   .RNG.seed = 3)
 
@@ -604,9 +585,6 @@ Inits_4 <- list(#mu_phi = mp_array,
   sigma_mu_phi = 1,
   sigma_nu_p = 1,
   theta_phi = 4,
-  # alpha_theta = 0,
-  # pi_theta = 0,
-  # rho_theta = 0,
   .RNG.name = "base::Marsaglia-Multicarry", 
   .RNG.seed = 4)
 
@@ -617,9 +595,6 @@ Inits_5 <- list(#mu_phi = mp_array,
                 sigma_mu_phi = 1,
                 sigma_nu_p = 1,
                 theta_phi = 4,
-                # alpha_theta = 0,
-                # pi_theta = 0,
-                # rho_theta = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
@@ -630,9 +605,6 @@ Inits_6 <- list(#mu_phi = mp_array,
                 sigma_mu_phi = 1,
                 sigma_nu_p = 1,
                 theta_phi = 4,
-                # alpha_theta = 0,
-                # pi_theta = 0,
-                # rho_theta = 0,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 6)
 
@@ -643,7 +615,7 @@ F_Inits <- list(Inits_1, Inits_2, Inits_3, Inits_4, Inits_5, Inits_6)
 # Parameters to track -----------------------------------------------------
 
 Pars <- c('mu_phi',
-          'mu_phi_bs',
+          'bs',
           'mu_p',
           'beta_p',
           'mu_beta_p',
@@ -653,15 +625,11 @@ Pars <- c('mu_phi',
           'sigma_nu_p',
           'nu_p',
           'z_out',
-          'p_out'
-          # 'alpha_theta',
-          # 'pi_theta',
-          # 'rho_theta'
-          )
+          'p_out')
 
 
 Pars_report <- c('mu_phi',
-          'mu_phi_bs',
+          'bs',
           'mu_p',
           'beta_p',
           'mu_beta_p',
@@ -684,7 +652,7 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_400k_2019-08-23_nu_p[i,j,k]_beta[j,k]',
+        jagsID = 'PW_400k_2019-09-08',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
