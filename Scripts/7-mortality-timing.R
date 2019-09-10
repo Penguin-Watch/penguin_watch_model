@@ -15,7 +15,7 @@ rm(list = ls())
 # dir ---------------------------------------------------------------------
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-23'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
 
 
 # Load packages -----------------------------------------------------------
@@ -73,13 +73,13 @@ for (i in 1:length(data$unsites))
     if (!is.na(data$yrs_array[j,i]))
     {
       #lay to hatch
-      lh <- round((z_out_mn[1,j,i] - z_out_mn[31,j,i]) / 31, 3)
+      lh <- round((z_out_mn[1,j,i] - z_out_mn[30,j,i]) / 30, 3)
       
       #young hatch to older hatch
       yo <- round((z_out_mn[31,j,i] - z_out_mn[45,j,i]) / 15, 3)
       
       #older hatch to creche
-      oc <- round((z_out_mn[45,j,i] - z_out_mn[60,j,i]) / 15, 3)
+      oc <- round((z_out_mn[46,j,i] - z_out_mn[60,j,i]) / 15, 3)
       
       t_m <- data.frame(site = data$unsites[i], 
                         season_year = data$yrs_array[j,i],
@@ -169,7 +169,7 @@ for (i in 1:dim(data$date_array)[3])
                                 m_snow >= 2 | s_rain >= 2,
                                 date < max(dates),
                                 date > min(dates))
-      t_precip$ts <- as.numeric(t_precip[,'date'] - min(dates))
+      t_precip$ts <- as.numeric(t_precip[,'date'] - min(dates) + 1)
       
       
       #keep every 5th date value
@@ -220,8 +220,8 @@ for (i in 1:dim(data$date_array)[3])
         #THIS IS FOR THE LATENT TRUE STATE (number of chicks)
         geom_ribbon(aes(ymin = z_out_LCI, ymax = z_out_UCI),
                     fill = 'blue', alpha = 0.2) +
-        geom_line(aes(y = z_out_mn), col = 'blue') +
-        geom_line(aes(y = z_out_dot), col = 'blue', linetype = 2) +
+        geom_line(aes(y = z_out_mn), col = 'blue', size = 3) +
+        geom_line(aes(y = z_out_dot), col = 'blue', linetype = 2, size = 3) +
         # #THIS IS FOR THE DETECTION PROBABILITY
         # geom_ribbon(aes(ymin = p_out_LCI_sc, ymax = p_out_UCI_sc),
         #             fill = 'red', alpha = 0.2) +
@@ -240,10 +240,10 @@ for (i in 1:dim(data$date_array)[3])
         #comment out all y_continuous to plot min(chicks) : max(chicks)
         #THIS IS FOR PRECIPITATION
         geom_vline(xintercept = t_precip$ts,
-                   color = 'purple', size = (t_precip$m_snow/3),
+                   color = 'purple', size = (t_precip$m_snow/3)*2,
                    alpha = 0.5) +
         geom_vline(xintercept = t_precip$ts,
-                   color = 'orange', size = (t_precip$s_rain/3),
+                   color = 'orange', size = (t_precip$s_rain/3)*2,
                    alpha = 0.5) +
         #THIS IS FOR THE NUMBER OF CONFIRMED CHICKS
         # geom_line(aes(y = count),
@@ -253,10 +253,19 @@ for (i in 1:dim(data$date_array)[3])
         ylab('Number of chicks') +
         xlab('') +
         ggtitle(paste0(SITE, ' - ', YEAR)) + 
-        theme(axis.text.x = element_text(angle = 90, hjust = 1))
+        theme(
+          plot.title = element_text(size = 24),
+          axis.text = element_text(size = 20),
+          axis.text.x = element_text(angle = 90, hjust = 1),
+          axis.title = element_text(size = 18),
+          axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
+          axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
+          axis.ticks.length= unit(0.2, 'cm'))
       
       #print(p)
-      ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-08-23.jpg'))
+      ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-08-23.jpg'), 
+             width = 8,
+             height = 8)
     }
   }
 }

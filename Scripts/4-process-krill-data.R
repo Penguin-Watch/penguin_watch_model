@@ -28,7 +28,7 @@ rm(list = ls())
 
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-23'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
 
 
 # Load packages -----------------------------------------------------------
@@ -59,9 +59,9 @@ SLL_p <- unique(site_md[,c('site_id', 'longitude', 'latitude')])
 colnames(SLL_p) <- c('SITE', 'col_lon', 'col_lat')
 
 #add SG sites
-sg_add <- data.frame(SITE = c('COOP', 'GODH', 'MAIV', 'OCEA'), 
-                     col_lon = c(-35.83, -36.26, -36.50, -36.27),
-                     col_lat = c(-54.78, -54.29, -54.24, -54.34))
+sg_add <- data.frame(SITE = c('COOP', 'GODH', 'OCEA'), 
+                     col_lon = c(-35.83, -36.26, -36.27),
+                     col_lat = c(-54.78, -54.29, -54.34))
                               
 SLL <- rbind(SLL_p, sg_add)
 

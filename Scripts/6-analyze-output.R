@@ -15,7 +15,7 @@ rm(list = ls())
 
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-23'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
 
 
 # Load packages -----------------------------------------------------------
@@ -419,7 +419,7 @@ p <- ggplot(data = DATA_PLOT2, aes(x, y)) +
     axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
     axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
     axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
-ggsave(p, filename = paste0(obj))
+ggsave(p, filename = paste0(obj), width = 5, height = 5)
 
 return(fit)
 }
@@ -449,10 +449,10 @@ MCMCvis::MCMCsummary(fit2, params = 'x')
 # BS ~ tourism ------------------------------------------------------------
 
 #filter SG (don't have data for sites there yet)
-master3 <- filter(master2, t_visitors > 1000)
+master3 <- dplyr::filter(master2, t_visitors > 1000)
 
 fit3 <- rs_fun(y = master3$mn_bs,
-               x = master3$t_visitors, XLAB = 'Number of visitors',
+               x = (master3$t_visitors/1000), XLAB = 'Thousands of visitors',
                YLAB = 'Breeding Success (chicks / pair)',
                obj = 'bs_tourism.jpg')
 
@@ -461,13 +461,13 @@ MCMCvis::MCMCsummary(fit3, params = 'x')
 
 
 
-# BS ~ tourism ------------------------------------------------------------
+# BS ~ precip + krill + tourism ------------------------------------------------------------
 
-z_idx <- which(master2$t_visitors < 1000)
-fit5 <- rstanarm::stan_glm(master3$mn_bs ~ log(master3$t_visitors) + 
-                            sum_precip[-z_idx] + 
-                             log(master3$krill_WS), 
-                          chains = 4)
-
-MCMCsummary(fit5, round = 7)
+# z_idx <- which(master2$t_visitors < 1000)
+# fit4 <- rstanarm::stan_glm(master3$mn_bs ~ log(master3$t_visitors) + 
+#                             sum_precip[-z_idx] + 
+#                              log(master3$krill_WS), 
+#                           chains = 4)
+# 
+# MCMCsummary(fit4, round = 7)
 

@@ -25,9 +25,9 @@ library(dplyr)
 #phi = survival prob
 #p = detection prob
 
-#NAME <- 'PW_500k_2019-07-17_nu_p[i,j,k]_beta[j,k]'
-NAME <- 'PW_400k_2019-08-23_nu_p[i,j,k]_beta[j,k]'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-08-23'
+
+NAME <- 'PW_400k_2019-09-08'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
@@ -87,9 +87,9 @@ MCMCvis::MCMCtrace(fit,
           post_zm = FALSE)
 
 
-# mu_beta_p ~ dnorm(0.1, 10) T(0, 0.5)
+# mu_beta_p ~ dnorm(0.1, 10) T(0, 1)
 PR_p <- rnorm(15000, 0.1, 1/sqrt(10))
-PR <- PR_p[which(PR_p > 0 & PR_p < 0.5)]
+PR <- PR_p[which(PR_p > 0 & PR_p < 1)]
 # tf(PR)
 MCMCvis::MCMCtrace(fit, 
           params = 'mu_beta_p',
@@ -208,10 +208,10 @@ for (i in 1:length(data$unsites))
 #extract BS data from model output
 
 #mu_phi_bs
-mu_phi_bs <- MCMCvis::MCMCpstr(fit, params = 'mu_phi_bs')[[1]]
-mu_phi_bs_LCI <- MCMCvis::MCMCpstr(fit, params = 'mu_phi_bs',
+bs <- MCMCvis::MCMCpstr(fit, params = 'bs')[[1]]
+bs_LCI <- MCMCvis::MCMCpstr(fit, params = 'bs',
                                    func = function(x) quantile(x, probs = c(0.025)))[[1]]
-mu_phi_bs_UCI <- MCMCvis::MCMCpstr(fit, params = 'mu_phi_bs',
+bs_UCI <- MCMCvis::MCMCpstr(fit, params = 'bs',
                                    func = function(x) quantile(x, probs = c(0.975)))[[1]]
 
 
@@ -254,9 +254,9 @@ for (i in 1:length(data$unsites))
 
 mrg2 <- data.frame(SITE = site_vec,
                    YEAR = year_vec,
-                   mn_bs = as.vector(mu_phi_bs)[!is.na(as.vector(mu_phi_bs))],
-                   LCI_bs = as.vector(mu_phi_bs_LCI)[!is.na(as.vector(mu_phi_bs))],
-                   UCI_bs = as.vector(mu_phi_bs_UCI)[!is.na(as.vector(mu_phi_bs))])
+                   mn_bs = as.vector(bs)[!is.na(as.vector(bs))],
+                   LCI_bs = as.vector(bs_LCI)[!is.na(as.vector(bs))],
+                   UCI_bs = as.vector(bs_UCI)[!is.na(as.vector(bs))])
 
 
 #merge lat/ln with precip, BS, and creche date
