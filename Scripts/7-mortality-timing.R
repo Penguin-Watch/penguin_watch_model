@@ -98,18 +98,26 @@ mval <- mort[,c('lh', 'yo', 'oc')]
 
 setwd(OUTPUT)
 
+#palette from here: colormind.io
+colors <- c('#225857', '#ECC151', '#E54E3D')
+cols <- grDevices::col2rgb(colors)/255
+
 #figure of mortality rates by egg/chick stage
 pdf('mort_rates_season.pdf', width = 5, height = 5)
-plot(density(mval[,1]), xlim = c(0, 0.6), ylim = c(0,5), 
-     col = rgb(1,0,0,0.3), lwd = 3, 
+plot(density(mval[,1]), xlim = c(0, 0.7), ylim = c(0,6), 
+     col = rgb(cols[1,3], cols[2,3], cols[3,3], 1), lwd = 3, 
      main = 'Chick death rates over nesting season', 
      xlab = 'Chick deaths per day')
-lines(density(mval[,2]), col = rgb(0,1,0,0.3), lwd = 3)
-lines(density(mval[,3]), col = rgb(0,0,1,0.3), lwd = 3)
+lines(density(mval[,2]), 
+      col = rgb(cols[1,2], cols[2,2], cols[3,2], 1), lwd = 3)
+lines(density(mval[,3]), 
+      col = rgb(cols[1,1], cols[2,1], cols[3,1], 1), lwd = 3)
 legend('topright',
        legend = c('lay -> hatch', 'hatch -> young chick', 
                   'young chick -> creche'),
-       col = c(rgb(1,0,0,0.3), rgb(0,1,0,0.3), rgb(0,0,1,0.3)),
+       col = c(rgb(cols[1,3], cols[2,3], cols[3,3], 1), 
+               rgb(cols[1,2], cols[2,2], cols[3,2], 1), 
+               rgb(cols[1,1], cols[2,1], cols[3,1], 1)),
        lwd = c(2,2,2,2), cex = 1)
 dev.off()
 
