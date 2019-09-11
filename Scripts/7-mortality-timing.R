@@ -46,7 +46,7 @@ precip_df <- readRDS('precip_df.rds')
 
 # process data ------------------------------------------------------------
 
-#extract mean and 95% credible interval for latent state
+#extract mean and 1 sd for latent state
 z_out_mn <- MCMCvis::MCMCpstr(z_out, params = 'z_out', func = mean)[[1]]
 z_out_sd <- MCMCvis::MCMCpstr(z_out, params = 'z_out', func = sd)[[1]]
 z_out_LCI <- z_out_mn - z_out_sd
@@ -216,12 +216,12 @@ for (i in 1:dim(data$date_array)[3])
                            p_out_mn = p_out_mn[,j,i], 
                            p_out_LCI = p_out_LCI[,j,i],
                            p_out_UCI = p_out_UCI[,j,i],
-                           # p_out_mn_sc = p_out_mn[,j,i] * rng_z_out + min_z_out,
-                           # p_out_LCI_sc = p_out_LCI[,j,i] * rng_z_out + min_z_out,
-                           # p_out_UCI_sc = p_out_UCI[,j,i] * rng_z_out + min_z_out,
-                           p_out_mn_sc = p_out_mn[,j,i] * rng_dt_seq,
-                           p_out_LCI_sc = p_out_LCI[,j,i] * rng_dt_seq,
-                           p_out_UCI_sc = p_out_UCI[,j,i] * rng_dt_seq,
+                           p_out_mn_sc = p_out_mn[,j,i] * rng_z_out + min_z_out,
+                           p_out_LCI_sc = p_out_LCI[,j,i] * rng_z_out + min_z_out,
+                           p_out_UCI_sc = p_out_UCI[,j,i] * rng_z_out + min_z_out,
+                           # p_out_mn_sc = p_out_mn[,j,i] * rng_dt_seq,
+                           # p_out_LCI_sc = p_out_LCI[,j,i] * rng_dt_seq,
+                           # p_out_UCI_sc = p_out_UCI[,j,i] * rng_dt_seq,
                            count = counts)
       
       p <- ggplot(PLT_DF, aes(x = time)) + 
@@ -230,19 +230,19 @@ for (i in 1:dim(data$date_array)[3])
                     fill = 'blue', alpha = 0.2) +
         geom_line(aes(y = z_out_mn), col = 'blue', size = 3) +
         geom_line(aes(y = z_out_dot), col = 'blue', linetype = 2, size = 3) +
-        # #THIS IS FOR THE DETECTION PROBABILITY
-        # geom_ribbon(aes(ymin = p_out_LCI_sc, ymax = p_out_UCI_sc),
-        #             fill = 'red', alpha = 0.2) +
-        # geom_line(aes(y = p_out_mn_sc),
-        #           col = 'red') +
+        #THIS IS FOR THE DETECTION PROBABILITY
+        geom_ribbon(aes(ymin = p_out_LCI_sc, ymax = p_out_UCI_sc),
+                    fill = 'red', alpha = 0.2) +
+        geom_line(aes(y = p_out_mn_sc),
+                  col = 'red', size = 3) +
         # #Y-axis options
         # #second y-axis with number of chicks from 0 to max
         # scale_y_continuous(limits = c(-1, (max(dt_seq) + 1)),
         #                    sec.axis = sec_axis(~(.)/max(dt_seq),
         #                                        name = 'Detection probability')) +
         # #second y-axis with number of chicks from min to max
-        # scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out,
-        #                                        name = 'Detection probability')) +
+        scale_y_continuous(sec.axis = sec_axis(~(.-min_z_out)/rng_z_out,
+                                               name = 'Detection probability')) +
         #one y-axis with number of chicks from 0 to max
         # scale_y_continuous(limits = c(0, (max(dt_seq) + 1))) +
         #comment out all y_continuous to plot min(chicks) : max(chicks)
@@ -253,6 +253,10 @@ for (i in 1:dim(data$date_array)[3])
         geom_vline(xintercept = t_precip$ts,
                    color = 'orange', size = (t_precip$s_rain/3)*2,
                    alpha = 0.5) +
+        #JUST 2018-01-13 BROW
+        # geom_vline(xintercept = 48,
+        #            color = 'red', size = 3,
+        #            alpha = 0.9) +
         #THIS IS FOR THE NUMBER OF CONFIRMED CHICKS
         # geom_line(aes(y = count),
         #           col = 'green') +
@@ -265,12 +269,19 @@ for (i in 1:dim(data$date_array)[3])
           plot.title = element_text(size = 24),
           axis.text = element_text(size = 20),
           axis.text.x = element_text(angle = 90, hjust = 1),
-          axis.title = element_text(size = 18),
+          axis.title = element_text(size = 24),
           axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
+          #ONLY FOR SECOND AXIS
+          axis.title.y.right = element_text(margin = margin(t = 0, r = 0, b = 0, l = 15)),
           axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
           axis.ticks.length= unit(0.2, 'cm'))
       
       #print(p)
+      # setwd('..')
+      # ggsave(p, filename = 'Fig_5_b.pdf',
+      #        width = 8,
+      #        height = 8)
+      
       ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-08-23.jpg'), 
              width = 8,
              height = 8)
