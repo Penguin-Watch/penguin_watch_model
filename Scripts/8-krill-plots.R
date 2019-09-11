@@ -31,7 +31,7 @@ setwd(paste0(dir, 'Data/Krill_data/CCAMLR/Processed_CCAMLR'))
 #read in weighted krill catch
 krill_weighted_150 <- readRDS('krill_weighted_150.rds')
 
-#read in average (across years) kril catch over entire season
+#read in average (across years) krill catch over entire season
 CCAMLR_kr_AY <- read.csv('CCAMLR_krill_average.csv')
 
 
@@ -69,7 +69,7 @@ p2 <- ggplot(krill_time, aes(x = MONTH, y = KRILL)) +
   geom_col() + 
   theme_bw() +
   xlab('Month') +
-  ylab('Total krill catch (thousands of tons)') +
+  ylab('Krill catch (thousands of tons)') +
   scale_x_continuous(breaks = seq(1,12, by = 2), labels = months) +
   theme(
     plot.title = element_text(size = 22),

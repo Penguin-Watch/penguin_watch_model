@@ -330,7 +330,7 @@ saveRDS(krill_weighted_150, 'krill_weighted_150.rds')
 # Time frame and sites for krill covariate processing -----------------------------
 
 #PW years included in krill data output (1999/2000 season is PW year 2000)
-yrs <- 2000:2018
+yrs <- 2013:2018
 SITES <- sel_sites
 
 
