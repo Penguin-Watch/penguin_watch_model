@@ -22,7 +22,7 @@ OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
 
 library(MCMCvis)
 library(dplyr)
-require(PMCMR)
+library(ggplot2)
 
 
 
@@ -117,29 +117,34 @@ j <- 2
   #dotted line from start of season to first chick sighting
   dt_seq <- seq(z_out_mn[1,j,i], z_out_mn[st_obs,j,i], length = st_obs)
   
+  #hourly time steps (only 8 hours)
+  times <- seq(from = st_obs, to = 61, by = 1/8)
+  ltimes <- length(times)
+  times2 <- times[-ltimes]
+  
   SITE <- data$unsites[i]
   YEAR <- data$yrs_array[j,i]
   min_z_out <- min(z_out_LCI[,j,i])
   rng_z_out <- max(z_out_UCI[,j,i]) - min_z_out
   rng_dt_seq <- (range(dt_seq)[2])
-  PLT_DF <- data.frame(time = 1:60,  
+  PLT_DF <- data.frame(time = 1:62,  
                        z_out_mn = c(rep(NA, (st_obs - 1)), 
-                                    z_out_mn[st_obs:60,j,i]),
+                                    z_out_mn[st_obs:60,j,i], rep(NA, 2)),
                        z_out_LCI = c(rep(NA, (st_obs - 1)), 
-                                     z_out_LCI[st_obs:60,j,i]),
+                                     z_out_LCI[st_obs:60,j,i], rep(NA, 2)),
                        z_out_UCI = c(rep(NA, (st_obs - 1)), 
-                                     z_out_UCI[st_obs:60,j,i]),
-                       z_out_dot = c(dt_seq, rep(NA, 60 - st_obs)),
-                       p_out_mn = p_out_mn[,j,i], 
-                       p_out_LCI = p_out_LCI[,j,i],
-                       p_out_UCI = p_out_UCI[,j,i],
-                       p_out_mn_sc = p_out_mn[,j,i] * rng_z_out + min_z_out,
-                       p_out_LCI_sc = p_out_LCI[,j,i] * rng_z_out + min_z_out,
-                       p_out_UCI_sc = p_out_UCI[,j,i] * rng_z_out + min_z_out,
-                       # p_out_mn_sc = p_out_mn[,j,i] * rng_dt_seq,
-                       # p_out_LCI_sc = p_out_LCI[,j,i] * rng_dt_seq,
-                       # p_out_UCI_sc = p_out_UCI[,j,i] * rng_dt_seq,
-                       count = counts)
+                                     z_out_UCI[st_obs:60,j,i], rep(NA, 2)),
+                       z_out_dot = c(dt_seq, rep(NA, 60 - st_obs), rep(NA, 2)),
+                       p_out_mn = c(p_out_mn[,j,i], rep(NA, 2)),
+                       p_out_LCI = c(p_out_LCI[,j,i], rep(NA, 2)),
+                       p_out_UCI = c(p_out_UCI[,j,i], rep(NA, 2)),
+                       p_out_mn_sc = c(p_out_mn[,j,i] * rng_z_out + min_z_out, rep(NA, 2)),
+                       p_out_LCI_sc = c(p_out_LCI[,j,i] * rng_z_out + min_z_out, rep(NA, 2)),
+                       p_out_UCI_sc = c(p_out_UCI[,j,i] * rng_z_out + min_z_out, rep(NA, 2)),
+                       # p_out_mn_sc = c(p_out_mn[,j,i] * rng_dt_seq, rep(NA, 2)),
+                       # p_out_LCI_sc = c(p_out_LCI[,j,i] * rng_dt_seq, rep(NA, 2)),
+                       # p_out_UCI_sc = c(p_out_UCI[,j,i] * rng_dt_seq, rep(NA, 2)),
+                       count = c(counts, rep(NA, 2)))
   
   
   gdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
@@ -151,12 +156,6 @@ j <- 2
          FALSE)
   
   setwd(gdir)
-  
-  #hourly time steps (only 8 hours)
-  times <- seq(from = st_obs, to = 60, by = 1/8)
-  ltimes <- length(times)
-  times2 <- times
-  #times2 <- times[-c((ltimes - 4):ltimes)]
   
   #navigate to directory with camera images
   imgdir <- paste0('/Users/caseyyoungflesh/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Full_res_images')
@@ -362,7 +361,7 @@ j <- 2
     }
     
     #print(p)
-    ggsave(p, filename = paste0('GIF-', st_d, '-', SITE, '-', YEAR, '-2019-09-08.pdf'),
+    ggsave(p, filename = paste0('GIF-', st_d, '-', SITE, '-', YEAR, '-2019-09-08.jpg'),
            width = 8,
            height = 8)
   }
@@ -370,17 +369,18 @@ j <- 2
   DELAY <- GIF_DELAY
   SIZE <- GIF_DIM
   plt_imgs <- paste0(list.files(), collapse = ' ')
+  
   #plot gif
   #interface with imagemagick through command line
   system(paste0('convert -delay ', DELAY,
                 ' -resize ',  SIZE, ' ',
                 plt_imgs, ' ',
                 cdir, '/', sydir, '-plot.gif'))
-  
+
   
   #combine gifs using imagemagick
   #from here: https://stackoverflow.com/questions/30927367/imagemagick-making-2-gifs-into-side-by-side-gifs-using-im-convert
-  
+
   setwd(cdir)
   
   # separate frames of cam gif
