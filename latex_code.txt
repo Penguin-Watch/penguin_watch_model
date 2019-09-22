@@ -1,8 +1,7 @@
-#LATEX CODE FOR MODEL: pwatch_surv_4e.jags (PW_60k_2019-04-12-FULL_beta[j,k])
+#LATEX CODE
 
 
 #second term in normal is sd
-
 
 z_{t,i,j,k} \sim Binom(\phi_{t,i,j,k}, z_{t-1,i,j,k}) 
 
@@ -20,18 +19,9 @@ logit(p_{t,i,j,k}) = \mu_{p} + \nu_{p_{i,j,k}} + \beta_{p_{j,k}} \times x_{t}
 
 
 #site level true state and mean detection probability for each time step
-Z_{t,j,k} = \forall \ t,j,k; \sum_{i}{} z_{t,i,j,k}
-    -AKA: Z_{t,j,k} = sum(z[t,,j,k])
+Z_{t,j,k} = \sum_{i}{} z_{t,i,j,k}
 
-\overline{p_{t,j,k}} = \forall \ t,j,k; \frac{1}{I} \sum_{i}{} p_{t,i,j,k}
-    -AKA: P_{t,j,k} = mean(p[t,,j,k])
-
-
-
-#number of chicks alive at end of season (used to calculate breeding success) - SAME AS Z_{60,j,k}
-
-\gamma_{j,k} = (ilogit(\mu_{\phi_{j,k}}) ^ 60) \times 2
-
+\overline{p_{t,j,k}} = \frac{1}{N_{j,k}} \sum_{i}{} p_{t,i,j,k}
 
 
 

@@ -22,7 +22,6 @@ OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
 
 library(MCMCvis)
 library(dplyr)
-library(PMCMR)
 library(ggplot2)
 
 
@@ -124,9 +123,6 @@ dev.off()
 
 #friedman test to check for differences in means (repeated measures - does not assume normality)
 friedman.test(as.matrix(mval))
-
-#post-hoc test to see which associations are 'stat sig'
-PMCMR::posthoc.friedman.nemenyi.test(as.matrix(mval))
 
 
 

@@ -25,7 +25,6 @@ library(dplyr)
 library(ggplot2)
 library(sp)
 library(rgdal)
-library(boot)
 library(rstanarm)
 
 
@@ -80,100 +79,33 @@ AP_SA_ll <- sp::spTransform(AP_SA, CRS("+init=epsg:4326"))
 #Antarctic continent
 setwd(paste0(dir, 'Data/Coastline_low_res_polygon'))
 Ant <- rgdal::readOGR('Coastline_low_res_polygon.shp')
-
+Ant_3031 <- sp::spTransform(Ant, CRS("+init=epsg:3031"))
+Ant_SA <- raster::union(Ant_3031, SA)
 
 
 #mean BS at each site
 mrg_agg <- aggregate(mn_bs ~ SITE + col_lat + col_lon, 
-                     data = master_output, mean)
+                     data = PW_output, mean)
 
 #merge with source
-mrg_agg2 <- dplyr::left_join(mrg_agg, unique(master_output[,c('SITE', 'SOURCE')]), 
+mrg_agg2 <- dplyr::left_join(mrg_agg, unique(PW_output[,c('SITE', 'SOURCE')]), 
                              by = c('SITE'))
 
 #change PETE to all
-PETE_idx <- which(mrg_agg2$SITE == 'PETE')
-mrg_agg3 <- mrg_agg2[-PETE_idx[2:3],]
-mrg_agg3[which(mrg_agg3$SITE == 'PETE'),'SOURCE'] <- 'ALL'
+# PETE_idx <- which(mrg_agg2$SITE == 'PETE')
+# mrg_agg3 <- mrg_agg2[-PETE_idx[2:3],]
+# mrg_agg3[which(mrg_agg3$SITE == 'PETE'),'SOURCE'] <- 'ALL'
 
 
 setwd(OUTPUT)
 
 #BLACK circles = Mean breeding success for site comes from this study
-#RED circles = Mean breeding success for site comes from Hinke et al. 2018
-#PURPE cirlces = Mean breeding success for site comes from this study, Hinke et al. 2018, and Lynch et al. 2009 (three studies)
 
 #how transparent points are when plotted
 ALPHA_PT <- 0.9
 
-
-#all sites
-# pdf('BS_map.pdf')
-# #AP shp file
-# ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
-#   geom_polygon(fill = 'grey') + 
-#   geom_path(data = AP_SA_ll, aes(long, lat, group = group), 
-#             inherit.aes = FALSE,
-#             color = 'black') +
-#   #lat/lon limits
-#   coord_map(xlim = c(-70, -30),
-#             ylim = c(-67, -51)) +
-#   #theme_void() +
-#   theme_bw() +
-#   #BS
-#   geom_point(data = mrg_agg3,
-#              inherit.aes = FALSE,
-#              size = 8,
-#              alpha = ALPHA_PT,
-#              aes(col_lon, col_lat, color = mn_bs)) +
-#   scale_color_gradient('Chicks per pair',
-#                        limits = c(min(mrg_agg3$mn_bs),
-#                                   max(mrg_agg3$mn_bs)),
-#                        low = '#2c7fb8',
-#                        high = '#edf8b1') +
-#   # #point outlines
-#   # geom_point(data = mrg_agg3,
-#   #            inherit.aes = FALSE,
-#   #            size = 8,
-#   #            shape = 21,
-#   #            alpha = 0.8,
-#   #            stroke = 1,
-#   #            color = 'black',
-#   #            aes(col_lon, col_lat)) +
-#   #point outlines - PW
-#   geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
-#              inherit.aes = FALSE,
-#              size = 8,
-#              shape = 21,
-#              alpha = 0.8,
-#              stroke = 1,
-#              color = 'black',
-#              aes(col_lon, col_lat)) +
-#   #point outlines - Hinke
-#   geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
-#              inherit.aes = FALSE,
-#              size = 8,
-#              shape = 21,
-#              alpha = 0.8,
-#              stroke = 1,
-#              color = 'red',
-#              aes(col_lon, col_lat)) +
-#   #point outlines - ALL THREE SOURCES
-#   geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
-#              inherit.aes = FALSE,
-#              size = 8,
-#              shape = 21,
-#              alpha = 0.8,
-#              stroke = 1,
-#              color = 'purple',
-#              aes(col_lon, col_lat))
-# #theme(legend.position='none') +
-# dev.off()
-
-
-
 #just AP sites
-pdf('BS_map_AP.pdf')
+pdf('BS_map_AP.pdf', height = 6, width = 6)
 #AP shp file
 ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
@@ -187,67 +119,39 @@ ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
   #BS
-  geom_point(data = mrg_agg3,
+  geom_point(data = mrg_agg2,
              inherit.aes = FALSE,
              size = 8,
              alpha = ALPHA_PT,
              aes(col_lon, col_lat, color = mn_bs)) +
   scale_color_gradient('Chicks per pair',
-                       limits = c(min(mrg_agg3$mn_bs),
-                                  max(mrg_agg3$mn_bs)),
+                       limits = c(min(mrg_agg2$mn_bs),
+                                  max(mrg_agg2$mn_bs)),
                        low = '#2c7fb8',
                        high = '#edf8b1') +
   # #point outlines
-  # geom_point(data = mrg_agg3,
-  #            inherit.aes = FALSE,
-  #            size = 8,
-  #            shape = 21,
-  #            alpha = 0.8,
-  #            stroke = 1,
-  #            color = 'black',
-  #            aes(col_lon, col_lat)) +
-  #point outlines - PW
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
+  geom_point(data = mrg_agg2,
              inherit.aes = FALSE,
              size = 8,
              shape = 21,
              alpha = 0.8,
              stroke = 1,
              color = 'black',
-             aes(col_lon, col_lat)) +
-  #point outlines - Hinke
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'red',
-             #color = 'black',
-             aes(col_lon, col_lat)) + 
-  #point outlines - ALL THREE SOURCES
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'purple',
-             #color = 'black',
-             aes(col_lon, col_lat))
-#theme(legend.position='none') +
+             aes(col_lon, col_lat)) #+
+  #theme(legend.position='none')
 dev.off()
 
 
-PT_SZ <- 40
+PT_SZ <- 30
 #just SG sites
-pdf('BS_map_SG.pdf')
+pdf('BS_map_SG.pdf', width = 6, height = 6)
 #SG shp file
 ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
   geom_path(data = AP_SA_ll, aes(long, lat, group = group), 
             inherit.aes = FALSE,
-            color = 'black') +
+            color = 'black',
+            size = 1.2) +
   #just SG lat/lon
   coord_map(xlim = c(-39.5, -34.5),
             ylim = c(-53, -55.5)) +
@@ -258,53 +162,35 @@ ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
   scale_x_continuous(breaks = c(-39, -37, -35)) +
   scale_y_continuous(breaks = c(-53, -54, -55)) +
   #BS
-  geom_point(data = mrg_agg3,
+  geom_point(data = mrg_agg2,
              inherit.aes = FALSE,
              size = PT_SZ,
              alpha = ALPHA_PT,
              aes(col_lon, col_lat, color = mn_bs)) +
   scale_color_gradient('Chicks per pair',
-                       limits = c(min(mrg_agg3$mn_bs),
-                                  max(mrg_agg3$mn_bs)),
+                       limits = c(min(mrg_agg2$mn_bs),
+                                  max(mrg_agg2$mn_bs)),
                        low = '#2c7fb8',
                        high = '#edf8b1') +
   #point outlines - PW
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'PW'),],
+  geom_point(data = mrg_agg2,
              inherit.aes = FALSE,
              size = PT_SZ,
              shape = 21,
              alpha = 0.8,
-             stroke = 1,
+             stroke = 3.5,
              color = 'black',
              aes(col_lon, col_lat)) +
-  #point outlines - Hinke
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'Hinke'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'red',
-             aes(col_lon, col_lat)) + 
-  #point outlines - ALL THREE SOURCES
-  geom_point(data = mrg_agg3[which(mrg_agg3$SOURCE == 'ALL'),],
-             inherit.aes = FALSE,
-             size = 8,
-             shape = 21,
-             alpha = 0.8,
-             stroke = 1,
-             color = 'purple',
-             aes(col_lon, col_lat))
-#theme(legend.position='none') +
+  theme(legend.position='none')
 dev.off()
 
 
 #inset
-pdf('Ant_continent.pdf')
+pdf('Ant_SA.pdf')
 #SG shp file
-ggplot(data = Ant, aes(long, lat, group = group)) +
+ggplot(data = Ant_SA, aes(long, lat, group = group)) +
   geom_polygon(fill = 'grey') + 
-  geom_path(data = Ant, aes(long, lat, group = group), 
+  geom_path(data = Ant_SA, aes(long, lat, group = group), 
             inherit.aes = FALSE,
             color = 'black') +
   theme_void()
@@ -363,65 +249,64 @@ sum_precip <- master2$train + master2$tsnow
 
 rs_fun <- function(y, x, XLAB, YLAB, obj)
 {
-fit <- rstanarm::stan_glm(y ~ x, 
-                          chains = 4)
+  fit <- rstanarm::stan_glm(y ~ x, chains = 4)
 
-alpha_ch <- c()
-beta_ch <- c()
-for (i in 1:4)
-{
-  a1 <- fit$stanfit@sim$samples[[i]]$alpha
-  b1 <- fit$stanfit@sim$samples[[i]]$beta
-  alpha_ch <- c(alpha_ch, a1)
-  beta_ch <- c(beta_ch, b1)
-}
-
-sim_x <- seq(min(x), max(x), length = 100)
-mf <- matrix(nrow = length(alpha_ch), ncol = 100)
-for (i in 1:length(sim_x))
-{
-  mf[,i] <- alpha_ch + beta_ch * sim_x[i]
-}
-
-med_mf <- apply(mf, 2, median)
-LCI_mf <- apply(mf, 2, function(x) quantile(x, probs = 0.025))
-UCI_mf <- apply(mf, 2, function(x) quantile(x, probs = 0.975))
-
-FIT_PLOT <- data.frame(MN = med_mf,
-                       MN_X = sim_x,
-                       LCI = LCI_mf,
-                       UCI = UCI_mf)
-
-DATA_PLOT2 <- data.frame(x = x,
-                         y = y)
-
-p <- ggplot(data = DATA_PLOT2, aes(x, y)) +
-  #model fit
-  geom_ribbon(data = FIT_PLOT,
-              aes(x = MN_X, ymin = LCI, ymax = UCI),
-              fill = 'grey', alpha = 0.7,
-              inherit.aes = FALSE) +
-  geom_line(data = FIT_PLOT, aes(MN_X, MN), color = 'red',
-            alpha = 0.9,
-            inherit.aes = FALSE,
-            size = 1.4) +
-  #latent state
-  geom_point(data = DATA_PLOT2, aes(x, y), color = 'black',
-             inherit.aes = FALSE, size = 3, alpha = 0.3) +
-  theme_bw() +
-  #scale_x_discrete(limits = c(seq(18,30, by = 2))) +
-  ylab(YLAB) +
-  xlab(XLAB) +
-  theme(
-    plot.title = element_text(size = 22),
-    axis.text = element_text(size = 16),
-    axis.title = element_text(size = 18),
-    axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
-    axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
-    axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
-ggsave(p, filename = paste0(obj), width = 5, height = 5)
-
-return(fit)
+  alpha_ch <- c()
+  beta_ch <- c()
+  for (i in 1:4)
+  {
+    a1 <- fit$stanfit@sim$samples[[i]]$alpha
+    b1 <- fit$stanfit@sim$samples[[i]]$beta
+    alpha_ch <- c(alpha_ch, a1)
+    beta_ch <- c(beta_ch, b1)
+  }
+  
+  sim_x <- seq(min(x), max(x), length = 100)
+  mf <- matrix(nrow = length(alpha_ch), ncol = 100)
+  for (i in 1:length(sim_x))
+  {
+    mf[,i] <- alpha_ch + beta_ch * sim_x[i]
+  }
+  
+  med_mf <- apply(mf, 2, median)
+  LCI_mf <- apply(mf, 2, function(x) quantile(x, probs = 0.025))
+  UCI_mf <- apply(mf, 2, function(x) quantile(x, probs = 0.975))
+  
+  FIT_PLOT <- data.frame(MN = med_mf,
+                         MN_X = sim_x,
+                         LCI = LCI_mf,
+                         UCI = UCI_mf)
+  
+  DATA_PLOT2 <- data.frame(x = x,
+                           y = y)
+  
+  p <- ggplot(data = DATA_PLOT2, aes(x, y)) +
+    #model fit
+    geom_ribbon(data = FIT_PLOT,
+                aes(x = MN_X, ymin = LCI, ymax = UCI),
+                fill = 'grey', alpha = 0.7,
+                inherit.aes = FALSE) +
+    geom_line(data = FIT_PLOT, aes(MN_X, MN), color = 'red',
+              alpha = 0.9,
+              inherit.aes = FALSE,
+              size = 1.4) +
+    #latent state
+    geom_point(data = DATA_PLOT2, aes(x, y), color = 'black',
+               inherit.aes = FALSE, size = 3, alpha = 0.3) +
+    theme_bw() +
+    #scale_x_discrete(limits = c(seq(18,30, by = 2))) +
+    ylab(YLAB) +
+    xlab(XLAB) +
+    theme(
+      plot.title = element_text(size = 22),
+      axis.text = element_text(size = 16),
+      axis.title = element_text(size = 18),
+      axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
+      axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
+      axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
+  ggsave(p, filename = paste0(obj), width = 5, height = 5)
+  
+  return(fit)
 }
 
 fit1 <- rs_fun(y = master2$mn_bs, 
@@ -430,6 +315,7 @@ fit1 <- rs_fun(y = master2$mn_bs,
                YLAB = 'Breeding Success (chicks / pair)',
                obj = 'bs_precip.jpg')
 
+# fit1 <- rstanarm::stan_glm(master2$mn_bs ~ sum_precip, chains = 4)
 MCMCvis::MCMCsummary(fit1, params = 'x')
 
 
@@ -442,6 +328,7 @@ fit2 <- rs_fun(y = master2$mn_bs,
                YLAB = 'Breeding Success (chicks / pair)',
                obj = 'bs_krill.jpg')
 
+# fit2 <- rstanarm::stan_glm(master2$mn_bs ~ log(master2$krill_WS), chains = 4)
 MCMCvis::MCMCsummary(fit2, params = 'x')
 
 
@@ -456,6 +343,9 @@ fit3 <- rs_fun(y = master3$mn_bs,
                YLAB = 'Breeding Success (chicks / pair)',
                obj = 'bs_tourism.jpg')
 
+# tt_y <- master3$mn_bs
+# tt_x <- (master3$t_visitors/1000)
+# fit3 <- rstanarm::stan_glm(tt_y ~ tt_x, chains = 4)
 MCMCvis::MCMCsummary(fit3, params = 'x')
 
 
@@ -463,11 +353,39 @@ MCMCvis::MCMCsummary(fit3, params = 'x')
 
 # BS ~ precip + krill + tourism ------------------------------------------------------------
 
-# z_idx <- which(master2$t_visitors < 1000)
-# fit4 <- rstanarm::stan_glm(master3$mn_bs ~ log(master3$t_visitors) + 
-#                             sum_precip[-z_idx] + 
-#                              log(master3$krill_WS), 
-#                           chains = 4)
-# 
-# MCMCsummary(fit4, round = 7)
+z_idx <- which(master2$t_visitors < 1000)
+
+tt_y <- master3$mn_bs
+tt_x1 <- (master3$t_visitors/1000)
+tt_x2 <- sum_precip[-z_idx]
+tt_x3 <- log(master3$krill_WS)
+fit4 <- rstanarm::stan_glm(tt_y ~ tt_x1 + tt_x2 + tt_x3, chains = 4)
+
+MCMCsummary(fit4, round = 7)
+MCMCplot(fit4, params = c('tt_x1', 'tt_x2', 'tt_x3'))
+MCMCplot(fit4)
+
+
+
+#ADD TOURISM SG
+master4 <- master2
+z_idx <- c(3, 4, 15, 26)
+# master4[z_idx,]$t_visitors <- mean(master4$t_visitors)
+master4[z_idx,]$t_visitors <- c(639, 233, 1417, 200)
+
+
+tt_y <- master4$mn_bs
+tt_x1 <- (master4$t_visitors/1000)
+tt_x2 <- sum_precip
+tt_x3 <- log(master4$krill_WS)
+fit4 <- rstanarm::stan_glm(tt_y ~ tt_x1 + tt_x2 + tt_x3, chains = 4)
+
+fit4 <- rstanarm::stan_glm(tt_y ~ tt_x1, chains = 4)
+
+
+MCMCsummary(fit4, round = 6)
+MCMCplot(fit4, params = c('tt_x1', 'tt_x2', 'tt_x3'))
+MCMCplot(fit4, params = 'beta')
+
+
 

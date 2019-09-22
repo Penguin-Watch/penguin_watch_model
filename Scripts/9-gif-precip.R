@@ -23,6 +23,7 @@ OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
 library(MCMCvis)
 library(dplyr)
 library(ggplot2)
+#requires installation of imagemagick - script written to work on macOS
 
 
 
