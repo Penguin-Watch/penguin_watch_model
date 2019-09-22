@@ -6,4 +6,4 @@ Associated publication:
 
 Youngflesh, C.\*, Jones, F.M.\*, Lynch, H.J., Arthur, J., Macháčková, Z., Tosey, H.R., Hart, T. XXXX. Large-scale assessment of intra- and inter-annual nesting success using a remote camera network. *In Review*
 
-* _Authors contributed equally_
+\* _Authors contributed equally_
