@@ -36,11 +36,14 @@ setwd(OUTPUT)
 master_output <- readRDS('master_output.rds')
 
 
-
 # plot BS ------------------------------------------
 
 #just penguin watch BS estimates
 PW_output <- dplyr::filter(master_output, SOURCE == 'PW')
+
+min(PW_output$mn_bs)
+max(PW_output$mn_bs)
+mean(PW_output$mn_bs)
 
 setwd(OUTPUT)
 
