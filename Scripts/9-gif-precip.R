@@ -15,7 +15,7 @@ rm(list = ls())
 # dir ---------------------------------------------------------------------
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
 
 
 # Load packages -----------------------------------------------------------
@@ -45,7 +45,7 @@ precip_df <- readRDS('precip_df.rds')
 
 #model input
 setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
-PW_data <- read.csv('PW_data_2019-08-13.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-10-07.csv', stringsAsFactors = FALSE)
 
 
 
@@ -149,7 +149,7 @@ j <- 2
   
   
   gdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-                 SITE, '-', YEAR, '-2019-09-08-plot')
+                 SITE, '-', YEAR, '-2019-10-07-plot')
   
   #create dir for figs if doesn't exist and change to that dir
   ifelse(!dir.exists(gdir), 
@@ -292,7 +292,7 @@ j <- 2
   #create gif of camera images using imagemagick
   #make dir
   cdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-                 SITE, '-', YEAR, '-2019-09-08-cam')
+                 SITE, '-', YEAR, '-2019-10-07-cam')
   
   #create dir for figs if doesn't exist and change to that dir
   ifelse(!dir.exists(cdir), 
@@ -315,7 +315,7 @@ j <- 2
   #8 hours per day
   #create fig for each hourly time step
   setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-               SITE, '-', YEAR, '-2019-09-08-plot'))
+               SITE, '-', YEAR, '-2019-10-07-plot'))
   for (d in 1:length(times2))
   {
     p <- ggplot(PLT_DF, aes(x = time)) + 
@@ -362,7 +362,7 @@ j <- 2
     }
     
     #print(p)
-    ggsave(p, filename = paste0('GIF-', st_d, '-', SITE, '-', YEAR, '-2019-09-08.jpg'),
+    ggsave(p, filename = paste0('GIF-', st_d, '-', SITE, '-', YEAR, '-2019-10-07.jpg'),
            width = 8,
            height = 8)
   }

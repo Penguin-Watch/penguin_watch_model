@@ -18,7 +18,7 @@ rm(list = ls())
 
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
 
 
 # Load packages -----------------------------------------------------------
@@ -66,6 +66,14 @@ for (i in 1:length(fls))
   t_df$YEAR[i] <- as.numeric(strsplit(nm[2], split = '.', fixed = TRUE)[[1]][1])
   t_df$t_visitors[i] <- sum(temp$total_visiting, na.rm = TRUE)
 }
+
+
+
+# add SG tourism data -----------------------------------------------------
+
+setwd(paste0(dir, 'Data/tourism_data/SG_tourism_2019-09-29'))
+
+
 
 
 

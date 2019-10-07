@@ -40,13 +40,12 @@ setwd(dir[1])
 #make sure only periods of data that have been QCed are read in here (NA vals will be added to fill the rest of the period)
 #unused nests should be marked with all NAs
 
-PW_data <- read.csv('PW_data_2019-08-13.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-10-07.csv', stringsAsFactors = FALSE)
 
-#remove specified colonies
+#remove specified colonies 
 un_sites_p <- sort(unique(PW_data$site))
-to_rm <- c('AITC', 'MAIV')
-un_sites <- un_sites_p[-which(un_sites_p %in% to_rm)]
-#un_sites <- un_sites_p
+#none
+un_sites <- un_sites_p
 
 
 #determine years
@@ -285,12 +284,6 @@ for (k in 1:dim(nests_array)[4])
   }
 }
 
-
-
-# observations with > 2 chicks --------------------------------------------
-
-# check to see if any nests have observations with more than 2 chicks
-# which(nests_array > 2, arr.ind = TRUE)
 
 
 
@@ -652,12 +645,12 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_400k_2019-09-08',
+        jagsID = 'PW_400k_2019-10-07',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
         logit(p) <- mu_p + nu_p[j,k] + beta_p[i,j,k]',
-        db_hash = 'PW_data_2019-08-13.csv',
+        db_hash = 'PW_data_2019-10-07.csv',
         params_report = Pars_report,
         n_chain = 6,
         n_adapt = 8000,

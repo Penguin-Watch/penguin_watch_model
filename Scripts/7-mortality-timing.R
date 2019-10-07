@@ -15,7 +15,7 @@ rm(list = ls())
 # dir ---------------------------------------------------------------------
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
 
 
 # Load packages -----------------------------------------------------------
@@ -279,7 +279,7 @@ for (i in 1:dim(data$date_array)[3])
       #        width = 8,
       #        height = 8)
       
-      ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-08-23.jpg'), 
+      ggsave(p, filename = paste0(SITE, '-', YEAR, '-2019-10-07.jpg'), 
              width = 8,
              height = 8)
     }

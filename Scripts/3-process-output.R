@@ -26,8 +26,8 @@ library(dplyr)
 #p = detection prob
 
 
-NAME <- 'PW_400k_2019-09-08'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-09-08'
+NAME <- 'PW_400k_2019-10-07'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
@@ -35,7 +35,7 @@ fit <- readRDS(paste0(NAME, '.rds'))
 data <- readRDS('jagsData.rds')
 
 setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
-PW_data <- read.csv('PW_data_2019-08-13.csv', stringsAsFactors = FALSE)
+PW_data <- read.csv('PW_data_2019-10-07.csv', stringsAsFactors = FALSE)
 
 
 

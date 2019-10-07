@@ -22,7 +22,7 @@ rm(list = ls())
 # DIR ---------------------------------------------------------------------
 
 
-DATE <- '2019-08-13'
+DATE <- '2019-10-07'
 
 setwd(paste0('~/Google_Drive/Research/Projects/Penguin_watch/PW_surv_model_data/Model_input_', DATE, '/'))
 
