@@ -339,10 +339,9 @@ MCMCvis::MCMCsummary(fit2, params = 'x')
 # BS ~ tourism ------------------------------------------------------------
 
 #filter SG (don't have data for sites there yet)
-master3 <- dplyr::filter(master2, t_visitors > 1000)
 
-fit3 <- rs_fun(y = master3$mn_bs,
-               x = (master3$t_visitors/1000), XLAB = 'Thousands of visitors',
+fit3 <- rs_fun(y = master2$mn_bs,
+               x = (master2$t_visitors/1000), XLAB = 'Thousands of visitors',
                YLAB = 'Breeding Success (chicks / pair)',
                obj = 'bs_tourism.jpg')
 
@@ -350,45 +349,6 @@ fit3 <- rs_fun(y = master3$mn_bs,
 # tt_x <- (master3$t_visitors/1000)
 # fit3 <- rstanarm::stan_glm(tt_y ~ tt_x, chains = 4)
 MCMCvis::MCMCsummary(fit3, params = 'x')
-
-
-
-
-# BS ~ precip + krill + tourism ------------------------------------------------------------
-
-z_idx <- which(master2$t_visitors < 1000)
-
-tt_y <- master3$mn_bs
-tt_x1 <- (master3$t_visitors/1000)
-tt_x2 <- sum_precip[-z_idx]
-tt_x3 <- log(master3$krill_WS)
-fit4 <- rstanarm::stan_glm(tt_y ~ tt_x1 + tt_x2 + tt_x3, chains = 4)
-
-MCMCsummary(fit4, round = 7)
-MCMCplot(fit4, params = c('tt_x1', 'tt_x2', 'tt_x3'))
-MCMCplot(fit4)
-
-
-
-#ADD TOURISM SG
-master4 <- master2
-z_idx <- c(3, 4, 15, 26)
-# master4[z_idx,]$t_visitors <- mean(master4$t_visitors)
-master4[z_idx,]$t_visitors <- c(639, 233, 1417, 200)
-
-
-tt_y <- master4$mn_bs
-tt_x1 <- (master4$t_visitors/1000)
-tt_x2 <- sum_precip
-tt_x3 <- log(master4$krill_WS)
-fit4 <- rstanarm::stan_glm(tt_y ~ tt_x1 + tt_x2 + tt_x3, chains = 4)
-
-fit4 <- rstanarm::stan_glm(tt_y ~ tt_x1, chains = 4)
-
-
-MCMCsummary(fit4, round = 6)
-MCMCplot(fit4, params = c('tt_x1', 'tt_x2', 'tt_x3'))
-MCMCplot(fit4, params = 'beta')
 
 
 
