@@ -261,7 +261,7 @@ for (i in 1:dim(data$date_array)[3])
         scale_x_continuous(labels = n_dates, breaks = n_breaks) +
         ylab('Number of chicks') +
         xlab('') +
-        ggtitle(paste0(SITE, ' - ', YEAR)) + 
+        ggtitle(paste0(SITE, ' - ', YEAR-1, '-', YEAR)) + 
         theme(
           plot.title = element_text(size = 24),
           axis.text = element_text(size = 20),
