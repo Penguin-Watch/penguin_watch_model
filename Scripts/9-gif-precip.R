@@ -142,9 +142,6 @@ j <- 2
                        p_out_mn_sc = c(p_out_mn[,j,i] * rng_z_out + min_z_out, rep(NA, 2)),
                        p_out_LCI_sc = c(p_out_LCI[,j,i] * rng_z_out + min_z_out, rep(NA, 2)),
                        p_out_UCI_sc = c(p_out_UCI[,j,i] * rng_z_out + min_z_out, rep(NA, 2)),
-                       # p_out_mn_sc = c(p_out_mn[,j,i] * rng_dt_seq, rep(NA, 2)),
-                       # p_out_LCI_sc = c(p_out_LCI[,j,i] * rng_dt_seq, rep(NA, 2)),
-                       # p_out_UCI_sc = c(p_out_UCI[,j,i] * rng_dt_seq, rep(NA, 2)),
                        count = c(counts, rep(NA, 2)))
   
   
@@ -400,14 +397,18 @@ j <- 2
   Sys.sleep(10)
   # remove temp files
   system(paste0('rm a*.gif b*.gif'))
+
   
+  #reduce size of gif to 85% of original
+  setwd(cdir)
+  ar <- 1050/474
+  height <- 474 * 0.75
+  width <- height * ar
   
-  # convert BROWc2018-cam.gif -coalesce a-%04d.gif             # separate frames of 1.gif
-  # convert BROWc2018-plot.gif -coalesce b-%04d.gif            # separate frames of 2.gif
-  # for f in a-*.gif; do convert $f ${f/a/b} +append $f; done  # append frames side-by-side
-  # convert -loop 0 -delay 10 a-*.gif cam-plot-combine.gif     # rejoin frames
-  # rm a*.gif
-  # rm b*.gif    
+  system(paste0('convert ', sydir, '-cam-plot-combine.gif -coalesce -scale ', 
+                width, 'x', height, ' ', sydir, '-cam-plot-combine-small.gif'))
+  
 #}
 #}
 #}
+

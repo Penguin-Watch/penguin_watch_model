@@ -285,3 +285,76 @@ for (i in 1:dim(data$date_array)[3])
     }
   }
 }
+
+
+
+#reduce size of images to reduce overall size of Appendix markdown doc
+
+rd_img_fun <- function(jpeg_dir = paste0(getwd()))
+{
+  #jpeg_dir <- '~/Desktop/test/'
+  #change permissions
+  system(paste0('chmod -R 755 ', jpeg_dir))
+  
+  #list files
+  jf <- list.files(path = jpeg_dir)
+  jpeg_files <- paste0(jpeg_dir, '/', jf[grep('.jpg', jf)])
+  #determine file sizes
+  jpeg_sizes <- file.size(jpeg_files)
+  #larger than 1MB
+  large_files <- jpeg_files[which(jpeg_sizes >= 200000)]
+  
+  if (length(large_files) > 0)
+  {
+    #quality level
+    PER <- 10
+    for (i in 1:length(large_files))
+    {
+      #i <- 1
+      #determine number of characters in filename
+      num_char <- nchar(large_files[i])
+      #imagemagick to reduce file size
+      system(paste0('convert -strip -interlace Plane -sampling-factor 4:2:0 -quality ', 
+                    PER, '% ', large_files[i], ' ', 
+                    substring(large_files[i], first = 1, last = num_char-4), '.JPG'))
+    }
+  }
+  
+  # #recheck file sizes
+  # #determine file sizes
+  # jpeg_sizes <- file.size(jpeg_files)
+  # #larger than 1MB
+  # large_files <- jpeg_files[which(jpeg_sizes >= 1000000)]
+  # if (length(large_files) < 1)
+  # {
+  #   print('SUCCESS!')
+  # } else {
+  #   print('Looks like there are still some large files! Running through again.')
+  #   
+  #   PER <- 75
+  #   for (i in 1:length(large_files))
+  #   {
+  #     #determine number of characters in filename
+  #     num_char <- nchar(large_files[i])
+  #     #imagemagick to reduce file size
+  #     system(paste0('convert -strip -interlace Plane -sampling-factor 4:2:0 -quality ', PER, '% ', large_files[i], ' ', substring(large_files[i], first = 1, last = num_char-4), '.JPG'))
+  #   }
+  #   
+  #   #recheck file sizes
+  #   #determine file sizes
+  #   jpeg_sizes <- file.size(jpeg_files)
+  #   #larger than 1MB
+  #   large_files <- jpeg_files[which(jpeg_sizes >= 1000000)]
+  #   if (length(large_files) < 1)
+  #   {
+  #     print('SUCCESS!')
+  #   } else {
+  #     print('Looks like there are still some large files! Running through again.')
+  #   }
+  # }
+  
+  #change permissions back
+  system(paste0('chmod -R 555 ', jpeg_dir))
+}
+
+rd_img_fun()
