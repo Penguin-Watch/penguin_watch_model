@@ -68,11 +68,6 @@ p_out_UCI <- p_out_mn + p_out_sd
 
 #takes a few minutes per site - may need to be altered for sites other than BROW 2018 (because of different frequency of images, etc.)
 
-#GIF_DIM <- '384X316'
-#GIF_DIM <- '768X632'
-GIF_DIM <- '576X474'
-GIF_DELAY <- 10
-
 #for (i in 1:12)
 #{
 i <- 1
@@ -209,9 +204,12 @@ j <- 2
   tr_time <- full_time[1:(length(files3) - 1)]
   
   #cbind filenames, dates, and times
-  img_td <- data.frame(filename = files3, 
+  img_td <- data.frame(filename = paste0(imgdir, '/', sydir, '/', files3), 
                        date = c(conv_dates[1], tr_date), 
                        time = c(conv_times[1], tr_time))
+  
+  
+  
   
   # ##############################
   # #insert black images into day
@@ -285,30 +283,6 @@ j <- 2
   img_td4 <- img_td3[-c((limg - 4):limg),]
   ##############################
   
-  
-  #create gif of camera images using imagemagick
-  #make dir
-  cdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-                 SITE, '-', YEAR, '-2019-10-07-cam')
-  
-  #create dir for figs if doesn't exist and change to that dir
-  ifelse(!dir.exists(cdir), 
-         dir.create(cdir), 
-         FALSE)
-  
-  #create vector of image names
-  #8 images per day
-  im_imgs <- paste0(img_td3$filename, collapse = ' ')
-  DELAY <- GIF_DELAY
-  SIZE <- GIF_DIM
-  
-  #camera image gif
-  #interface with imagemagick through command line
-  system(paste0('convert -delay ', DELAY,
-                ' -resize ',  SIZE, ' ',
-                im_imgs, ' ',
-                cdir, '/', sydir, '-cam.gif'))
-  
   #8 hours per day
   #create fig for each hourly time step
   setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
@@ -336,6 +310,7 @@ j <- 2
       xlab('') +
       #ggtitle(paste0(SITE, ' - ', YEAR)) + 
       theme(
+        panel.grid.minor = element_blank(),
         plot.title = element_text(size = 24),
         axis.text = element_text(size = 20),
         axis.text.x = element_text(angle = 90, hjust = 1),
@@ -359,56 +334,78 @@ j <- 2
     }
     
     #print(p)
-    ggsave(p, filename = paste0('GIF-', st_d, '-', SITE, '-', YEAR, '-2019-10-07.jpg'),
+    ggsave(p, filename = paste0('GIF-', st_d, '-', 
+                                SITE, '-', YEAR, '-2019-10-07.jpg'),
            width = 8,
            height = 8)
   }
   
-  DELAY <- GIF_DELAY
-  SIZE <- GIF_DIM
-  plt_imgs <- paste0(list.files(), collapse = ' ')
+  #create dir for figs if doesn't exist and change to that dir
+  cdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
+                 SITE, '-', YEAR, '-2019-10-07-cam')
   
-  #plot gif
-  #interface with imagemagick through command line
-  system(paste0('convert -delay ', DELAY,
-                ' -resize ',  SIZE, ' ',
-                plt_imgs, ' ',
-                cdir, '/', sydir, '-plot.gif'))
-
+  ifelse(!dir.exists(cdir), 
+         dir.create(cdir), 
+         FALSE)
   
-  #combine gifs using imagemagick
-  #from here: https://stackoverflow.com/questions/30927367/imagemagick-making-2-gifs-into-side-by-side-gifs-using-im-convert
-
+  #scale plots and cam images
+  #2048 x 1536 - 16%
+  W <- 2048 * 0.18
+  H <- 1536/2048 * W
+  
+  
+  #rescale plot images
+  system(paste0('for f in *.jpg; do convert $f -scale ', 
+                W, 'X', H, ' ', cdir, '/$f-scale.jpg; done'))
+  
   setwd(cdir)
+  plt_img <- list.files()[grep('GIF', list.files())]
   
-  # separate frames of cam gif
-  system(paste0('convert ', sydir, '-cam.gif', 
-                ' -coalesce a-%04d.gif'))
-  # separate frames of plot gif
-  system(paste0('convert ', sydir, '-plot.gif', 
-                ' -coalesce b-%04d.gif'))
-  Sys.sleep(5)
-  # append frames side-by-side
-  system(paste0('for f in a-*.gif; do convert $f ${f/a/b} +append $f; done'))
-  Sys.sleep(5)
-  # rejoin frames
-  system(paste0('convert -loop 0 -delay 10 a-*.gif ', 
-                sydir, '-cam-plot-combine.gif'))
-  Sys.sleep(10)
-  # remove temp files
-  system(paste0('rm a*.gif b*.gif'))
-
+  #rescale cam images
+  setwd(paste0(imgdir, '/', sydir))
+  system(paste0('for f in *.JPG; do convert $f -scale ', 
+                W, 'X', H, ' ', cdir, '/$f-scale.jpg; done'))
   
-  #reduce size of gif to 85% of original
+  #rescale black
+  system(paste0('convert ~/Google_Drive/R/penguin_watch_model/Data/black.JPG -scale ', W, 'X', H, ' ', cdir, '/black.JPG-scale.jpg'))
+  
+  #cam img paths
+  cam_img_path <- paste0(as.character(img_td3$filename), '-scale.jpg')
+  #cam img names
+  cam_img <- sapply(strsplit(cam_img_path, split = '/'), tail, 1)
+  
+  #every other image to reduce size
+  plt_img2 <- plt_img[c(TRUE, FALSE)]
+  cam_img2 <- cam_img[c(TRUE, FALSE)]
+  
+  #append images to one another
+  for (i in 1:length(plt_img2))
+  {
+    #i <- 1
+    
+    if (i < 10)
+    {
+      n <- paste0('00', i)
+    } else {
+      if (i < 100)
+      {
+        n <- paste0('0', i)
+      } else {
+        n <- paste0(i)
+      }
+    }
+    
+    system(paste0('convert ', cdir, '/', cam_img2[i], 
+                  ' ', cdir, '/', plt_img2[i],
+                  ' +append ', cdir, '/g-', n, '.png'))
+  }
+  
+  #create animated gif
   setwd(cdir)
-  ar <- 1050/474
-  height <- 474 * 0.75
-  width <- height * ar
+  system(paste0('convert -loop 0 -delay 10 g-*.png ',
+                '+matte +map ',
+                sydir, '-cam-plot-combine-small.gif'))
   
-  system(paste0('convert ', sydir, '-cam-plot-combine.gif -coalesce -scale ', 
-                width, 'x', height, ' ', sydir, '-cam-plot-combine-small.gif'))
+  system(paste0('rm g-*.png'))
+  system(paste0('rm *scale*'))
   
-#}
-#}
-#}
-
