@@ -1,13 +1,14 @@
 #!/bin/bash
 
-#PBS -l nodes=1:ppn=28,walltime=48:00:00
-#PBS -q long
-#PBS -N PW_run
-#PBS -j oe
-#PBS -o out.txt
+#SBATCH --job-name=PW_run
+#SBATCH --output=out.txt
+#SBATCH --ntasks-per-node=28
+#SBATCH --nodes=1
+#SBATCH --time=168:00:00
+#SBATCH -p extended-28core
 
 module load shared
-module load R/3.4.4
+module load R/3.6.2
 module load gcc-stack
 module load openblas/dynamic/0.2.18
 module load lapack/gcc/64/3.6.0
