@@ -157,24 +157,10 @@ for (k in 1:n_sites)
       
       
       #Specify FIRST and LAST days of season - number of days before first data point (first chick sighting) - days after specified data start day
-      #reference: first chick sighting
-      # FIRST <- min(date_rng) - DAYS_BEFORE
-      # LAST <- min(date_rng) + DAYS_BUFF_FIRST_CHICK + DAYS_AFTER
-      
+
       #reference: chick creche
       FIRST <- max(date_rng) - DAYS_BEFORE
       LAST <- max(date_rng)
-      
-      # #Use same dates across all sites
-      # first_date <- format(as.Date('12-15', format = '%m-%d'), '%m-%d')
-      # last_date <- format(as.Date('02-15', format = '%m-%d'), '%m-%d')
-      # FIRST <- as.Date(paste0((d_yrs[j]-1), '-', first_date), format = "%Y-%m-%d")
-      # LAST <- as.Date(paste0(d_yrs[j], '-', last_date), format = "%Y-%m-%d")
-      
-      #which dates are within the designated period
-      # #reference: first chick sighting
-      # valid_dates <- which(temp_agg$datetime >= min(date_rng) + 
-      #                        DAYS_BUFF_FIRST_CHICK & temp_agg$datetime <= LAST)
       
       #reference: chick creche
       valid_dates <- which(!is.na(temp_agg$datetime))
@@ -184,8 +170,6 @@ for (k in 1:n_sites)
       if (min(sel_dates) > FIRST)
       {
         #add NA vals to front
-        #num_first <- length(which(sel_dates == min(sel_dates))) #used when not aggregating days
-        
         lna <- min(sel_dates) - FIRST
         na_first <- matrix(NA, ncol = length(tog2), nrow = (lna)) # + (num_first))
       } else {
@@ -196,8 +180,6 @@ for (k in 1:n_sites)
       if (max(sel_dates) < LAST)
       {
         #add NA vals to end
-        #num_last <- length(which(sel_dates == max(sel_dates))) #used when not aggregating days
-        
         lna <- LAST - max(sel_dates)
         na_last <- matrix(NA, ncol = length(tog2), nrow = (lna))# + (num_last))
       } else {
