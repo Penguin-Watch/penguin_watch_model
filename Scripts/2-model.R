@@ -127,7 +127,7 @@ for (k in 1:n_sites)
   j_idx <- 1
   for (j in 1:n_yrs)
   {
-    #j <- 6
+    #j <- 4
     temp2 <- dplyr::filter(temp, season_year == d_yrs[j])
     
     if (NROW(temp2) > 0)
@@ -135,7 +135,8 @@ for (k in 1:n_sites)
       temp_dates <- as.Date(temp2$datetime, format = "%Y:%m:%d %H:%M:%S")
       
       #date range (includes days that might be missing for some reason)
-      date_rng <- seq(temp_dates[1], temp_dates[length(temp_dates)], by = 'day')
+      date_rng <- seq(temp_dates[1], temp_dates[length(temp_dates)], 
+                      by = 'day')
       
       #find max number of chicks for each nest at each relevant day
       temp_agg <- data.frame()
@@ -354,36 +355,36 @@ z_array[ones] <- NA
 
 #number of years for each site
 NJ <- rep(NA, NCOL(yrs_array))
-for (i in 1:length(NJ))
+for (j in 1:length(NJ))
 {
   #i <- 1
-  NJ[i] <- max(which(!is.na(yrs_array[,i])))
+  NJ[j] <- max(which(!is.na(yrs_array[,j])))
 }
 
 
 #data availability
 d_avail <- data.frame()
-for (i in 1:length(un_sites))
+for (k in 1:length(un_sites))
 {
-  #i <- 1
+  #k <- 1
   #years
   for (j in 1:dim(nests_array)[3])
   {
     #j <- 1
-    temp <- dplyr::filter(PW_data, site == un_sites[i],
-                          season_year == yrs_array[j,i])
+    temp <- dplyr::filter(PW_data, site == un_sites[k],
+                          season_year == yrs_array[j,k])
     
     if (NROW(temp) > 0)
     {
-      tna <- apply(nests_array[,,j,i], 2, function(x) sum(!is.na(x)))
+      tna <- apply(nests_array[,,j,k], 2, function(x) sum(!is.na(x)))
       nv_nests <- sum(tna > 0)
     } else {
       nv_nests <- 0
     }
-    tt <- data.frame(site = un_sites[i],
-                     season_year = yrs_array[j,i],
+    tt <- data.frame(site = un_sites[k],
+                     season_year = yrs_array[j,k],
                      j = j,
-                     k = i,
+                     k = k,
                      num_nests = nv_nests)
     
     d_avail <- rbind(d_avail, tt)
@@ -401,7 +402,37 @@ idx_df_f <- unique(idx_df[,c('site', 'season_year',
 #metadata
 d_mrg <- dplyr::left_join(d_avail_f, idx_df_f, by = c('site', 'season_year'))
 
+#first day of observation for each site/year - NA if site/year isn't modeled
+st_obs <- matrix(NA, nrow = dim(date_array)[2], ncol = dim(date_array)[3])
+for (k in 1:dim(date_array)[3])
+{
+  #i <- 1
+  for (j in 1:dim(date_array)[2])
+  {
+    #j <- 1
+    #which is min
+    tm <- which(!is.na(nests_array[,1,j,k]))
+    if (length(tm) > 0)
+    {
+      st_obs[j,k] <- min(tm)
+    }
+  }
+}
 
+#y_rep - fill places with no obs data (nests_array) with 0
+y_rep <- array(NA, dim = dim(nests_array))
+#fill 0 at t = 1 for all nest/sites/years
+y_rep[1,,,] <- 0
+#fill 0 for all unmodeled nests/sites/years
+umnsy <- which(is.na(z_array[1,,,]), arr.ind = TRUE)
+umnsy_idx <- rep(1:NROW(umnsy), rep(60, NROW(umnsy)))
+umnsy2 <- umnsy[umnsy_idx,]
+ats <- rep(1:60, NROW(umnsy))
+na_na <- cbind(ats, umnsy2)
+y_rep[na_na] <- 0
+
+
+#JAGS list
 DATA <- list(
   y = nests_array, #response
   NK = dim(nests_array)[4], #number of sites
@@ -414,8 +445,9 @@ DATA <- list(
   yrs_array = yrs_array,
   c_array = c_array,
   date_array = date_array,
-  d_mrg = d_mrg) 
-
+  d_mrg = d_mrg,
+  st_obs = st_obs, #first day of obseration for each site/year
+  y_rep = y_rep)
 
 
 # Model -------------------------------------------------------------------
@@ -426,7 +458,6 @@ setwd(dir[4])
   sink('pwatch_surv.jags')
   
   cat("
-      
       model {
       
       #site
@@ -438,8 +469,7 @@ setwd(dir[4])
       #nests - if there are data for that year, site
       for (i in 1:NI[j,k])
       {
-      #both chicks alive at time step 1 (z[1,i,j] = 2)
-      
+      #both chicks alive at time step 1 (z[1,i,j,k] = 2)
       #time step
       for (t in 2:NT)
       {
@@ -455,8 +485,15 @@ setwd(dir[4])
       p[t,i,j,k] * z[t,i,j,k],
       p[t,i,j,k])
       
+      #simulate data from estimated parameters
+      y_rep[t,i,j,k] ~ dbinom(p_sight[t,i,j,k], z[t,i,j,k])
+      
       } #t
       } #i
+      
+      #y.rep - number of chicks observed after first obs at each site/year
+      sy_chicks_rep[j,k] <- sum(y_rep[st_obs[j,k]:NT,,j,k])
+      
       } #j
       } #k
       
@@ -529,7 +566,7 @@ setwd(dir[4])
       sigma_nu_p ~ dunif(0, 3)
       
       }",fill = TRUE)
-
+  
   sink()
 }
 
@@ -537,52 +574,43 @@ setwd(dir[4])
 
 # Starting values ---------------------------------------------------------
 
-mp_array <- yrs_array
-mp_array[which(!is.na(mp_array), arr.ind = TRUE)] <- 4
+Inits_1 <- list(mu_p = 0,
+                mu_beta_p = 0.1,
+                sigma_beta_p = 1,
+                sigma_mu_phi = 1,
+                sigma_nu_p = 1,
+                theta_phi = 4,
+                .RNG.name = "base::Mersenne-Twister", 
+                .RNG.seed = 1)
 
+Inits_2 <- list(mu_p = 0,
+                mu_beta_p = 0.1,
+                sigma_beta_p = 1,
+                sigma_mu_phi = 1,
+                sigma_nu_p = 1,
+                theta_phi = 4,
+                .RNG.name = "base::Wichmann-Hill", 
+                .RNG.seed = 2)
 
-Inits_1 <- list(#mu_phi = mp_array,
-  mu_p = 0,
-  mu_beta_p = 0.1,
-  sigma_beta_p = 1,
-  sigma_mu_phi = 1,
-  sigma_nu_p = 1,
-  theta_phi = 4,
-  .RNG.name = "base::Mersenne-Twister", 
-  .RNG.seed = 1)
+Inits_3 <- list(mu_p = 0,
+                mu_beta_p = 0.1,
+                sigma_beta_p = 1,
+                sigma_mu_phi = 1,
+                sigma_nu_p = 1,
+                theta_phi = 4,
+                .RNG.name = "base::Marsaglia-Multicarry", 
+                .RNG.seed = 3)
 
-Inits_2 <- list(#mu_phi = mp_array,
-  mu_p = 0,
-  mu_beta_p = 0.1,
-  sigma_beta_p = 1,
-  sigma_mu_phi = 1,
-  sigma_nu_p = 1,
-  theta_phi = 4,
-  .RNG.name = "base::Wichmann-Hill", 
-  .RNG.seed = 2)
+Inits_4 <- list(mu_p = 0,
+                mu_beta_p = 0.1,
+                sigma_beta_p = 1,
+                sigma_mu_phi = 1,
+                sigma_nu_p = 1,
+                theta_phi = 4,
+                .RNG.name = "base::Marsaglia-Multicarry", 
+                .RNG.seed = 4)
 
-Inits_3 <- list(#mu_phi = mp_array,
-  mu_p = 0,
-  mu_beta_p = 0.1,
-  sigma_beta_p = 1,
-  sigma_mu_phi = 1,
-  sigma_nu_p = 1,
-  theta_phi = 4,
-  .RNG.name = "base::Marsaglia-Multicarry", 
-  .RNG.seed = 3)
-
-Inits_4 <- list(#mu_phi = mp_array, 
-  mu_p = 0,
-  mu_beta_p = 0.1,
-  sigma_beta_p = 1,
-  sigma_mu_phi = 1,
-  sigma_nu_p = 1,
-  theta_phi = 4,
-  .RNG.name = "base::Marsaglia-Multicarry", 
-  .RNG.seed = 4)
-
-Inits_5 <- list(#mu_phi = mp_array,
-                mu_p = 0,
+Inits_5 <- list(mu_p = 0,
                 mu_beta_p = 0.1,
                 sigma_beta_p = 1,
                 sigma_mu_phi = 1,
@@ -591,8 +619,7 @@ Inits_5 <- list(#mu_phi = mp_array,
                 .RNG.name = "base::Wichmann-Hill",
                 .RNG.seed = 5)
 
-Inits_6 <- list(#mu_phi = mp_array,
-                mu_p = 0,
+Inits_6 <- list(mu_p = 0,
                 mu_beta_p = 0.1,
                 sigma_beta_p = 1,
                 sigma_mu_phi = 1,
@@ -618,24 +645,24 @@ Pars <- c('mu_phi',
           'sigma_nu_p',
           'nu_p',
           'z_out',
-          'p_out')
+          'p_out',
+          'sy_chicks_rep')
 
 
 Pars_report <- c('mu_phi',
-          'bs',
-          'mu_p',
-          'beta_p',
-          'mu_beta_p',
-          'sigma_beta_p',
-          'theta_phi',
-          'sigma_mu_phi',
-          'sigma_nu_p',
-          'nu_p')
+                 'mu_p',
+                 'beta_p',
+                 'mu_beta_p',
+                 'sigma_beta_p',
+                 'theta_phi',
+                 'sigma_mu_phi',
+                 'sigma_nu_p',
+                 'nu_p')
 
 
 # Run model ---------------------------------------------------------------
 
-#make sure model compiles
+# #make sure model compiles
 # jagsRun(jagsData = DATA,
 #         jagsModel = 'pwatch_surv.jags',
 #         jagsInits = F_Inits,
@@ -645,7 +672,7 @@ jagsRun(jagsData = DATA,
         jagsModel = 'pwatch_surv.jags',
         jagsInits = F_Inits,
         params = Pars,
-        jagsID = 'PW_400k_2019-10-07',
+        jagsID = 'PW_400k_2020-03-16',
         jagsDsc = 'all sites/years (no missing)
         track z_out
         track p_out
@@ -658,6 +685,4 @@ jagsRun(jagsData = DATA,
         n_draw = 400000,
         n_thin = 100,
         EXTRA = FALSE,
-        Rhat_max = 1.1,
-        n_max = 100000,
         save_data = TRUE)
