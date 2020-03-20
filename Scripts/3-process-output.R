@@ -5,11 +5,9 @@
 #################
 
 
-
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
-
 
 
 # Load packages -----------------------------------------------------------
@@ -19,15 +17,14 @@ library(boot)
 library(dplyr)
 
 
-
 # Load model results and data -------------------------------------------------------
 
 #phi = survival prob
 #p = detection prob
 
 
-NAME <- 'PW_400k_2019-10-07'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
+NAME <- 'PW_400k_2020-03-16'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2020-03-16'
 
 setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/', NAME))
 
@@ -38,12 +35,9 @@ setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
 PW_data <- read.csv('PW_data_2019-10-07.csv', stringsAsFactors = FALSE)
 
 
-
 # model summary ---------------------------------------------------------------
 
 sm <- MCMCvis::MCMCsummary(fit, excl = c('z_out', 'p_out'))
-max(sm[,'Rhat'])
-min(sm[,'n.eff'])
 
 
 # trace plots -------------------------------------------------------------
@@ -57,13 +51,14 @@ setwd(OUTPUT)
 
 
 MCMCvis::MCMCtrace(fit, params = 'nu_p', Rhat = TRUE, n.eff = TRUE,
-                   ind = TRUE, filename = 'nu_p_trace.pdf')
+                   ind = TRUE, filename = 'nu_p_trace.pdf', 
+                   open_pdf = FALSE)
 MCMCvis::MCMCtrace(fit, params = 'beta_p', Rhat = TRUE, n.eff = TRUE,
-                   ind = TRUE, filename = 'beta_p_trace.pdf')
+                   ind = TRUE, filename = 'beta_p_trace.pdf',
+                   open_pdf = FALSE)
 MCMCvis::MCMCtrace(fit, params = 'mu_phi', Rhat = TRUE, n.eff = TRUE,
-                   ind = TRUE, filename = 'mu_phi_trace.pdf')
-
-
+                   ind = TRUE, filename = 'mu_phi_trace.pdf',
+                   open_pdf = FALSE)
 
 
 # PPO ---------------------------------------------------------------------
@@ -84,7 +79,8 @@ MCMCvis::MCMCtrace(fit,
           ind = TRUE, 
           priors = PR,
           filename = 'mu_p_PPO.pdf',
-          post_zm = FALSE)
+          post_zm = FALSE,
+          open_pdf = FALSE)
 
 
 # mu_beta_p ~ dnorm(0.1, 10) T(0, 1)
@@ -96,7 +92,8 @@ MCMCvis::MCMCtrace(fit,
           ind = TRUE, 
           priors = PR,
           filename = 'mu_beta_p_PPO.pdf',
-          post_zm = FALSE)
+          post_zm = FALSE,
+          open_pdf = FALSE)
 
 # sigma_beta_p ~ dunif(0, 2)
 PR <- runif(15000, 0, 2)
@@ -105,7 +102,8 @@ MCMCvis::MCMCtrace(fit,
           ind = TRUE, 
           priors = PR,
           filename = 'sigma_beta_p_PPO.pdf',
-          post_zm = FALSE)
+          post_zm = FALSE,
+          open_pdf = FALSE)
 
 # sigma_nu_p ~ dunif(0, 3)
 PR <- runif(15000, 0, 3)
@@ -114,7 +112,8 @@ MCMCvis::MCMCtrace(fit,
           ind = TRUE, 
           priors = PR,
           filename = 'sigma_nu_p_PPO.pdf',
-          post_zm = FALSE)
+          post_zm = FALSE,
+          open_pdf = FALSE)
 
 # theta_phi ~ dnorm(4, 0.25)
 PR <- rnorm(15000, 4, 1/sqrt(0.25))
@@ -124,7 +123,8 @@ MCMCvis::MCMCtrace(fit,
           ind = TRUE, 
           priors = PR,
           filename = 'theta_phi_PPO.pdf',
-          post_zm = FALSE)
+          post_zm = FALSE,
+          open_pdf = FALSE)
 
 # sigma_mu_phi ~ dunif(0, 3)
 PR <- runif(15000, 0, 3)
@@ -133,9 +133,8 @@ MCMCvis::MCMCtrace(fit,
           ind = TRUE, 
           priors = PR,
           filename = 'sigma_mu_phi_PPO.pdf',
-          post_zm = FALSE)
-
-
+          post_zm = FALSE,
+          open_pdf = FALSE)
 
 
 # aggregate precip events to day ------------------------------------------
@@ -147,10 +146,10 @@ setwd('~/Google_Drive/R/penguin_watch_model/Data/precip_data')
 fls <- list.files()
 
 precip_df <- data.frame()
-for (i in 1:length(data$unsites))
+for (k in 1:length(data$unsites))
 {
-  #i <- 1
-  fls2 <- fls[grep(data$unsites[i], fls)]
+  #k <- 1
+  fls2 <- fls[grep(data$unsites[k], fls)]
   
   years <- as.numeric(substr(fls2, start = 6, stop = 9))
   for (j in 1:length(years))
@@ -166,10 +165,10 @@ for (i in 1:length(data$unsites))
                      format = '%Y:%m:%d')
     
     udates <- unique(dates)
-    for (k in 1:length(udates))
+    for (i in 1:length(udates))
     {
-      #k <- 1
-      t2 <- tt[which(dates == udates[k]),]
+      #i <- 1
+      t2 <- tt[which(dates == udates[i]),]
       
       #max snow score
       t_snow <- t2$score[grep('S', t2$score)]
@@ -189,9 +188,9 @@ for (i in 1:length(data$unsites))
         s_rain <- 0
       }
       
-      t_precip <- data.frame(site = data$unsites[i],
+      t_precip <- data.frame(site = data$unsites[k],
                              season_year = years[j],
-                             date = udates[k],
+                             date = udates[i],
                              m_snow,
                              s_rain)
       
@@ -201,25 +200,20 @@ for (i in 1:length(data$unsites))
 }
 
 
-
-
 # merge precip data with model output ----------------------------------------------------------
 
 #extract BS data from model output
 
 #mu_phi_bs
-bs <- MCMCvis::MCMCpstr(fit, params = 'bs')[[1]]
-bs_LCI <- MCMCvis::MCMCpstr(fit, params = 'bs',
-                                   func = function(x) quantile(x, probs = c(0.025)))[[1]]
-bs_UCI <- MCMCvis::MCMCpstr(fit, params = 'bs',
-                                   func = function(x) quantile(x, probs = c(0.975)))[[1]]
+bs <- MCMCvis::MCMCpstr(fit, params = 'bs', func = mean)[[1]]
+bs_sd <- MCMCvis::MCMCpstr(fit, params = 'bs', func = sd)[[1]]
 
 
 p2 <- data.frame()
-for (i in 1:length(data$unsites))
+for (k in 1:length(data$unsites))
 {
-  #i <- 1
-  tsite <- dplyr::filter(precip_df, site == data$unsites[i])
+  #k <- 1
+  tsite <- dplyr::filter(precip_df, site == data$unsites[k])
   
   u_year <- unique(tsite$season_year)
   for (j in 1:length(u_year))
@@ -229,7 +223,7 @@ for (i in 1:length(data$unsites))
     tsnow <- length(which(tyear$m_snow >= 2))
     train <- length(which(tyear$s_rain >= 2))
     
-    tt <- data.frame(SITE = data$unsites[i], 
+    tt <- data.frame(SITE = data$unsites[k], 
                      YEAR = u_year[j],
                      tsnow,
                      train)
@@ -242,11 +236,11 @@ yrs_rng <- range(data$yrs_array, na.rm = TRUE)
 
 site_vec <- c()
 year_vec <- c()
-for (i in 1:length(data$unsites))
+for (k in 1:length(data$unsites))
 {
-  #i <- 1
-  tv <- rep(data$unsites[i], sum(!is.na(data$yrs_array[,i])))
-  yv <- data$yrs_array[which(!is.na(data$yrs_array[,i])),i]
+  #k <- 1
+  tv <- rep(data$unsites[k], sum(!is.na(data$yrs_array[,k])))
+  yv <- data$yrs_array[which(!is.na(data$yrs_array[,k])),k]
   
   site_vec <- c(site_vec, tv)
   year_vec <- c(year_vec, yv)
@@ -255,8 +249,7 @@ for (i in 1:length(data$unsites))
 mrg2 <- data.frame(SITE = site_vec,
                    YEAR = year_vec,
                    mn_bs = as.vector(bs)[!is.na(as.vector(bs))],
-                   LCI_bs = as.vector(bs_LCI)[!is.na(as.vector(bs))],
-                   UCI_bs = as.vector(bs_UCI)[!is.na(as.vector(bs))])
+                   sd_bs = as.vector(bs_sd)[!is.na(as.vector(bs_sd))])
 
 
 #merge lat/ln with precip, BS, and creche date
@@ -266,16 +259,13 @@ mrg4 <- dplyr::left_join(mrg3, p2, by = c('SITE', 'YEAR'))
 mrg5 <- dplyr::left_join(mrg4, data$d_mrg, by = c('SITE' = 'site', 'YEAR' = 'season_year'))
 
 
-
-
 # merge with published BS values ------------------------------------------
 
 #Merge with Hinke et al. 2017 (MEE) data
 hinke_2017 <- data.frame(SITE = c('SHIR', 'CIER', 'LLAN', 'GALE', 'LION', 'PETE'), 
                          YEAR = rep(2017, 6),
                          mn_bs = c(1.63, 1.47, 1.53, 1.46, 1.26, 1.51),
-                         LCI_bs = rep(NA, 6),
-                         UCI_bs = rep(NA, 6),
+                         sd_bs = rep(NA, 6),
                          col_lat = c(-62.46, -64.143, -62.175, 
                                      -65.244, -62.135, -65.17),
                          col_lon = c(-60.789, -60.984, -58.456, 
@@ -295,8 +285,7 @@ lynch_2009 <- data.frame(SITE = 'PETE',
                          YEAR = c('2004', '2005', '2006', '2007', '2008'),
                          mn_bs = c((3260/2145), (2781/2265), (3453/2438),
                                        (3343/2293), (3348/2719)),
-                         LCI_bs = rep(NA, 5),
-                         UCI_bs = rep(NA, 5),
+                         sd_bs = rep(NA, 5),
                          col_lat = rep(-65.17, 5),
                          col_lon = rep(-64.14, 5),
                          tsnow = rep(NA, 5),
@@ -323,8 +312,6 @@ mrg6$SOURCE <- c(rep('PW', length(which(!is.na(mrg6$train)))),
                  rep('Lynch', length(which(is.na(mrg6$creche_date)))))
 
 
-
-
 # save master object ------------------------------------------------------
 
 setwd(OUTPUT)
@@ -333,16 +320,17 @@ mrg6$YEAR <- as.numeric(mrg6$YEAR)
 saveRDS(mrg6, 'bs_precip_mrg.rds')
 
 
-
-
 # save z_out and p_out ----------------------------------------------------
 
 setwd(OUTPUT)
 
 z_out_obj <- MCMCvis::MCMCchains(fit, params = 'z_out', mcmc.list = TRUE)
 p_out_obj <- MCMCvis::MCMCchains(fit, params = 'p_out', mcmc.list = TRUE)
+sy_chicks_rep_obj <- MCMCvis::MCMCchains(fit, params = 'sy_chicks_rep', 
+                                         mcmc.list = TRUE)
 
 saveRDS(z_out_obj, 'z_out.rds')
 saveRDS(p_out_obj, 'p_out.rds')
+saveRDS(sy_chicks_rep_obj, 'sy_chicks_rep.rds')
 saveRDS(precip_df, 'precip_df.rds')
 saveRDS(data, 'jagsData.rds')

@@ -7,18 +7,16 @@
 #################
 
 
-
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
-
 
 
 # top level dir -----------------------------------------------------------
 
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2020-03-16'
 
 
 # Load packages -----------------------------------------------------------
@@ -40,7 +38,6 @@ mrg <- dplyr::filter(mrg_p, SOURCE == 'PW')
 
 #read in model input data
 data <- readRDS('jagsData.rds')
-
 
 
 # read in tourism data ----------------------------------------------------
@@ -79,7 +76,6 @@ for (i in 1:length(fls))
   
   t_df$t_visitors[i] <- sum(temp$total_visiting[v_ind], na.rm = TRUE)
 }
-
 
 
 # add SG tourism data -----------------------------------------------------
@@ -125,6 +121,7 @@ for (i in 1:length(fls))
 
 #combine AP and SG tourism data
 t_df_comb <- rbind(t_df, t_df_SG)
+
 
 # merge with rest of data -------------------------------------------------
 

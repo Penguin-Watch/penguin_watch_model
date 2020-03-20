@@ -5,18 +5,15 @@
 #################
 
 
-
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
 
 
-
 # dir ---------------------------------------------------------------------
 
-
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2020-03-16'
 
 
 # Load packages -----------------------------------------------------------

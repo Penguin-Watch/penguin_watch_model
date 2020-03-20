@@ -10,12 +10,11 @@
 rm(list = ls())
 
 
-
 # dir ---------------------------------------------------------------------
 
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2020-03-16'
 
 
 # Load packages -----------------------------------------------------------
@@ -25,7 +24,7 @@ library(dplyr)
 library(ggplot2)
 library(sp)
 library(rgdal)
-library(rstanarm)
+library(rjags)
 
 
 # Load data -------------------------------------------------------
@@ -34,6 +33,57 @@ setwd(OUTPUT)
 
 #read in master data object
 master_output <- readRDS('master_output.rds')
+sy_chicks_rep <- readRDS('sy_chicks_rep.rds')
+data <- readRDS('jagsData.rds')
+
+
+# posterior predictive check ----------------------------------------------
+
+#data generated from model
+sy_chicks_rep_ch <- MCMCvis::MCMCchains(sy_chicks_rep)
+
+#observed data
+sy <- sum(data$y, na.rm = TRUE)
+
+
+#create dir for PPC figs if doesn't exist
+ifelse(!dir.exists(paste0(OUTPUT, '/PPC_plots')), 
+       dir.create(paste0(OUTPUT, '/PPC_plots')), 
+       FALSE)
+
+setwd(paste0(OUTPUT, '/PPC_plots'))
+
+cn <- colnames(sy_chicks_rep_ch)
+ppp <- rep(NA, length(cn))
+for (i in 1:length(cn))
+{
+  #i <- 8
+  #get row/col
+  sp1 <- strsplit(cn[i], split = '[', fixed = TRUE)[[1]][2]
+  sp2 <- strsplit(sp1, split = ']', fixed = TRUE)[[1]][1]
+  sp3 <- as.numeric(strsplit(sp2, split = ',', fixed = TRUE)[[1]])
+  
+  #total chicks for y for that site/year
+  tsy <- sum(data$y[,,sp3[1],sp3[2]], na.rm = TRUE)
+  #total for yrep for that site/year
+  tsyr <- sy_chicks_rep_ch[,i]
+  
+  YEAR <- data$yrs_array[sp3[1], sp3[2]]
+  SITE <- data$unsites[sp3[2]]
+  
+  #ppcheck
+  ppp[i] <- sum(tsyr > tsy) / length(tsyr)
+  txt <- paste0('Bayes p: ', round(ppp[i], 2))
+  
+  jpeg(paste0(SITE, '-', YEAR, '-2020-03-13.jpg'), 
+       width = 5, height = 5, units = 'in', res = 300)
+  hist(tsyr, main = paste0(SITE, ' - ', 
+                           YEAR-1, '-', YEAR),
+       xlab = 'Simulated number of chicks') 
+  abline(v = tsy, col = 'red', lwd = 3)
+  legend('topleft',legend = txt, bty ="n", pch=NA)
+  dev.off()
+}
 
 
 # plot BS ------------------------------------------
@@ -51,7 +101,7 @@ pdf('site_bs.pdf')
 ggplot(PW_output, aes(YEAR, mn_bs, color = SITE)) + 
   geom_point(size = 3, position = position_dodge(width = 0.7)) +
   geom_errorbar(data = PW_output,
-                aes(ymin = LCI_bs, ymax = UCI_bs,
+                aes(ymin = (mn_bs - sd_bs), ymax = (mn_bs + sd_bs),
                     color = SITE), width = 1.1,
                 position = position_dodge(width = 0.7)) +
   theme_bw() +
@@ -59,8 +109,6 @@ ggplot(PW_output, aes(YEAR, mn_bs, color = SITE)) +
   ylab('Breeding Success') +
   xlab('Year')
 dev.off()
-
-
 
 
 # BS map ------------------------------------------------------------------
@@ -202,8 +250,6 @@ ggplot(data = Ant_SA, aes(long, lat, group = group)) +
 dev.off()
 
 
-
-
 # just PW sites, no BS -------------------------------------------------------
 
 uPW <- unique(PW_output[,c('SITE', 'col_lat', 'col_lon')])
@@ -242,29 +288,68 @@ ggplot(data = AP_SA_ll, aes(long, lat, group = group)) +
 dev.off()
 
 
+# functions to fit models and plot results --------------------------------
 
-
-
-# BS ~ precip -------------------------------------------------------------
-
-master2 <- dplyr::filter(master_output, SOURCE == 'PW')
-sum_precip <- master2$train + master2$tsnow
-
-rs_fun <- function(y, x, XLAB, YLAB, obj)
+fit_env_fun <- function(ENV, n_adapt, n_burn, n_draw, n_thin)
 {
-  fit <- rstanarm::stan_glm(y ~ x, chains = 4)
-
-  alpha_ch <- c()
-  beta_ch <- c()
-  for (i in 1:4)
+  DATA <- list(y_obs = PW_output$mn_bs,
+               sigma_y = PW_output$sd_bs + 0.000001,
+               x = scale(ENV, scale = FALSE)[,1],
+               N = length(PW_output$mn_bs))
+  
   {
-    a1 <- fit$stanfit@sim$samples[[i]]$alpha
-    b1 <- fit$stanfit@sim$samples[[i]]$beta
-    alpha_ch <- c(alpha_ch, a1)
-    beta_ch <- c(beta_ch, b1)
+    sink('bs_env.jags')
+    
+    cat("
+        model {
+      
+        #site
+        for (i in 1:N)
+        {
+          y_obs[i] ~ dnorm(y_true[i], pow(sigma_y[i], -2))
+          mu[i] = alpha + beta * x[i]
+          y_true[i] ~ dnorm(mu[i], tau)
+        } 
+  
+        alpha ~ dnorm(0, 10)
+        beta ~ dnorm(0, 1)
+        tau <- pow(sigma, -2) 
+        sigma ~ dunif(0, 5)
+        
+        }",fill = TRUE)
+    
+    sink()
   }
   
-  sim_x <- seq(min(x), max(x), length = 100)
+  jm <- rjags::jags.model(data = DATA,
+                          file = 'bs_env.jags',
+                          n.chains = 4,
+                          n.adapt = n_adapt)
+  
+  stats::update(jm, n.iter = n_burn)
+  
+  samples <- rjags::coda.samples(jm,
+                                 n.iter = n_draw,
+                                 variable.names = c('alpha',
+                                                    'beta',
+                                                    'sigma',
+                                                    'y_true'),
+                                 thin = n_thin)
+  
+  file.remove('bs_env.jags')
+  
+  return(samples)
+}
+
+
+plot_env_fun <- function(ENV, samples, XLAB, YLAB, obj)
+{
+  ENVsc <- scale(ENV, scale = FALSE)
+  sim_x <- seq(min(ENVsc), max(ENVsc), length = 100)
+  
+  alpha_ch <- MCMCvis::MCMCchains(samples, params = 'alpha')
+  beta_ch <- MCMCvis::MCMCchains(samples, params = 'beta')
+  
   mf <- matrix(nrow = length(alpha_ch), ncol = 100)
   for (i in 1:length(sim_x))
   {
@@ -276,12 +361,15 @@ rs_fun <- function(y, x, XLAB, YLAB, obj)
   UCI_mf <- apply(mf, 2, function(x) quantile(x, probs = 0.975))
   
   FIT_PLOT <- data.frame(MN = med_mf,
-                         MN_X = sim_x,
+                         MN_X = sim_x + attr(ENVsc, 'scaled:center'),
                          LCI = LCI_mf,
                          UCI = UCI_mf)
   
-  DATA_PLOT2 <- data.frame(x = x,
-                           y = y)
+  yt_mn <- MCMCvis::MCMCpstr(samples, params = 'y_true', func = mean)[[1]]
+  yt_sd <- MCMCvis::MCMCpstr(samples, params = 'y_true', func = sd)[[1]]
+  
+  DATA_PLOT2 <- data.frame(x = ENVsc + attr(ENVsc, 'scaled:center'),
+                           y = yt_mn)
   
   p <- ggplot(data = DATA_PLOT2, aes(x, y)) +
     #model fit
@@ -307,48 +395,67 @@ rs_fun <- function(y, x, XLAB, YLAB, obj)
       axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0)),
       axis.title.x = element_text(margin = margin(t = 15, r = 15, b = 0, l = 0)),
       axis.ticks.length= unit(0.2, 'cm')) #length of axis tick
-  ggsave(p, filename = paste0(obj), width = 5, height = 5)
   
-  return(fit)
+  ggsave(p, filename = paste0(obj), width = 5, height = 5)
 }
 
-fit1 <- rs_fun(y = master2$mn_bs, 
-               x = sum_precip, 
-               XLAB = 'Total # of precipitation events', 
-               YLAB = 'Breeding Success (chicks / pair)',
-               obj = 'bs_precip.jpg')
 
-# fit1 <- rstanarm::stan_glm(master2$mn_bs ~ sum_precip, chains = 4)
-MCMCvis::MCMCsummary(fit1, params = 'x')
+# BS ~ precip -------------------------------------------------------------
+
+#total # precip events
+sum_precip <- PW_output$train + PW_output$tsnow
+
+#fit model
+fit_precip <- fit_env_fun(ENV = sum_precip, 
+                          n_adapt = 5000, 
+                          n_burn = 10000, 
+                          n_draw = 10000, 
+                          n_thin = 1)
+
+#analyze output
+MCMCvis::MCMCsummary(fit_precip, round = 3)
+
+#plot results
+plot_env_fun(sum_precip, fit_precip, 
+             XLAB = 'Total # of precipitation events', 
+             YLAB = 'Breeding Success (chicks / pair)',
+             obj = 'bs_precip.jpg')
 
 
 # BS ~ krill --------------------------------------------------------------
 
-#krill caught in previous year
+#fit model
+fit_krill <- fit_env_fun(log(PW_output$krill_WS), 
+                         n_adapt = 5000, 
+                         n_burn = 10000, 
+                         n_draw = 10000, 
+                         n_thin = 1)
 
-fit2 <- rs_fun(y = master2$mn_bs, 
-               x = log(master2$krill_WS), XLAB = 'log(Krill catch) (tons)', 
-               YLAB = 'Breeding Success (chicks / pair)',
-               obj = 'bs_krill.jpg')
+#analyze output
+MCMCvis::MCMCsummary(fit_krill, round = 3)
 
-# fit2 <- rstanarm::stan_glm(master2$mn_bs ~ log(master2$krill_WS), chains = 4)
-MCMCvis::MCMCsummary(fit2, params = 'x')
-
+#plot results
+plot_env_fun(log(PW_output$krill_WS), fit_krill, 
+             XLAB = 'log(Krill catch) (tons)', 
+             YLAB = 'Breeding Success (chicks / pair)',
+             obj = 'bs_krill.jpg')
 
 
 # BS ~ tourism ------------------------------------------------------------
 
-#filter SG (don't have data for sites there yet)
+#fit model
+fit_tourism <- fit_env_fun((PW_output$t_visitors/1000), 
+                           n_adapt = 5000, 
+                           n_burn = 10000, 
+                           n_draw = 10000, 
+                           n_thin = 1)
 
-fit3 <- rs_fun(y = master2$mn_bs,
-               x = (master2$t_visitors/1000), XLAB = 'Thousands of visitors',
-               YLAB = 'Breeding Success (chicks / pair)',
-               obj = 'bs_tourism.jpg')
+#analyze output
+MCMCvis::MCMCsummary(fit_tourism, round = 3)
 
-# tt_y <- master3$mn_bs
-# tt_x <- (master3$t_visitors/1000)
-# fit3 <- rstanarm::stan_glm(tt_y ~ tt_x, chains = 4)
-MCMCvis::MCMCsummary(fit3, params = 'x')
-
-
+#plot results
+plot_env_fun((PW_output$t_visitors/1000), fit_tourism, 
+             XLAB = 'Thousands of visitors',
+             YLAB = 'Breeding Success (chicks / pair)',
+             obj = 'bs_tourism.jpg')
 

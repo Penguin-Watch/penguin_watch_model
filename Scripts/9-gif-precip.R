@@ -5,17 +5,15 @@
 #################
 
 
-
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
 
 
-
 # dir ---------------------------------------------------------------------
 
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2020-03-16'
 
 
 # Load packages -----------------------------------------------------------
@@ -24,7 +22,6 @@ library(MCMCvis)
 library(dplyr)
 library(ggplot2)
 #requires installation of imagemagick - script written to work on macOS
-
 
 
 # load data ---------------------------------------------------------------
@@ -48,7 +45,6 @@ setwd('~/Google_Drive/R/penguin_watch_model/Data/PW_data/')
 PW_data <- read.csv('PW_data_2019-10-07.csv', stringsAsFactors = FALSE)
 
 
-
 # process data ------------------------------------------------------------
 
 #extract mean and 1 sd for latent state
@@ -61,7 +57,6 @@ p_out_mn <- MCMCvis::MCMCpstr(p_out, params = 'p_out', func = mean)[[1]]
 p_out_sd <- MCMCvis::MCMCpstr(p_out, params = 'p_out', func = sd)[[1]]
 p_out_LCI <- p_out_mn - p_out_sd
 p_out_UCI <- p_out_mn + p_out_sd
-
 
 
 # gifs --------------------------------------------------------------------
@@ -140,8 +135,16 @@ PLT_DF <- data.frame(time = 1:62,
                      count = c(counts, rep(NA, 2)))
 
 
-gdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-               SITE, '-', YEAR, '-2019-10-07-plot')
+#create gif dir if doesn't exist and change to that dir
+giff_dir <- paste0(OUTPUT, '/gif/')
+
+ifelse(!dir.exists(giff_dir), 
+       dir.create(giff_dir), 
+       FALSE)
+
+#create dir within gif/
+gdir <- paste0(giff_dir,
+                   SITE, '-', YEAR, '-2019-10-07-plot')
 
 #create dir for figs if doesn't exist and change to that dir
 ifelse(!dir.exists(gdir), 
@@ -207,8 +210,6 @@ tr_time <- full_time[1:(length(files3) - 1)]
 img_td <- data.frame(filename = paste0(imgdir, '/', sydir, '/', files3), 
                      date = c(conv_dates[1], tr_date), 
                      time = c(conv_times[1], tr_time))
-
-
 
 
 # ##############################
@@ -285,8 +286,7 @@ img_td4 <- img_td3[-c((limg - 4):limg),]
 
 #8 hours per day
 #create fig for each hourly time step
-setwd(paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
-             SITE, '-', YEAR, '-2019-10-07-plot'))
+setwd(gdir)
 for (d in 1:length(times2))
 {
   p <- ggplot(PLT_DF, aes(x = time)) + 
@@ -341,7 +341,7 @@ for (d in 1:length(times2))
 }
 
 #create dir for figs if doesn't exist and change to that dir
-cdir <- paste0('~/Google_Drive/R/penguin_watch_model/Results/gif/', 
+cdir <- paste0(OUTPUT, '/gif/', 
                SITE, '-', YEAR, '-2019-10-07-cam')
 
 ifelse(!dir.exists(cdir), 
@@ -428,8 +428,3 @@ for (i in 1:length(plt_img2))
 setwd(cdir)
 system(paste0("ffmpeg -framerate 7 -pattern_type glob -i 'g-*.jpg' -c:v libx264 ", 
               sydir, "-cam-plot-combine.mp4"))
-
-#remove files before producing new video
-# getwd()
-# system(paste0('rm g-*'))
-# system(paste0('rm BROWc2018-cam-plot-combine.mp4'))

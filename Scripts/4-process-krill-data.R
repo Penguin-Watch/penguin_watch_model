@@ -7,7 +7,6 @@
 #################
 
 
-
 # Krill covariates -------------------------------------------------------------------
 
 #Several ways in which krill fishing may impact BS:
@@ -17,18 +16,15 @@
 # * Effect of krill fishing across years
 
 
-
 # Clear environment -------------------------------------------------------
 
 rm(list = ls())
 
 
-
 # top level dir -----------------------------------------------------------
 
-
 dir <- '~/Google_Drive/R/penguin_watch_model/'
-OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2019-10-07'
+OUTPUT <- '~/Google_Drive/R/penguin_watch_model/Results/OUTPUT-2020-03-16'
 
 
 # Load packages -----------------------------------------------------------
@@ -46,7 +42,6 @@ setwd(OUTPUT)
 
 #read in RDS from 3-analyze-output.R
 bs_precip_mrg <- readRDS('bs_precip_mrg.rds')
-
 
 
 # create site buffers ----------------------------------------------------------
@@ -77,7 +72,6 @@ SA <- sp::spTransform(SA_p, CRS("+init=epsg:3031"))
 AP_SA <- raster::union(AP, SA)
 
 
-
 #CCAMLR zones
 # setwd(paste0(dir, 'Data/asd-shapefile-WGS84'))
 # mz <- rgdal::readOGR('asd-shapefile-WGS84.shp')
@@ -96,23 +90,6 @@ for (i in 1:length(SSMU_names))
   #i <- 1
   assign(SSMU_names[i], SSMU[which(SSMU@data$ShortLabel == SSMU_names[i]),])
 }
-
-
-#buffers for each colony
-# p_SLL <- cbind(SLL$col_lon, SLL$col_lat)
-
-#points are in 4326 (uses lat/lon)
-# col_points <- sp::SpatialPoints(p_SLL, proj4string = CRS('+init=epsg:4326'))
-
-#convert colony points to 3031 (rgeos expects projected spatial object)
-# t_col_points <- sp::spTransform(col_points, CRS("+init=epsg:3031"))
-
-# #create buffers around sites - 150km
-# all_site_buffers_150 <- rgeos::gBuffer(t_col_points, width = 150000)
-# all_site_buffers_100 <- rgeos::gBuffer(t_col_points, width = 100000)
-# all_site_buffers_50 <- rgeos::gBuffer(t_col_points, width = 50000)
-# all_site_buffers_25 <- rgeos::gBuffer(t_col_points, width = 25000)
-
 
 
 # Spatial intersection of SSMU and site buffers - Weight krill catch ---------------------------
@@ -326,13 +303,11 @@ saveRDS(krill_weighted_100, 'krill_weighted_100.rds')
 saveRDS(krill_weighted_150, 'krill_weighted_150.rds')
 
 
-
 # Time frame and sites for krill covariate processing -----------------------------
 
 #PW years included in krill data output (1999/2000 season is PW year 2000)
 yrs <- 2013:2018
 SITES <- sel_sites
-
 
 
 # Effect of krill fishing during each breeding season ---------------------
@@ -382,7 +357,6 @@ setwd('../Processed_CCAMLR/')
 write.csv(CCAMLR_kr_BS, 'CCAMLR_krill_breeding_season.csv', row.names = FALSE)
 
 
-
 # Effect of krill fishing during whole season ----------------------------
 
 #150km radius for March - Jan (e.g., March 1999 - Feb 2000 for 1999/2000 breeding season)
@@ -427,7 +401,6 @@ for (i in 1:NROW(SITES))
 
 setwd('../Processed_CCAMLR/')
 write.csv(CCAMLR_kr_WS, 'CCAMLR_krill_entire_season.csv', row.names = FALSE)
-
 
 
 # Effect of krill fishing across years ------------------------------------
@@ -476,8 +449,6 @@ for (i in 1:NROW(SITES))
 }
 
 write.csv(CCAMLR_kr_AY, 'CCAMLR_krill_average.csv', row.names = FALSE)
-
-
 
 
 # merge krill with bs_precip data -----------------------------------------------
