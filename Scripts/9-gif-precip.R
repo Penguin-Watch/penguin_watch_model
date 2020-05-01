@@ -428,3 +428,8 @@ for (i in 1:length(plt_img2))
 setwd(cdir)
 system(paste0("ffmpeg -framerate 7 -pattern_type glob -i 'g-*.jpg' -c:v libx264 ", 
               sydir, "-cam-plot-combine.mp4"))
+
+#create gif from mp4
+setwd(cdir)
+system(paste0("ffmpeg -i ", sydir, "-cam-plot-combine.mp4 -r 15 -vf scale=800:-1 -ss 00:00:25 -to 00:00:57 ", sydir, "-cam-plot-combine.gif"))
+
