@@ -312,7 +312,7 @@ SITES <- sel_sites
 
 # Effect of krill fishing during each breeding season ---------------------
 
-#25km radius for Dec - Feb in each year
+#25km radius for Dec - Jan in each year
 #YEAR is PW year
 
 #CCAMLR data
@@ -326,7 +326,7 @@ for (i in 1:NROW(SITES))
   for (j in 1:length(yrs))
   {
     #j <- 1
-    #used Dec 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+    #used Dec 1 - Jan 31
 
     yr_one <- dplyr::filter(temp_krill, YEAR == yrs[j]-1)
     DEC <- dplyr::filter(yr_one, MONTH == 12)
@@ -359,7 +359,7 @@ write.csv(CCAMLR_kr_BS, 'CCAMLR_krill_breeding_season.csv', row.names = FALSE)
 
 # Effect of krill fishing during whole season ----------------------------
 
-#150km radius for March - Jan (e.g., March 1999 - Feb 2000 for 1999/2000 breeding season)
+#150km radius for March - Jan (e.g., March 1999 - Jan 2000 for 1999/2000 breeding season)
 #YEAR is PW year
 
 CCAMLR_kr_WS <- data.frame()
@@ -372,7 +372,7 @@ for (i in 1:NROW(SITES))
   for (j in 1:length(yrs))
   {
     #j <- 1
-    #used March 1 - Feb 1 (Chicks appear to be creche by Feb 1 - catch after this period would be irrelevant for survival)
+    #used March 1 - Jan 31
     yr_one <- dplyr::filter(temp_krill, YEAR == yrs[j]-1)
     MAR_DEC <- dplyr::filter(yr_one, MONTH > 2)
     yr_two <- dplyr::filter(temp_krill, YEAR == yrs[j])
@@ -420,7 +420,7 @@ for (i in 1:NROW(SITES))
   for (j in 1:length(yrs))
   {
     #j <- 1
-    #used March 1 - Feb 1 (Feb 1 was perscribed end of PW data)
+    #used March 1 - Feb 1
     yr_one <- dplyr::filter(temp_krill, YEAR == yrs[j]-1)
     MAR_DEC <- dplyr::filter(yr_one, MONTH > 2)
     yr_two <- dplyr::filter(temp_krill, YEAR == yrs[j])
