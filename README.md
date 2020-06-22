@@ -1,7 +1,8 @@
 # penguin_watch_model
 
-Code for Youngflesh et al. *Accepted.* *Remote Sensing in Ecology and Conservation*
+Code for Youngflesh et al. *Accepted.* __*Remote Sensing in Ecology and Conservation*__
 
+&nbsp;
 
 Associated publication:
 
@@ -9,11 +10,13 @@ Youngflesh, C.\*, Jones, F.M.\*, Lynch, H.J., Arthur, J., Macháčková, Z., Tos
 
 \* _Authors contributed equally_
 
+&nbsp;
 
 Associated data available here:
 
-DRYAD CITATION [link](URL_HERE)
+[Dryad Digital Repository link](https://doi.org/10.5068/D1MX0Z)
 
+&nbsp;
 
 Repository structure:
 
