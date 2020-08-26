@@ -2,23 +2,19 @@
 
 Code for Youngflesh et al. *Accepted.* __*Remote Sensing in Ecology and Conservation*__
 
-&nbsp;
-
-Associated publication:
+**Associated publication:**
 
 Youngflesh, C.\*, Jones, F.M.\*, Lynch, H.J., Arthur, J., Macháčková, Z., Tosey, H.R., Hart, T. *Accepted.* Large-scale assessment of intra- and inter-annual nesting success using a remote camera network. __*Remote Sensing in Ecology and Conservation*__. [link](URL_HERE)
 
 \* _Authors contributed equally_
 
-&nbsp;
 
-Associated data available here:
+**Associated data:**
 
 [Dryad Digital Repository link](https://doi.org/10.5068/D1MX0Z)
 
-&nbsp;
 
-Repository structure:
+**Repository structure:**
 
 * `Scripts/`
   * `1-process-pw-data.R` - Prepare data for modeling

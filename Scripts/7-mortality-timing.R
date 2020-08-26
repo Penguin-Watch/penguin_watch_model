@@ -58,7 +58,15 @@ p_out_UCI <- p_out_mn + p_out_sd
 
 # compare death rates at different period of season -----------------------
 
-mort <- data.frame()
+mort <- data.frame(site = rep(NA, length(data$unsites) * 
+                                length(data$yrs_array[,i]) * 
+                                dim(z_out_ch)[4]),
+                   season_year = NA,
+                   iter = NA,
+                   lh = NA,
+                   yo = NA,
+                   oc = NA)
+counter <- 1
 #site
 for (i in 1:length(data$unsites))
 {
@@ -69,23 +77,49 @@ for (i in 1:length(data$unsites))
     #j <- 1
     if (!is.na(data$yrs_array[j,i]))
     {
-      #lay to hatch
-      lh <- round((z_out_mn[1,j,i] - z_out_mn[30,j,i]) / 30, 3)
+      for (k in 1:dim(z_out_ch)[4])
+      #for (k in 1:10)
+      {
+        print(k)
+        #k <- 1
+        #lay to hatch
+        lh <- round((z_out_ch[1,j,i,k] - z_out_ch[30,j,i,k]) / 30, 3)
       
-      #young hatch to older hatch
-      yo <- round((z_out_mn[31,j,i] - z_out_mn[45,j,i]) / 15, 3)
+        #young hatch to older hatch
+        yo <- round((z_out_ch[31,j,i,k] - z_out_ch[45,j,i,k]) / 15, 3)
       
-      #older hatch to creche
-      oc <- round((z_out_mn[46,j,i] - z_out_mn[60,j,i]) / 15, 3)
+        #older hatch to creche
+        oc <- round((z_out_ch[46,j,i,k] - z_out_ch[60,j,i,k]) / 15, 3)
       
-      t_m <- data.frame(site = data$unsites[i], 
-                        season_year = data$yrs_array[j,i],
-                        lh, yo, oc)
-      
-      mort <- rbind(mort, t_m)
+        mort$site[counter] <- data$unsites[i]
+        mort$season_year[counter] <- data$yrs_array[j,i]
+        mort$iter[counter] <- k
+        mort$lh[counter] <- lh
+        mort$yo[counter] <- yo
+        mort$oc[counter] <- oc
+        
+        counter <- counter + 1
+      }
     }
   }
 }
+
+#trim NA values
+mort2 <- mort[-c(min(which(is.na(mort$site))):NROW(mort)),]
+
+#for each site/year
+#lay/hatch - young chick
+ly_mn <- aggregate(lh - yo ~ site + season_year, data = mort, FUN = mean)
+ly_CI <- aggregate(lh - yo ~ site + season_year, data = mort, 
+                    FUN = function(x) quantile(x, probs = c(0.025, 0.975)))
+#lay/hatch - old chick
+lo_mn <- aggregate(lh - oc ~ site + season_year, data = mort, FUN = mean)
+lo_CI <- aggregate(lh - oc ~ site + season_year, data = mort, 
+                   FUN = function(x) quantile(x, probs = c(0.025, 0.975)))
+#young chick - old chick
+yo_mn <- aggregate(yo - oc ~ site + season_year, data = mort, FUN = mean)
+yo_CI <- aggregate(yo - oc ~ site + season_year, data = mort, 
+                   FUN = function(x) quantile(x, probs = c(0.025, 0.975)))
 
 num <- cbind(rep(1, NROW(mort)), rep(2, NROW(mort)), rep(3, NROW(mort)))
 mval <- mort[,c('lh', 'yo', 'oc')]
