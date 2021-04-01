@@ -1,10 +1,10 @@
 # penguin_watch_model
 
-Code for Youngflesh et al. *In Press.* __*Remote Sensing in Ecology and Conservation*__
+Code for Youngflesh et al. 2021. __*Remote Sensing in Ecology and Conservation*__
 
 **Associated publication:**
 
-Youngflesh, C.\*, Jones, F.M.\*, Lynch, H.J., Arthur, J., Macháčková, Z., Tosey, H.R., Hart, T. *In Press.* Large-scale assessment of intra- and inter-annual nesting success using a remote camera network. __*Remote Sensing in Ecology and Conservation*__. [link](https://zslpublications.onlinelibrary.wiley.com/doi/full/10.1002/rse2.171)
+Youngflesh, C.\*, Jones, F.M.\*, Lynch, H.J., Arthur, J., Macháčková, Z., Tosey, H.R., Hart, T. 2021. Large-scale assessment of intra- and inter-annual nesting success using a remote camera network. __*Remote Sensing in Ecology and Conservation*__ 7:97–108. [link](https://zslpublications.onlinelibrary.wiley.com/doi/full/10.1002/rse2.171)
 
 \* _Authors contributed equally_
 
